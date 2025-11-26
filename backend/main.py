@@ -1,6 +1,17 @@
 """
 Marei Mekomos - Backend API
-Connects Claude AI with Sefaria's text database to find relevant Torah sources
+
+This file implements a small FastAPI backend that does two main things:
+1) Asks an AI (Claude) to suggest relevant "marei mekomos" (Torah source
+    references) for a given topic.
+2) Looks up those suggested references on Sefaria (via its public API) and
+    returns the found texts (Hebrew / English) together with the references.
+
+The edits in this file add beginner-friendly comments (for dummies) and
+print statements so you can see what the server is doing when you run it.
+
+Read this file top-to-bottom and follow the printed messages in the console
+to understand the runtime flow.
 """
 
 from fastapi import FastAPI, HTTPException
@@ -23,11 +34,17 @@ app.add_middleware(
 )
 
 # Initialize Anthropic client - reads ANTHROPIC_API_KEY from environment
+# Initialize the Anthropic client.
+# NOTE for beginners: The Anthropic library expects an environment variable
+# named `ANTHROPIC_API_KEY` to be set. If you haven't set it, the client may
+# raise an error when used. We keep the constructor call here like before.
 client = Anthropic()
+
 
 class TopicRequest(BaseModel):
     topic: str
     level: str = "intermediate"  # beginner, intermediate, advanced
+
 
 class SourceReference(BaseModel):
     ref: str           # Sefaria reference format, e.g., "Shemot 20:12"
@@ -37,6 +54,7 @@ class SourceReference(BaseModel):
     he_ref: str = ""   # Hebrew reference
     sefaria_url: str = ""
     found: bool = True
+
 
 class MareiMekomosResponse(BaseModel):
     topic: str
@@ -75,90 +93,108 @@ Only return the JSON, no other text."""
 
 
 async def get_sources_from_claude(topic: str, level: str) -> dict:
-    """Ask Claude to suggest relevant sources for a topic"""
-    
+    """
+    Ask Claude (the AI) to suggest relevant sources for a topic.
+
+    Returns a dict with keys `sources` (a list) and `summary` (string).
+    """
+
+    print(f"[Claude] Requesting sources for topic='{topic}' level='{level}'")
+
     level_instruction = {
         "beginner": "Focus on basic sources: main pesukim and a key gemara or two.",
         "intermediate": "Include Chumash, main sugyos in Gemara, key Rishonim, and Shulchan Aruch.",
         "advanced": "Be comprehensive: include lesser-known sources, multiple Rishonim, and Acharonim."
     }
-    
-    user_message = f"""Find marei mekomos for the topic: {topic}
 
-Level: {level} - {level_instruction.get(level, level_instruction['intermediate'])}
+    user_message = (
+        f"Find marei mekomos for the topic: {topic}\n\n"
+        f"Level: {level} - {level_instruction.get(level, level_instruction['intermediate'])}\n\n"
+        "Return 5-15 sources depending on the level, organized by category."
+    )
 
-Return 5-15 sources depending on the level, organized by category."""
-
+    # Send request to Claude
     response = client.messages.create(
         model="claude-sonnet-4-20250514",
         max_tokens=2000,
         system=CLAUDE_SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": user_message}]
+        messages=[{"role": "user", "content": user_message}],
     )
-    
-    # Extract the text content
+
     response_text = response.content[0].text
-    
-    # Parse JSON from response
+    preview = response_text[:800].replace("\n", " ")
+    print(f"[Claude] Response preview: {preview}{'...' if len(response_text) > 800 else ''}")
+
+    # Parse JSON from the AI response (it may be wrapped in markdown fences)
     try:
-        # Handle case where Claude might wrap in markdown code blocks
         if "```json" in response_text:
             response_text = response_text.split("```json")[1].split("```")[0]
         elif "```" in response_text:
             response_text = response_text.split("```")[1].split("```")[0]
-        
+
         return json.loads(response_text.strip())
     except json.JSONDecodeError as e:
-        print(f"JSON parse error: {e}")
-        print(f"Response was: {response_text}")
-        return {"sources": [], "summary": "Error parsing sources"}
+        print("[Claude] JSON parse error while decoding response:", e)
+        print("[Claude] Full response text (raw):")
+        print(response_text)
+        return {"sources": [], "summary": "Error parsing sources from Claude"}
 
 
 async def fetch_text_from_sefaria(ref: str) -> dict:
-    """Fetch actual text from Sefaria API for a given reference"""
-    
-    # URL encode the reference
+    """
+    Fetch actual text from the Sefaria API for a given reference string.
+
+    Returns a dict with `found`, `he_text`, `en_text`, `he_ref`, `sefaria_url`.
+    """
+
+    print(f"[Sefaria] Fetching text for ref='{ref}'")
+
+    # URL-encode spaces simply by replacing them with %20. For more robust
+    # encoding use urllib.parse.quote(ref, safe='').
     encoded_ref = ref.replace(" ", "%20")
     url = f"https://www.sefaria.org/api/v3/texts/{encoded_ref}"
-    
+
     async with httpx.AsyncClient(verify=False) as client:
         try:
             response = await client.get(url, timeout=10.0)
-            
+
+            print(f"[Sefaria] HTTP status code: {response.status_code}")
             if response.status_code == 200:
                 data = response.json()
-                
+
                 # Extract Hebrew and English text
                 he_text = ""
                 en_text = ""
                 he_ref = data.get("heRef", "")
-                
+
                 versions = data.get("versions", [])
                 for version in versions:
                     lang = version.get("language", "")
                     text = version.get("text", "")
-                    
+
                     # Handle nested arrays (common in Sefaria responses)
                     if isinstance(text, list):
                         text = flatten_text(text)
-                    
+
                     if lang == "he" and not he_text:
                         he_text = text
                     elif lang == "en" and not en_text:
                         en_text = text
-                
+
+                print(f"[Sefaria] Found he_text={'yes' if he_text else 'no'} en_text={'yes' if en_text else 'no'}")
                 return {
                     "found": True,
-                    "he_text": he_text[:1000] if he_text else "",  # Limit length
+                    "he_text": he_text[:1000] if he_text else "",
                     "en_text": en_text[:1000] if en_text else "",
                     "he_ref": he_ref,
-                    "sefaria_url": f"https://www.sefaria.org/{encoded_ref}"
+                    "sefaria_url": f"https://www.sefaria.org/{encoded_ref}",
                 }
             else:
+                print(f"[Sefaria] No text found for '{ref}', status {response.status_code}")
                 return {"found": False}
-                
+
         except Exception as e:
-            print(f"Error fetching {ref}: {e}")
+            print(f"[Sefaria] Exception while fetching '{ref}': {e}")
             return {"found": False}
 
 
@@ -176,29 +212,48 @@ def flatten_text(text_data) -> str:
 
 @app.get("/")
 async def root():
+    # Simple root endpoint. We also print so beginners see an incoming
+    # request in the server logs when the frontend or curl hits '/'.
+    print("[HTTP] GET / -> root endpoint called")
     return {"message": "Marei Mekomos API - Use POST /search to find sources"}
 
 
 @app.post("/search", response_model=MareiMekomosResponse)
 async def search_sources(request: TopicRequest):
     """Main endpoint: takes a topic and returns organized sources with texts"""
-    
-    # Step 1: Ask Claude for source suggestions
+    # Print the incoming request so you can follow along in the logs.
+    print(f"[HTTP] POST /search -> topic='{request.topic}' level='{request.level}'")
+
+    # Step 1: Ask Claude for source suggestions (this may take a couple
+    # of seconds depending on network and the AI model).
     claude_response = await get_sources_from_claude(request.topic, request.level)
-    
+
+    # `claude_response` is expected to be a dict like {"sources": [...], "summary": "..."}
+    suggested = claude_response.get("sources", [])
+    print(f"[Claude] Suggested {len(suggested)} sources (before lookup)")
+
     sources = []
-    
-    # Step 2: Fetch actual texts from Sefaria for each suggested source
-    for source in claude_response.get("sources", []):
+
+    # Step 2: For each suggested source, ask Sefaria for the actual texts.
+    # Note: Claude may suggest references that don't exist; we detect this
+    # by checking `found` in the result from Sefaria.
+    for source in suggested:
         ref = source.get("ref", "")
         category = source.get("category", "")
-        
+
+        # Skip any incomplete suggestions
         if not ref:
+            print("[Claude] Skipping empty suggestion")
             continue
-            
-        # Fetch from Sefaria
+
+        print(f"[Workflow] Looking up: '{ref}' (category: {category})")
+
+        # Fetch the text from Sefaria
         sefaria_data = await fetch_text_from_sefaria(ref)
-        
+
+        was_found = sefaria_data.get("found", False)
+        print(f"[Workflow] Sefaria returned found={was_found} for '{ref}'")
+
         sources.append(SourceReference(
             ref=ref,
             category=category,
@@ -206,12 +261,14 @@ async def search_sources(request: TopicRequest):
             en_text=sefaria_data.get("en_text", ""),
             he_ref=sefaria_data.get("he_ref", ""),
             sefaria_url=sefaria_data.get("sefaria_url", ""),
-            found=sefaria_data.get("found", False)
+            found=was_found
         ))
-    
-    # Filter out sources that weren't found (Claude hallucinated them)
+
+    # Remove any sources Sefaria didn't return so the frontend doesn't
+    # display broken links or missing texts.
     valid_sources = [s for s in sources if s.found]
-    
+    print(f"[Workflow] Returning {len(valid_sources)} valid sources to client")
+
     return MareiMekomosResponse(
         topic=request.topic,
         sources=valid_sources,
@@ -222,9 +279,14 @@ async def search_sources(request: TopicRequest):
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
+    print("[HTTP] GET /health -> health check called")
     return {"status": "healthy"}
 
 
 if __name__ == "__main__":
+    # When you run this file directly (python main.py) we'll start the
+    # development server and also print a friendly startup message so you
+    # can see that the process began.
     import uvicorn
+    print("[Server] Starting Marei Mekomos API on http://0.0.0.0:8000")
     uvicorn.run(app, host="0.0.0.0", port=8000)
