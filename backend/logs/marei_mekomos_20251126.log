@@ -1,0 +1,886 @@
+2025-11-26 15:11:19 | INFO     | root:setup_logging:66 | ================================================================================
+2025-11-26 15:11:19 | INFO     | root:setup_logging:67 | Logging system initialized - Log file: c:\Projects\marei-mekomos\backend\logs\marei_mekomos_20251126.log
+2025-11-26 15:11:19 | INFO     | root:setup_logging:68 | ================================================================================
+2025-11-26 15:11:19 | INFO     | __main__:<module>:339 | Starting Marei Mekomos API on http://0.0.0.0:8000
+2025-11-26 15:11:19 | DEBUG    | asyncio:__init__:623 | Using proactor: IocpProactor
+2025-11-26 15:11:37 | INFO     | __main__:search_sources:255 | ================================================================================
+2025-11-26 15:11:37 | INFO     | __main__:search_sources:256 | POST /search -> topic='bedikas chometz' level='intermediate'
+2025-11-26 15:11:37 | INFO     | __main__:search_sources:257 | ================================================================================
+2025-11-26 15:11:37 | INFO     | __main__:get_sources_from_claude:107 | Requesting sources from Claude for topic='bedikas chometz' level='intermediate'
+2025-11-26 15:11:37 | DEBUG    | __main__:get_sources_from_claude:121 | User message to Claude: Find marei mekomos for the topic: bedikas chometz
+
+Level: intermediate - Include Chumash, main sugyos in Gemara, key Rishonim, and Shulchan Aruch.
+
+Return 5-15 sources depending on the level, organized by category.
+2025-11-26 15:11:37 | DEBUG    | anthropic._base_client:_build_request:493 | Request options: {'method': 'post', 'url': '/v1/messages', 'timeout': Timeout(connect=5.0, read=600, write=600, pool=600), 'files': None, 'idempotency_key': 'stainless-python-retry-e43be8ce-2e9a-4194-82e8-c48b37835751', 'json_data': {'max_tokens': 2000, 'messages': [{'role': 'user', 'content': 'Find marei mekomos for the topic: bedikas chometz\n\nLevel: intermediate - Include Chumash, main sugyos in Gemara, key Rishonim, and Shulchan Aruch.\n\nReturn 5-15 sources depending on the level, organized by category.'}], 'model': 'claude-sonnet-4-20250514', 'system': 'You are a Torah scholar assistant that helps find marei mekomos (source references) for any Torah topic.\n\nWhen given a topic, you will return a JSON object with relevant sources organized by category.\n\nIMPORTANT RULES:\n1. Return ONLY valid Sefaria references. Use the exact format Sefaria expects.\n2. Be conservative - only suggest sources you are confident exist.\n3. Organize sources in this order: Chumash → Nach → Mishna → Gemara (Bavli) → Rishonim → Shulchan Aruch/Acharonim\n4. For Gemara, use format like "Kiddushin 31a" or "Berakhot 6b"\n5. For Chumash, use format like "Shemot 20:12" or "Bereishit 1:1"\n6. For Mishna, use format like "Mishnah Kiddushin 1:7"\n7. For Rashi on Chumash, use "Rashi on Shemot 20:12"\n8. For Rambam, use "Mishneh Torah, Hilchot Mamrim 6:1" \n9. For Shulchan Aruch, use "Shulchan Arukh, Yoreh De\'ah 240:1"\n10. Include the most important/foundational sources first within each category.\n\nReturn your response as valid JSON in this exact format:\n{\n  "sources": [\n    {"ref": "Shemot 20:12", "category": "Chumash"},\n    {"ref": "Kiddushin 31a", "category": "Gemara"},\n    ...\n  ],\n  "summary": "Brief 1-2 sentence summary of the topic"\n}\n\nOnly return the JSON, no other text.'}}
+2025-11-26 15:11:37 | DEBUG    | anthropic._base_client:request:1045 | Sending HTTP Request: POST https://api.anthropic.com/v1/messages
+2025-11-26 15:11:37 | DEBUG    | httpcore.connection:trace:47 | connect_tcp.started host='api.anthropic.com' port=443 local_address=None timeout=5.0 socket_options=[(65535, 8, True), (6, 17, 60), (6, 16, 5), (6, 3, 60)]
+2025-11-26 15:11:37 | DEBUG    | httpcore.connection:trace:47 | connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000024063C50580>
+2025-11-26 15:11:37 | DEBUG    | httpcore.connection:trace:47 | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000024062A45CC0> server_hostname='api.anthropic.com' timeout=5.0
+2025-11-26 15:11:37 | DEBUG    | httpcore.connection:trace:47 | start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000024063C50310>
+2025-11-26 15:11:37 | DEBUG    | httpcore.http11:trace:47 | send_request_headers.started request=<Request [b'POST']>
+2025-11-26 15:11:37 | DEBUG    | httpcore.http11:trace:47 | send_request_headers.complete
+2025-11-26 15:11:37 | DEBUG    | httpcore.http11:trace:47 | send_request_body.started request=<Request [b'POST']>
+2025-11-26 15:11:37 | DEBUG    | httpcore.http11:trace:47 | send_request_body.complete
+2025-11-26 15:11:37 | DEBUG    | httpcore.http11:trace:47 | receive_response_headers.started request=<Request [b'POST']>
+2025-11-26 15:11:45 | DEBUG    | httpcore.http11:trace:47 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Wed, 26 Nov 2025 20:11:44 GMT'), (b'Content-Type', b'application/json'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Content-Encoding', b'gzip'), (b'anthropic-ratelimit-input-tokens-limit', b'30000'), (b'anthropic-ratelimit-input-tokens-remaining', b'30000'), (b'anthropic-ratelimit-input-tokens-reset', b'2025-11-26T20:11:39Z'), (b'anthropic-ratelimit-output-tokens-limit', b'8000'), (b'anthropic-ratelimit-output-tokens-remaining', b'8000'), (b'anthropic-ratelimit-output-tokens-reset', b'2025-11-26T20:11:47Z'), (b'anthropic-ratelimit-requests-limit', b'50'), (b'anthropic-ratelimit-requests-remaining', b'49'), (b'anthropic-ratelimit-requests-reset', b'2025-11-26T20:11:38Z'), (b'retry-after', b'23'), (b'anthropic-ratelimit-tokens-limit', b'38000'), (b'anthropic-ratelimit-tokens-remaining', b'38000'), (b'anthropic-ratelimit-tokens-reset', b'2025-11-26T20:11:39Z'), (b'request-id', b'req_011CVX7KyR1kT4MCxwnQhmvX'), (b'strict-transport-security', b'max-age=31536000; includeSubDomains; preload'), (b'anthropic-organization-id', b'73a09491-cda3-40b4-8544-d00ca1bc9331'), (b'x-envoy-upstream-service-time', b'7632'), (b'cf-cache-status', b'DYNAMIC'), (b'X-Robots-Tag', b'none'), (b'Server', b'cloudflare'), (b'CF-RAY', b'9a4c093288c4431a-EWR')])
+2025-11-26 15:11:45 | INFO     | httpx:_send_single_request:1025 | HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2025-11-26 15:11:45 | DEBUG    | httpcore.http11:trace:47 | receive_response_body.started request=<Request [b'POST']>
+2025-11-26 15:11:45 | DEBUG    | httpcore.http11:trace:47 | receive_response_body.complete
+2025-11-26 15:11:45 | DEBUG    | httpcore.http11:trace:47 | response_closed.started
+2025-11-26 15:11:45 | DEBUG    | httpcore.http11:trace:47 | response_closed.complete
+2025-11-26 15:11:45 | DEBUG    | anthropic._base_client:request:1083 | HTTP Response: POST https://api.anthropic.com/v1/messages "200 OK" Headers({'date': 'Wed, 26 Nov 2025 20:11:44 GMT', 'content-type': 'application/json', 'transfer-encoding': 'chunked', 'connection': 'keep-alive', 'content-encoding': 'gzip', 'anthropic-ratelimit-input-tokens-limit': '30000', 'anthropic-ratelimit-input-tokens-remaining': '30000', 'anthropic-ratelimit-input-tokens-reset': '2025-11-26T20:11:39Z', 'anthropic-ratelimit-output-tokens-limit': '8000', 'anthropic-ratelimit-output-tokens-remaining': '8000', 'anthropic-ratelimit-output-tokens-reset': '2025-11-26T20:11:47Z', 'anthropic-ratelimit-requests-limit': '50', 'anthropic-ratelimit-requests-remaining': '49', 'anthropic-ratelimit-requests-reset': '2025-11-26T20:11:38Z', 'retry-after': '23', 'anthropic-ratelimit-tokens-limit': '38000', 'anthropic-ratelimit-tokens-remaining': '38000', 'anthropic-ratelimit-tokens-reset': '2025-11-26T20:11:39Z', 'request-id': 'req_011CVX7KyR1kT4MCxwnQhmvX', 'strict-transport-security': 'max-age=31536000; includeSubDomains; preload', 'anthropic-organization-id': '73a09491-cda3-40b4-8544-d00ca1bc9331', 'x-envoy-upstream-service-time': '7632', 'cf-cache-status': 'DYNAMIC', 'x-robots-tag': 'none', 'server': 'cloudflare', 'cf-ray': '9a4c093288c4431a-EWR'})
+2025-11-26 15:11:45 | DEBUG    | anthropic._base_client:request:1091 | request_id: req_011CVX7KyR1kT4MCxwnQhmvX
+2025-11-26 15:11:45 | DEBUG    | __main__:get_sources_from_claude:131 | Claude API response received. Usage: Usage(cache_creation=CacheCreation(ephemeral_1h_input_tokens=0, ephemeral_5m_input_tokens=0), cache_creation_input_tokens=0, cache_read_input_tokens=0, input_tokens=512, output_tokens=466, server_tool_use=None, service_tier='standard')
+2025-11-26 15:11:45 | DEBUG    | __main__:get_sources_from_claude:137 | Claude response text length: 1081 characters
+2025-11-26 15:11:45 | INFO     | __main__:get_sources_from_claude:139 | Claude response preview: ```json {   "sources": [     {"ref": "Shemot 12:15", "category": "Chumash"},     {"ref": "Shemot 12:19", "category": "Chumash"},     {"ref": "Devarim 16:4", "category": "Chumash"},     {"ref": "Pesachim 2a", "category": "Gemara"},     {"ref": "Pesachim 7b", "category": "Gemara"},     {"ref": "Pesachim 8a", "category": "Gemara"},     {"ref": "Pesachim 4a", "category": "Gemara"},     {"ref": "Rashi on Pesachim 2a", "category": "Rishonim"},     {"ref": "Tosafot on Pesachim 2a", "category": "Rishonim"},     {"ref": "Rambam Mishneh Torah, Hilchot Chametz U'Matzah 2:3", "category": "Rishonim"},     {"ref": "Tur, Orach Chayim 431", "category": "Rishonim"},     {"ref": "Shulchan Arukh, Orach Chayim 431:1", "category": "Shulchan Aruch"},     {"ref": "Shulchan Arukh, Orach Chayim 432:1", "category":...
+2025-11-26 15:11:45 | DEBUG    | __main__:get_sources_from_claude:145 | Extracting JSON from markdown json fence
+2025-11-26 15:11:45 | INFO     | __main__:get_sources_from_claude:152 | Successfully parsed Claude response. Found 14 sources
+2025-11-26 15:11:45 | DEBUG    | __main__:get_sources_from_claude:153 | Parsed data: {'sources': [{'ref': 'Shemot 12:15', 'category': 'Chumash'}, {'ref': 'Shemot 12:19', 'category': 'Chumash'}, {'ref': 'Devarim 16:4', 'category': 'Chumash'}, {'ref': 'Pesachim 2a', 'category': 'Gemara'}, {'ref': 'Pesachim 7b', 'category': 'Gemara'}, {'ref': 'Pesachim 8a', 'category': 'Gemara'}, {'ref': 'Pesachim 4a', 'category': 'Gemara'}, {'ref': 'Rashi on Pesachim 2a', 'category': 'Rishonim'}, {'ref': 'Tosafot on Pesachim 2a', 'category': 'Rishonim'}, {'ref': "Rambam Mishneh Torah, Hilchot Chametz U'Matzah 2:3", 'category': 'Rishonim'}, {'ref': 'Tur, Orach Chayim 431', 'category': 'Rishonim'}, {'ref': 'Shulchan Arukh, Orach Chayim 431:1', 'category': 'Shulchan Aruch'}, {'ref': 'Shulchan Arukh, Orach Chayim 432:1', 'category': 'Shulchan Aruch'}, {'ref': 'Mishnah Berurah 431:1', 'category': 'Acharonim'}], 'summary': "Bedikas chometz is the rabbinic obligation to search for and remove chametz on the night before Pesach, derived from the Torah's commandment to remove leaven from our homes."}
+2025-11-26 15:11:45 | INFO     | __main__:search_sources:269 | Claude suggested 14 sources (before Sefaria lookup)
+2025-11-26 15:11:45 | DEBUG    | __main__:search_sources:270 | Suggested sources: [{'ref': 'Shemot 12:15', 'category': 'Chumash'}, {'ref': 'Shemot 12:19', 'category': 'Chumash'}, {'ref': 'Devarim 16:4', 'category': 'Chumash'}, {'ref': 'Pesachim 2a', 'category': 'Gemara'}, {'ref': 'Pesachim 7b', 'category': 'Gemara'}, {'ref': 'Pesachim 8a', 'category': 'Gemara'}, {'ref': 'Pesachim 4a', 'category': 'Gemara'}, {'ref': 'Rashi on Pesachim 2a', 'category': 'Rishonim'}, {'ref': 'Tosafot on Pesachim 2a', 'category': 'Rishonim'}, {'ref': "Rambam Mishneh Torah, Hilchot Chametz U'Matzah 2:3", 'category': 'Rishonim'}, {'ref': 'Tur, Orach Chayim 431', 'category': 'Rishonim'}, {'ref': 'Shulchan Arukh, Orach Chayim 431:1', 'category': 'Shulchan Aruch'}, {'ref': 'Shulchan Arukh, Orach Chayim 432:1', 'category': 'Shulchan Aruch'}, {'ref': 'Mishnah Berurah 431:1', 'category': 'Acharonim'}]
+2025-11-26 15:11:45 | INFO     | __main__:search_sources:286 | [1/14] Looking up: 'Shemot 12:15' (category: Chumash)
+2025-11-26 15:11:45 | INFO     | __main__:fetch_text_from_sefaria:168 | Fetching text from Sefaria for ref='Shemot 12:15'
+2025-11-26 15:11:45 | DEBUG    | __main__:fetch_text_from_sefaria:174 | Sefaria API URL: https://www.sefaria.org/api/v3/texts/Shemot%2012:15
+2025-11-26 15:11:45 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.started host='www.sefaria.org' port=443 local_address=None timeout=10.0 socket_options=None
+2025-11-26 15:11:45 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063C1BD00>
+2025-11-26 15:11:45 | DEBUG    | httpcore.connection:atrace:87 | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000024063D03240> server_hostname='www.sefaria.org' timeout=10.0
+2025-11-26 15:11:45 | DEBUG    | httpcore.connection:atrace:87 | start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063C89220>
+2025-11-26 15:11:45 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.started request=<Request [b'GET']>
+2025-11-26 15:11:45 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.complete
+2025-11-26 15:11:45 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.started request=<Request [b'GET']>
+2025-11-26 15:11:45 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.complete
+2025-11-26 15:11:45 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.started request=<Request [b'GET']>
+2025-11-26 15:11:45 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Wed, 26 Nov 2025 20:11:44 GMT'), (b'Content-Type', b'application/json; charset=utf-8'), (b'Vary', b'Accept-Language, Cookie'), (b'Content-Language', b'en'), (b'url', b'/api/v3/texts/Shemot%2012:15'), (b'x-varnish', b'315036858'), (b'Age', b'0'), (b'Report-To', b'{"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=YKxXlPDhA%2B2IXmY6xvQw%2FcJBZ4pwxQKDk%2BDdIfZClSLuayin9E4AMQQX5POdruRGKM6ZaRKOD%2FAepRQ3cy6d2D38s3gJM72XYfzTo3jz"}]}'), (b'access-control-allow-origin', b'*'), (b'strict-transport-security', b'max-age=2592000'), (b'cf-cache-status', b'DYNAMIC'), (b'Nel', b'{"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}'), (b'Content-Encoding', b'gzip'), (b'CF-RAY', b'9a4c0965bc59b4c6-EWR'), (b'Cache-Status', b'node6.env2.dc1.us.techloq.com;detail=no-cache'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Referrer-Policy', b'no-referrer-when-downgrade')])
+2025-11-26 15:11:45 | INFO     | httpx:_send_single_request:1740 | HTTP Request: GET https://www.sefaria.org/api/v3/texts/Shemot%2012:15 "HTTP/1.1 200 OK"
+2025-11-26 15:11:45 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.started request=<Request [b'GET']>
+2025-11-26 15:11:45 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.complete
+2025-11-26 15:11:45 | DEBUG    | httpcore.http11:atrace:87 | response_closed.started
+2025-11-26 15:11:45 | DEBUG    | httpcore.http11:atrace:87 | response_closed.complete
+2025-11-26 15:11:45 | INFO     | __main__:fetch_text_from_sefaria:180 | Sefaria HTTP status code: 200 for ref='Shemot 12:15'
+2025-11-26 15:11:45 | DEBUG    | __main__:fetch_text_from_sefaria:183 | Sefaria response data keys: ['versions', 'available_versions', 'ref', 'heRef', 'sections', 'toSections', 'sectionRef', 'heSectionRef', 'firstAvailableSectionRef', 'isSpanning', 'next', 'prev', 'title', 'book', 'heTitle', 'primary_category', 'type', 'indexTitle', 'categories', 'heIndexTitle', 'isComplex', 'isDependant', 'order', 'collectiveTitle', 'heCollectiveTitle', 'alts', 'lengths', 'length', 'textDepth', 'sectionNames', 'addressTypes', 'titleVariants', 'heTitleVariants', 'index_offsets_by_depth', 'warnings']
+2025-11-26 15:11:45 | DEBUG    | __main__:fetch_text_from_sefaria:191 | Sefaria returned 1 version(s) for 'Shemot 12:15'
+2025-11-26 15:11:45 | DEBUG    | __main__:fetch_text_from_sefaria:197 | Version 0: lang=he, title=Miqra according to the Masorah, text_type=str
+2025-11-26 15:11:45 | DEBUG    | __main__:fetch_text_from_sefaria:205 | Hebrew text captured: 235 characters
+2025-11-26 15:11:45 | INFO     | __main__:fetch_text_from_sefaria:210 | Sefaria fetch result for 'Shemot 12:15': he_text=yes en_text=no
+2025-11-26 15:11:45 | DEBUG    | httpcore.connection:atrace:87 | close.started
+2025-11-26 15:11:45 | DEBUG    | httpcore.connection:atrace:87 | close.complete
+2025-11-26 15:11:45 | INFO     | __main__:search_sources:292 | [1/14] Sefaria lookup result for 'Shemot 12:15': found=True
+2025-11-26 15:11:45 | DEBUG    | __main__:search_sources:304 | Added source: Shemot 12:15, has_he=True, has_en=False
+2025-11-26 15:11:45 | INFO     | __main__:search_sources:286 | [2/14] Looking up: 'Shemot 12:19' (category: Chumash)
+2025-11-26 15:11:45 | INFO     | __main__:fetch_text_from_sefaria:168 | Fetching text from Sefaria for ref='Shemot 12:19'
+2025-11-26 15:11:45 | DEBUG    | __main__:fetch_text_from_sefaria:174 | Sefaria API URL: https://www.sefaria.org/api/v3/texts/Shemot%2012:19
+2025-11-26 15:11:45 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.started host='www.sefaria.org' port=443 local_address=None timeout=10.0 socket_options=None
+2025-11-26 15:11:45 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063D450A0>
+2025-11-26 15:11:45 | DEBUG    | httpcore.connection:atrace:87 | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000024063D03340> server_hostname='www.sefaria.org' timeout=10.0
+2025-11-26 15:11:45 | DEBUG    | httpcore.connection:atrace:87 | start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063D71B50>
+2025-11-26 15:11:45 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.started request=<Request [b'GET']>
+2025-11-26 15:11:45 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.complete
+2025-11-26 15:11:45 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.started request=<Request [b'GET']>
+2025-11-26 15:11:45 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.complete
+2025-11-26 15:11:45 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.started request=<Request [b'GET']>
+2025-11-26 15:11:46 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Wed, 26 Nov 2025 20:11:45 GMT'), (b'Content-Type', b'application/json; charset=utf-8'), (b'Vary', b'Accept-Language, Cookie'), (b'Content-Language', b'en'), (b'url', b'/api/v3/texts/Shemot%2012:19'), (b'x-varnish', b'332497664'), (b'Age', b'0'), (b'Report-To', b'{"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=cxBrzeO4gC%2BYkuyqjwaYfAjLAyU8qfrtUXYrQu9x5dQjwfVqjXzAYIrbfGv9IgHo0sfQ83tamvP4HU2YkQhcbAjKILxxWYL4Ntbp4Jyk"}]}'), (b'access-control-allow-origin', b'*'), (b'strict-transport-security', b'max-age=2592000'), (b'cf-cache-status', b'DYNAMIC'), (b'Nel', b'{"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}'), (b'Content-Encoding', b'gzip'), (b'CF-RAY', b'9a4c0967fe480ce8-EWR'), (b'Cache-Status', b'node6.env2.dc1.us.techloq.com;detail=no-cache'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Referrer-Policy', b'no-referrer-when-downgrade')])
+2025-11-26 15:11:46 | INFO     | httpx:_send_single_request:1740 | HTTP Request: GET https://www.sefaria.org/api/v3/texts/Shemot%2012:19 "HTTP/1.1 200 OK"
+2025-11-26 15:11:46 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.started request=<Request [b'GET']>
+2025-11-26 15:11:46 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.complete
+2025-11-26 15:11:46 | DEBUG    | httpcore.http11:atrace:87 | response_closed.started
+2025-11-26 15:11:46 | DEBUG    | httpcore.http11:atrace:87 | response_closed.complete
+2025-11-26 15:11:46 | INFO     | __main__:fetch_text_from_sefaria:180 | Sefaria HTTP status code: 200 for ref='Shemot 12:19'
+2025-11-26 15:11:46 | DEBUG    | __main__:fetch_text_from_sefaria:183 | Sefaria response data keys: ['versions', 'available_versions', 'ref', 'heRef', 'sections', 'toSections', 'sectionRef', 'heSectionRef', 'firstAvailableSectionRef', 'isSpanning', 'next', 'prev', 'title', 'book', 'heTitle', 'primary_category', 'type', 'indexTitle', 'categories', 'heIndexTitle', 'isComplex', 'isDependant', 'order', 'collectiveTitle', 'heCollectiveTitle', 'alts', 'lengths', 'length', 'textDepth', 'sectionNames', 'addressTypes', 'titleVariants', 'heTitleVariants', 'index_offsets_by_depth', 'warnings']
+2025-11-26 15:11:46 | DEBUG    | __main__:fetch_text_from_sefaria:191 | Sefaria returned 1 version(s) for 'Shemot 12:19'
+2025-11-26 15:11:46 | DEBUG    | __main__:fetch_text_from_sefaria:197 | Version 0: lang=he, title=Miqra according to the Masorah, text_type=str
+2025-11-26 15:11:46 | DEBUG    | __main__:fetch_text_from_sefaria:205 | Hebrew text captured: 184 characters
+2025-11-26 15:11:46 | INFO     | __main__:fetch_text_from_sefaria:210 | Sefaria fetch result for 'Shemot 12:19': he_text=yes en_text=no
+2025-11-26 15:11:46 | DEBUG    | httpcore.connection:atrace:87 | close.started
+2025-11-26 15:11:46 | DEBUG    | httpcore.connection:atrace:87 | close.complete
+2025-11-26 15:11:46 | INFO     | __main__:search_sources:292 | [2/14] Sefaria lookup result for 'Shemot 12:19': found=True
+2025-11-26 15:11:46 | DEBUG    | __main__:search_sources:304 | Added source: Shemot 12:19, has_he=True, has_en=False
+2025-11-26 15:11:46 | INFO     | __main__:search_sources:286 | [3/14] Looking up: 'Devarim 16:4' (category: Chumash)
+2025-11-26 15:11:46 | INFO     | __main__:fetch_text_from_sefaria:168 | Fetching text from Sefaria for ref='Devarim 16:4'
+2025-11-26 15:11:46 | DEBUG    | __main__:fetch_text_from_sefaria:174 | Sefaria API URL: https://www.sefaria.org/api/v3/texts/Devarim%2016:4
+2025-11-26 15:11:46 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.started host='www.sefaria.org' port=443 local_address=None timeout=10.0 socket_options=None
+2025-11-26 15:11:46 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063D403A0>
+2025-11-26 15:11:46 | DEBUG    | httpcore.connection:atrace:87 | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000024063C01BC0> server_hostname='www.sefaria.org' timeout=10.0
+2025-11-26 15:11:46 | DEBUG    | httpcore.connection:atrace:87 | start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063C890D0>
+2025-11-26 15:11:46 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.started request=<Request [b'GET']>
+2025-11-26 15:11:46 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.complete
+2025-11-26 15:11:46 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.started request=<Request [b'GET']>
+2025-11-26 15:11:46 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.complete
+2025-11-26 15:11:46 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.started request=<Request [b'GET']>
+2025-11-26 15:11:46 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Wed, 26 Nov 2025 20:11:45 GMT'), (b'Content-Type', b'application/json; charset=utf-8'), (b'Vary', b'Accept-Language, Cookie'), (b'Content-Language', b'en'), (b'url', b'/api/v3/texts/Devarim%2016:4'), (b'x-varnish', b'330599634'), (b'Age', b'0'), (b'Report-To', b'{"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=66%2FzAk8qFQ%2BS9QkGXHzNnoKiqk%2F3KU%2FOMnJPvKBpVVTZ71C4wU2p3lXalr4sXG1bc54SA63Uqo0k6mmN1f1vRgfQrCbjNUdlQWFXQ7AA"}]}'), (b'access-control-allow-origin', b'*'), (b'strict-transport-security', b'max-age=2592000'), (b'cf-cache-status', b'DYNAMIC'), (b'Nel', b'{"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}'), (b'Content-Encoding', b'gzip'), (b'CF-RAY', b'9a4c096b1b5dde9c-EWR'), (b'Cache-Status', b'node6.env2.dc1.us.techloq.com;detail=no-cache'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Referrer-Policy', b'no-referrer-when-downgrade')])
+2025-11-26 15:11:46 | INFO     | httpx:_send_single_request:1740 | HTTP Request: GET https://www.sefaria.org/api/v3/texts/Devarim%2016:4 "HTTP/1.1 200 OK"
+2025-11-26 15:11:46 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.started request=<Request [b'GET']>
+2025-11-26 15:11:46 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.complete
+2025-11-26 15:11:46 | DEBUG    | httpcore.http11:atrace:87 | response_closed.started
+2025-11-26 15:11:46 | DEBUG    | httpcore.http11:atrace:87 | response_closed.complete
+2025-11-26 15:11:46 | INFO     | __main__:fetch_text_from_sefaria:180 | Sefaria HTTP status code: 200 for ref='Devarim 16:4'
+2025-11-26 15:11:46 | DEBUG    | __main__:fetch_text_from_sefaria:183 | Sefaria response data keys: ['versions', 'available_versions', 'ref', 'heRef', 'sections', 'toSections', 'sectionRef', 'heSectionRef', 'firstAvailableSectionRef', 'isSpanning', 'next', 'prev', 'title', 'book', 'heTitle', 'primary_category', 'type', 'indexTitle', 'categories', 'heIndexTitle', 'isComplex', 'isDependant', 'order', 'collectiveTitle', 'heCollectiveTitle', 'alts', 'lengths', 'length', 'textDepth', 'sectionNames', 'addressTypes', 'titleVariants', 'heTitleVariants', 'index_offsets_by_depth', 'warnings']
+2025-11-26 15:11:46 | DEBUG    | __main__:fetch_text_from_sefaria:191 | Sefaria returned 1 version(s) for 'Devarim 16:4'
+2025-11-26 15:11:46 | DEBUG    | __main__:fetch_text_from_sefaria:197 | Version 0: lang=he, title=Miqra according to the Masorah, text_type=str
+2025-11-26 15:11:46 | DEBUG    | __main__:fetch_text_from_sefaria:205 | Hebrew text captured: 156 characters
+2025-11-26 15:11:46 | INFO     | __main__:fetch_text_from_sefaria:210 | Sefaria fetch result for 'Devarim 16:4': he_text=yes en_text=no
+2025-11-26 15:11:46 | DEBUG    | httpcore.connection:atrace:87 | close.started
+2025-11-26 15:11:46 | DEBUG    | httpcore.connection:atrace:87 | close.complete
+2025-11-26 15:11:46 | INFO     | __main__:search_sources:292 | [3/14] Sefaria lookup result for 'Devarim 16:4': found=True
+2025-11-26 15:11:46 | DEBUG    | __main__:search_sources:304 | Added source: Devarim 16:4, has_he=True, has_en=False
+2025-11-26 15:11:46 | INFO     | __main__:search_sources:286 | [4/14] Looking up: 'Pesachim 2a' (category: Gemara)
+2025-11-26 15:11:46 | INFO     | __main__:fetch_text_from_sefaria:168 | Fetching text from Sefaria for ref='Pesachim 2a'
+2025-11-26 15:11:46 | DEBUG    | __main__:fetch_text_from_sefaria:174 | Sefaria API URL: https://www.sefaria.org/api/v3/texts/Pesachim%202a
+2025-11-26 15:11:46 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.started host='www.sefaria.org' port=443 local_address=None timeout=10.0 socket_options=None
+2025-11-26 15:11:46 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063D764C0>
+2025-11-26 15:11:46 | DEBUG    | httpcore.connection:atrace:87 | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000024063C013C0> server_hostname='www.sefaria.org' timeout=10.0
+2025-11-26 15:11:46 | DEBUG    | httpcore.connection:atrace:87 | start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063D7FD30>
+2025-11-26 15:11:46 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.started request=<Request [b'GET']>
+2025-11-26 15:11:46 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.complete
+2025-11-26 15:11:46 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.started request=<Request [b'GET']>
+2025-11-26 15:11:46 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.complete
+2025-11-26 15:11:46 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.started request=<Request [b'GET']>
+2025-11-26 15:11:47 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Wed, 26 Nov 2025 20:11:46 GMT'), (b'Content-Type', b'application/json; charset=utf-8'), (b'Vary', b'Accept-Language, Cookie'), (b'Content-Language', b'en'), (b'url', b'/api/v3/texts/Pesachim%202a'), (b'x-varnish', b'335151369'), (b'Age', b'0'), (b'Report-To', b'{"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=jrRlyNv2lZGBUiQdmKtf0C1OCL4Pm7YhdhrdWhRT23sqfg18GI8FgCSkdULr%2BjJ8tgeDRzDqSq9PDD1uPfONMPmd%2Btv1O24%2FrEuuqYyY"}]}'), (b'access-control-allow-origin', b'*'), (b'strict-transport-security', b'max-age=2592000'), (b'cf-cache-status', b'DYNAMIC'), (b'Nel', b'{"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}'), (b'Content-Encoding', b'gzip'), (b'CF-RAY', b'9a4c096d7d7742aa-EWR'), (b'Cache-Status', b'node6.env2.dc1.us.techloq.com;detail=no-cache'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Referrer-Policy', b'no-referrer-when-downgrade')])
+2025-11-26 15:11:47 | INFO     | httpx:_send_single_request:1740 | HTTP Request: GET https://www.sefaria.org/api/v3/texts/Pesachim%202a "HTTP/1.1 200 OK"
+2025-11-26 15:11:47 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.started request=<Request [b'GET']>
+2025-11-26 15:11:47 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.complete
+2025-11-26 15:11:47 | DEBUG    | httpcore.http11:atrace:87 | response_closed.started
+2025-11-26 15:11:47 | DEBUG    | httpcore.http11:atrace:87 | response_closed.complete
+2025-11-26 15:11:47 | INFO     | __main__:fetch_text_from_sefaria:180 | Sefaria HTTP status code: 200 for ref='Pesachim 2a'
+2025-11-26 15:11:47 | DEBUG    | __main__:fetch_text_from_sefaria:183 | Sefaria response data keys: ['versions', 'available_versions', 'ref', 'heRef', 'sections', 'toSections', 'sectionRef', 'heSectionRef', 'firstAvailableSectionRef', 'isSpanning', 'next', 'prev', 'title', 'book', 'heTitle', 'primary_category', 'type', 'indexTitle', 'categories', 'heIndexTitle', 'isComplex', 'isDependant', 'order', 'collectiveTitle', 'heCollectiveTitle', 'alts', 'lengths', 'length', 'textDepth', 'sectionNames', 'addressTypes', 'titleVariants', 'heTitleVariants', 'index_offsets_by_depth', 'warnings']
+2025-11-26 15:11:47 | DEBUG    | __main__:fetch_text_from_sefaria:191 | Sefaria returned 1 version(s) for 'Pesachim 2a'
+2025-11-26 15:11:47 | DEBUG    | __main__:fetch_text_from_sefaria:197 | Version 0: lang=he, title=William Davidson Edition - Vocalized Aramaic, text_type=list
+2025-11-26 15:11:47 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 9 items -> 2124 characters
+2025-11-26 15:11:47 | DEBUG    | __main__:fetch_text_from_sefaria:205 | Hebrew text captured: 2124 characters
+2025-11-26 15:11:47 | INFO     | __main__:fetch_text_from_sefaria:210 | Sefaria fetch result for 'Pesachim 2a': he_text=yes en_text=no
+2025-11-26 15:11:47 | DEBUG    | httpcore.connection:atrace:87 | close.started
+2025-11-26 15:11:47 | DEBUG    | httpcore.connection:atrace:87 | close.complete
+2025-11-26 15:11:47 | INFO     | __main__:search_sources:292 | [4/14] Sefaria lookup result for 'Pesachim 2a': found=True
+2025-11-26 15:11:47 | DEBUG    | __main__:search_sources:304 | Added source: Pesachim 2a, has_he=True, has_en=False
+2025-11-26 15:11:47 | INFO     | __main__:search_sources:286 | [5/14] Looking up: 'Pesachim 7b' (category: Gemara)
+2025-11-26 15:11:47 | INFO     | __main__:fetch_text_from_sefaria:168 | Fetching text from Sefaria for ref='Pesachim 7b'
+2025-11-26 15:11:47 | DEBUG    | __main__:fetch_text_from_sefaria:174 | Sefaria API URL: https://www.sefaria.org/api/v3/texts/Pesachim%207b
+2025-11-26 15:11:47 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.started host='www.sefaria.org' port=443 local_address=None timeout=10.0 socket_options=None
+2025-11-26 15:11:47 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063D80B50>
+2025-11-26 15:11:47 | DEBUG    | httpcore.connection:atrace:87 | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000024063D210C0> server_hostname='www.sefaria.org' timeout=10.0
+2025-11-26 15:11:47 | DEBUG    | httpcore.connection:atrace:87 | start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063D808E0>
+2025-11-26 15:11:47 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.started request=<Request [b'GET']>
+2025-11-26 15:11:47 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.complete
+2025-11-26 15:11:47 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.started request=<Request [b'GET']>
+2025-11-26 15:11:47 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.complete
+2025-11-26 15:11:47 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.started request=<Request [b'GET']>
+2025-11-26 15:11:47 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Wed, 26 Nov 2025 20:11:46 GMT'), (b'Content-Type', b'application/json; charset=utf-8'), (b'Vary', b'Accept-Language, Cookie'), (b'Content-Language', b'en'), (b'url', b'/api/v3/texts/Pesachim%207b'), (b'x-varnish', b'324341465'), (b'Age', b'0'), (b'Report-To', b'{"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=r3LA8QymYcf08Yv%2FBpV1IMix4sAFs3gkPHsOlvSwnfgJIwLOe0eM03jXZ7PjAm9QeW0AmRKFC0QAkjsTvic0ebVshJvwmy%2F1k1oHWbvu"}]}'), (b'access-control-allow-origin', b'*'), (b'strict-transport-security', b'max-age=2592000'), (b'cf-cache-status', b'DYNAMIC'), (b'Nel', b'{"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}'), (b'Content-Encoding', b'gzip'), (b'CF-RAY', b'9a4c09702fa7de96-EWR'), (b'Cache-Status', b'node6.env2.dc1.us.techloq.com;detail=no-cache'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Referrer-Policy', b'no-referrer-when-downgrade')])
+2025-11-26 15:11:47 | INFO     | httpx:_send_single_request:1740 | HTTP Request: GET https://www.sefaria.org/api/v3/texts/Pesachim%207b "HTTP/1.1 200 OK"
+2025-11-26 15:11:47 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.started request=<Request [b'GET']>
+2025-11-26 15:11:47 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.complete
+2025-11-26 15:11:47 | DEBUG    | httpcore.http11:atrace:87 | response_closed.started
+2025-11-26 15:11:47 | DEBUG    | httpcore.http11:atrace:87 | response_closed.complete
+2025-11-26 15:11:47 | INFO     | __main__:fetch_text_from_sefaria:180 | Sefaria HTTP status code: 200 for ref='Pesachim 7b'
+2025-11-26 15:11:47 | DEBUG    | __main__:fetch_text_from_sefaria:183 | Sefaria response data keys: ['versions', 'available_versions', 'ref', 'heRef', 'sections', 'toSections', 'sectionRef', 'heSectionRef', 'firstAvailableSectionRef', 'isSpanning', 'next', 'prev', 'title', 'book', 'heTitle', 'primary_category', 'type', 'indexTitle', 'categories', 'heIndexTitle', 'isComplex', 'isDependant', 'order', 'collectiveTitle', 'heCollectiveTitle', 'alts', 'lengths', 'length', 'textDepth', 'sectionNames', 'addressTypes', 'titleVariants', 'heTitleVariants', 'index_offsets_by_depth', 'warnings']
+2025-11-26 15:11:47 | DEBUG    | __main__:fetch_text_from_sefaria:191 | Sefaria returned 1 version(s) for 'Pesachim 7b'
+2025-11-26 15:11:47 | DEBUG    | __main__:fetch_text_from_sefaria:197 | Version 0: lang=he, title=William Davidson Edition - Vocalized Aramaic, text_type=list
+2025-11-26 15:11:47 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 19 items -> 3605 characters
+2025-11-26 15:11:47 | DEBUG    | __main__:fetch_text_from_sefaria:205 | Hebrew text captured: 3605 characters
+2025-11-26 15:11:47 | INFO     | __main__:fetch_text_from_sefaria:210 | Sefaria fetch result for 'Pesachim 7b': he_text=yes en_text=no
+2025-11-26 15:11:47 | DEBUG    | httpcore.connection:atrace:87 | close.started
+2025-11-26 15:11:47 | DEBUG    | httpcore.connection:atrace:87 | close.complete
+2025-11-26 15:11:47 | INFO     | __main__:search_sources:292 | [5/14] Sefaria lookup result for 'Pesachim 7b': found=True
+2025-11-26 15:11:47 | DEBUG    | __main__:search_sources:304 | Added source: Pesachim 7b, has_he=True, has_en=False
+2025-11-26 15:11:47 | INFO     | __main__:search_sources:286 | [6/14] Looking up: 'Pesachim 8a' (category: Gemara)
+2025-11-26 15:11:47 | INFO     | __main__:fetch_text_from_sefaria:168 | Fetching text from Sefaria for ref='Pesachim 8a'
+2025-11-26 15:11:47 | DEBUG    | __main__:fetch_text_from_sefaria:174 | Sefaria API URL: https://www.sefaria.org/api/v3/texts/Pesachim%208a
+2025-11-26 15:11:47 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.started host='www.sefaria.org' port=443 local_address=None timeout=10.0 socket_options=None
+2025-11-26 15:11:47 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063D88220>
+2025-11-26 15:11:47 | DEBUG    | httpcore.connection:atrace:87 | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000024063D21040> server_hostname='www.sefaria.org' timeout=10.0
+2025-11-26 15:11:47 | DEBUG    | httpcore.connection:atrace:87 | start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063D7CA90>
+2025-11-26 15:11:47 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.started request=<Request [b'GET']>
+2025-11-26 15:11:47 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.complete
+2025-11-26 15:11:47 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.started request=<Request [b'GET']>
+2025-11-26 15:11:47 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.complete
+2025-11-26 15:11:47 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.started request=<Request [b'GET']>
+2025-11-26 15:11:48 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Wed, 26 Nov 2025 20:11:47 GMT'), (b'Content-Type', b'application/json; charset=utf-8'), (b'Vary', b'Accept-Language, Cookie'), (b'Content-Language', b'en'), (b'url', b'/api/v3/texts/Pesachim%208a'), (b'x-varnish', b'321327590'), (b'Age', b'0'), (b'Report-To', b'{"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=96IR2qm2r0TeWurWnRjPgcv4ttK3gOJErForVaEAJZLX0VbQP%2Fpi2bzxgTt2weq7icvhJTTnf852kpw%2FKBpWU1xdKHBKvjzQQaVZvaxU"}]}'), (b'access-control-allow-origin', b'*'), (b'strict-transport-security', b'max-age=2592000'), (b'cf-cache-status', b'DYNAMIC'), (b'Nel', b'{"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}'), (b'Content-Encoding', b'gzip'), (b'CF-RAY', b'9a4c0972add97ce7-EWR'), (b'Cache-Status', b'node6.env2.dc1.us.techloq.com;detail=no-cache'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Referrer-Policy', b'no-referrer-when-downgrade')])
+2025-11-26 15:11:48 | INFO     | httpx:_send_single_request:1740 | HTTP Request: GET https://www.sefaria.org/api/v3/texts/Pesachim%208a "HTTP/1.1 200 OK"
+2025-11-26 15:11:48 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.started request=<Request [b'GET']>
+2025-11-26 15:11:48 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.complete
+2025-11-26 15:11:48 | DEBUG    | httpcore.http11:atrace:87 | response_closed.started
+2025-11-26 15:11:48 | DEBUG    | httpcore.http11:atrace:87 | response_closed.complete
+2025-11-26 15:11:48 | INFO     | __main__:fetch_text_from_sefaria:180 | Sefaria HTTP status code: 200 for ref='Pesachim 8a'
+2025-11-26 15:11:48 | DEBUG    | __main__:fetch_text_from_sefaria:183 | Sefaria response data keys: ['versions', 'available_versions', 'ref', 'heRef', 'sections', 'toSections', 'sectionRef', 'heSectionRef', 'firstAvailableSectionRef', 'isSpanning', 'next', 'prev', 'title', 'book', 'heTitle', 'primary_category', 'type', 'indexTitle', 'categories', 'heIndexTitle', 'isComplex', 'isDependant', 'order', 'collectiveTitle', 'heCollectiveTitle', 'alts', 'lengths', 'length', 'textDepth', 'sectionNames', 'addressTypes', 'titleVariants', 'heTitleVariants', 'index_offsets_by_depth', 'warnings']
+2025-11-26 15:11:48 | DEBUG    | __main__:fetch_text_from_sefaria:191 | Sefaria returned 1 version(s) for 'Pesachim 8a'
+2025-11-26 15:11:48 | DEBUG    | __main__:fetch_text_from_sefaria:197 | Version 0: lang=he, title=William Davidson Edition - Vocalized Aramaic, text_type=list
+2025-11-26 15:11:48 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 18 items -> 3613 characters
+2025-11-26 15:11:48 | DEBUG    | __main__:fetch_text_from_sefaria:205 | Hebrew text captured: 3613 characters
+2025-11-26 15:11:48 | INFO     | __main__:fetch_text_from_sefaria:210 | Sefaria fetch result for 'Pesachim 8a': he_text=yes en_text=no
+2025-11-26 15:11:48 | DEBUG    | httpcore.connection:atrace:87 | close.started
+2025-11-26 15:11:48 | DEBUG    | httpcore.connection:atrace:87 | close.complete
+2025-11-26 15:11:48 | INFO     | __main__:search_sources:292 | [6/14] Sefaria lookup result for 'Pesachim 8a': found=True
+2025-11-26 15:11:48 | DEBUG    | __main__:search_sources:304 | Added source: Pesachim 8a, has_he=True, has_en=False
+2025-11-26 15:11:48 | INFO     | __main__:search_sources:286 | [7/14] Looking up: 'Pesachim 4a' (category: Gemara)
+2025-11-26 15:11:48 | INFO     | __main__:fetch_text_from_sefaria:168 | Fetching text from Sefaria for ref='Pesachim 4a'
+2025-11-26 15:11:48 | DEBUG    | __main__:fetch_text_from_sefaria:174 | Sefaria API URL: https://www.sefaria.org/api/v3/texts/Pesachim%204a
+2025-11-26 15:11:48 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.started host='www.sefaria.org' port=443 local_address=None timeout=10.0 socket_options=None
+2025-11-26 15:11:48 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063D8B8B0>
+2025-11-26 15:11:48 | DEBUG    | httpcore.connection:atrace:87 | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000024063D21F40> server_hostname='www.sefaria.org' timeout=10.0
+2025-11-26 15:11:48 | DEBUG    | httpcore.connection:atrace:87 | start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063D8B640>
+2025-11-26 15:11:48 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.started request=<Request [b'GET']>
+2025-11-26 15:11:48 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.complete
+2025-11-26 15:11:48 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.started request=<Request [b'GET']>
+2025-11-26 15:11:48 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.complete
+2025-11-26 15:11:48 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.started request=<Request [b'GET']>
+2025-11-26 15:11:48 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Wed, 26 Nov 2025 20:11:48 GMT'), (b'Content-Type', b'application/json; charset=utf-8'), (b'Vary', b'Accept-Language, Cookie'), (b'Content-Language', b'en'), (b'url', b'/api/v3/texts/Pesachim%204a'), (b'x-varnish', b'325980315'), (b'Age', b'0'), (b'Report-To', b'{"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=F11wyYaTXIM6Gj469wswJR%2FcBWwcFqpD0kCIEXm%2F%2FBq3OZil8OEhp8cK2WUL07DMMUPpJ5n3KaH%2FudpoLUpXbvlxPu4GrW28XFMXOQ%3D%3D"}]}'), (b'access-control-allow-origin', b'*'), (b'strict-transport-security', b'max-age=2592000'), (b'cf-cache-status', b'DYNAMIC'), (b'Nel', b'{"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}'), (b'Content-Encoding', b'gzip'), (b'CF-RAY', b'9a4c0978ecdec33b-EWR'), (b'Cache-Status', b'node6.env2.dc1.us.techloq.com;detail=no-cache'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Referrer-Policy', b'no-referrer-when-downgrade')])
+2025-11-26 15:11:48 | INFO     | httpx:_send_single_request:1740 | HTTP Request: GET https://www.sefaria.org/api/v3/texts/Pesachim%204a "HTTP/1.1 200 OK"
+2025-11-26 15:11:48 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.started request=<Request [b'GET']>
+2025-11-26 15:11:48 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.complete
+2025-11-26 15:11:48 | DEBUG    | httpcore.http11:atrace:87 | response_closed.started
+2025-11-26 15:11:48 | DEBUG    | httpcore.http11:atrace:87 | response_closed.complete
+2025-11-26 15:11:48 | INFO     | __main__:fetch_text_from_sefaria:180 | Sefaria HTTP status code: 200 for ref='Pesachim 4a'
+2025-11-26 15:11:48 | DEBUG    | __main__:fetch_text_from_sefaria:183 | Sefaria response data keys: ['versions', 'available_versions', 'ref', 'heRef', 'sections', 'toSections', 'sectionRef', 'heSectionRef', 'firstAvailableSectionRef', 'isSpanning', 'next', 'prev', 'title', 'book', 'heTitle', 'primary_category', 'type', 'indexTitle', 'categories', 'heIndexTitle', 'isComplex', 'isDependant', 'order', 'collectiveTitle', 'heCollectiveTitle', 'alts', 'lengths', 'length', 'textDepth', 'sectionNames', 'addressTypes', 'titleVariants', 'heTitleVariants', 'index_offsets_by_depth', 'warnings']
+2025-11-26 15:11:48 | DEBUG    | __main__:fetch_text_from_sefaria:191 | Sefaria returned 1 version(s) for 'Pesachim 4a'
+2025-11-26 15:11:48 | DEBUG    | __main__:fetch_text_from_sefaria:197 | Version 0: lang=he, title=William Davidson Edition - Vocalized Aramaic, text_type=list
+2025-11-26 15:11:48 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 12 items -> 2706 characters
+2025-11-26 15:11:48 | DEBUG    | __main__:fetch_text_from_sefaria:205 | Hebrew text captured: 2706 characters
+2025-11-26 15:11:48 | INFO     | __main__:fetch_text_from_sefaria:210 | Sefaria fetch result for 'Pesachim 4a': he_text=yes en_text=no
+2025-11-26 15:11:48 | DEBUG    | httpcore.connection:atrace:87 | close.started
+2025-11-26 15:11:48 | DEBUG    | httpcore.connection:atrace:87 | close.complete
+2025-11-26 15:11:48 | INFO     | __main__:search_sources:292 | [7/14] Sefaria lookup result for 'Pesachim 4a': found=True
+2025-11-26 15:11:48 | DEBUG    | __main__:search_sources:304 | Added source: Pesachim 4a, has_he=True, has_en=False
+2025-11-26 15:11:48 | INFO     | __main__:search_sources:286 | [8/14] Looking up: 'Rashi on Pesachim 2a' (category: Rishonim)
+2025-11-26 15:11:48 | INFO     | __main__:fetch_text_from_sefaria:168 | Fetching text from Sefaria for ref='Rashi on Pesachim 2a'
+2025-11-26 15:11:48 | DEBUG    | __main__:fetch_text_from_sefaria:174 | Sefaria API URL: https://www.sefaria.org/api/v3/texts/Rashi%20on%20Pesachim%202a
+2025-11-26 15:11:48 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.started host='www.sefaria.org' port=443 local_address=None timeout=10.0 socket_options=None
+2025-11-26 15:11:48 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063D8BFD0>
+2025-11-26 15:11:48 | DEBUG    | httpcore.connection:atrace:87 | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000024063D21140> server_hostname='www.sefaria.org' timeout=10.0
+2025-11-26 15:11:49 | DEBUG    | httpcore.connection:atrace:87 | start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063D8BFA0>
+2025-11-26 15:11:49 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.started request=<Request [b'GET']>
+2025-11-26 15:11:49 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.complete
+2025-11-26 15:11:49 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.started request=<Request [b'GET']>
+2025-11-26 15:11:49 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.complete
+2025-11-26 15:11:49 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.started request=<Request [b'GET']>
+2025-11-26 15:11:49 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Wed, 26 Nov 2025 20:11:48 GMT'), (b'Content-Type', b'application/json; charset=utf-8'), (b'Vary', b'Accept-Language, Cookie'), (b'Content-Language', b'en'), (b'url', b'/api/v3/texts/Rashi%20on%20Pesachim%202a'), (b'x-varnish', b'323592790'), (b'Age', b'0'), (b'Report-To', b'{"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=hA47tNY4hq5NYp7Lcla0JlgV714EFf34zkZZ6R24jbNwCc%2Bg3O5tGW%2Bs6WlaHeyuxPuVt3kqufppZkviiY6HmF7zkvoRT51JUqZK8w%3D%3D"}]}'), (b'access-control-allow-origin', b'*'), (b'strict-transport-security', b'max-age=2592000'), (b'cf-cache-status', b'DYNAMIC'), (b'Nel', b'{"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}'), (b'Content-Encoding', b'gzip'), (b'CF-RAY', b'9a4c097b1a7b0f9f-EWR'), (b'Cache-Status', b'node6.env2.dc1.us.techloq.com;detail=no-cache'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Referrer-Policy', b'no-referrer-when-downgrade')])
+2025-11-26 15:11:49 | INFO     | httpx:_send_single_request:1740 | HTTP Request: GET https://www.sefaria.org/api/v3/texts/Rashi%20on%20Pesachim%202a "HTTP/1.1 200 OK"
+2025-11-26 15:11:49 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.started request=<Request [b'GET']>
+2025-11-26 15:11:49 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.complete
+2025-11-26 15:11:49 | DEBUG    | httpcore.http11:atrace:87 | response_closed.started
+2025-11-26 15:11:49 | DEBUG    | httpcore.http11:atrace:87 | response_closed.complete
+2025-11-26 15:11:49 | INFO     | __main__:fetch_text_from_sefaria:180 | Sefaria HTTP status code: 200 for ref='Rashi on Pesachim 2a'
+2025-11-26 15:11:49 | DEBUG    | __main__:fetch_text_from_sefaria:183 | Sefaria response data keys: ['versions', 'available_versions', 'ref', 'heRef', 'sections', 'toSections', 'sectionRef', 'heSectionRef', 'firstAvailableSectionRef', 'isSpanning', 'next', 'prev', 'title', 'book', 'heTitle', 'primary_category', 'type', 'indexTitle', 'categories', 'heIndexTitle', 'isComplex', 'isDependant', 'order', 'collectiveTitle', 'heCollectiveTitle', 'alts', 'lengths', 'length', 'textDepth', 'sectionNames', 'addressTypes', 'titleVariants', 'heTitleVariants', 'index_offsets_by_depth', 'warnings']
+2025-11-26 15:11:49 | DEBUG    | __main__:fetch_text_from_sefaria:191 | Sefaria returned 1 version(s) for 'Rashi on Pesachim 2a'
+2025-11-26 15:11:49 | DEBUG    | __main__:fetch_text_from_sefaria:197 | Version 0: lang=he, title=Vilna Edition, text_type=list
+2025-11-26 15:11:49 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 7 items -> 510 characters
+2025-11-26 15:11:49 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 2 items -> 129 characters
+2025-11-26 15:11:49 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 4 items -> 515 characters
+2025-11-26 15:11:49 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 3 items -> 422 characters
+2025-11-26 15:11:49 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 3 items -> 178 characters
+2025-11-26 15:11:49 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 3 items -> 227 characters
+2025-11-26 15:11:49 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 0 items -> 0 characters
+2025-11-26 15:11:49 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 1 items -> 267 characters
+2025-11-26 15:11:49 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 8 items -> 2255 characters
+2025-11-26 15:11:49 | DEBUG    | __main__:fetch_text_from_sefaria:205 | Hebrew text captured: 2255 characters
+2025-11-26 15:11:49 | INFO     | __main__:fetch_text_from_sefaria:210 | Sefaria fetch result for 'Rashi on Pesachim 2a': he_text=yes en_text=no
+2025-11-26 15:11:49 | DEBUG    | httpcore.connection:atrace:87 | close.started
+2025-11-26 15:11:49 | DEBUG    | httpcore.connection:atrace:87 | close.complete
+2025-11-26 15:11:49 | INFO     | __main__:search_sources:292 | [8/14] Sefaria lookup result for 'Rashi on Pesachim 2a': found=True
+2025-11-26 15:11:49 | DEBUG    | __main__:search_sources:304 | Added source: Rashi on Pesachim 2a, has_he=True, has_en=False
+2025-11-26 15:11:49 | INFO     | __main__:search_sources:286 | [9/14] Looking up: 'Tosafot on Pesachim 2a' (category: Rishonim)
+2025-11-26 15:11:49 | INFO     | __main__:fetch_text_from_sefaria:168 | Fetching text from Sefaria for ref='Tosafot on Pesachim 2a'
+2025-11-26 15:11:49 | DEBUG    | __main__:fetch_text_from_sefaria:174 | Sefaria API URL: https://www.sefaria.org/api/v3/texts/Tosafot%20on%20Pesachim%202a
+2025-11-26 15:11:49 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.started host='www.sefaria.org' port=443 local_address=None timeout=10.0 socket_options=None
+2025-11-26 15:11:49 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063D886A0>
+2025-11-26 15:11:49 | DEBUG    | httpcore.connection:atrace:87 | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000024063D21DC0> server_hostname='www.sefaria.org' timeout=10.0
+2025-11-26 15:11:49 | DEBUG    | httpcore.connection:atrace:87 | start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063D884C0>
+2025-11-26 15:11:49 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.started request=<Request [b'GET']>
+2025-11-26 15:11:49 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.complete
+2025-11-26 15:11:49 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.started request=<Request [b'GET']>
+2025-11-26 15:11:49 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.complete
+2025-11-26 15:11:49 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.started request=<Request [b'GET']>
+2025-11-26 15:11:49 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Wed, 26 Nov 2025 20:11:48 GMT'), (b'Content-Type', b'application/json; charset=utf-8'), (b'Vary', b'Accept-Language, Cookie'), (b'Content-Language', b'en'), (b'url', b'/api/v3/texts/Tosafot%20on%20Pesachim%202a'), (b'x-varnish', b'332433492'), (b'Age', b'0'), (b'Report-To', b'{"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=AklFN%2BvApwCTj0E2aeGEOm6EI6sES9dvfvE3qto7xNrGTkToIcTsZ2oel9F83KyP%2F0NvebstZ%2BlV8DS8KqDjKfam1St6QfCaKijHSAAX"}]}'), (b'access-control-allow-origin', b'*'), (b'strict-transport-security', b'max-age=2592000'), (b'cf-cache-status', b'DYNAMIC'), (b'Nel', b'{"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}'), (b'Content-Encoding', b'gzip'), (b'CF-RAY', b'9a4c097d6d8bf965-EWR'), (b'Cache-Status', b'node6.env2.dc1.us.techloq.com;detail=no-cache'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Referrer-Policy', b'no-referrer-when-downgrade')])
+2025-11-26 15:11:49 | INFO     | httpx:_send_single_request:1740 | HTTP Request: GET https://www.sefaria.org/api/v3/texts/Tosafot%20on%20Pesachim%202a "HTTP/1.1 200 OK"
+2025-11-26 15:11:49 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.started request=<Request [b'GET']>
+2025-11-26 15:11:49 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.complete
+2025-11-26 15:11:49 | DEBUG    | httpcore.http11:atrace:87 | response_closed.started
+2025-11-26 15:11:49 | DEBUG    | httpcore.http11:atrace:87 | response_closed.complete
+2025-11-26 15:11:49 | INFO     | __main__:fetch_text_from_sefaria:180 | Sefaria HTTP status code: 200 for ref='Tosafot on Pesachim 2a'
+2025-11-26 15:11:49 | DEBUG    | __main__:fetch_text_from_sefaria:183 | Sefaria response data keys: ['versions', 'available_versions', 'ref', 'heRef', 'sections', 'toSections', 'sectionRef', 'heSectionRef', 'firstAvailableSectionRef', 'isSpanning', 'next', 'prev', 'title', 'book', 'heTitle', 'primary_category', 'type', 'indexTitle', 'categories', 'heIndexTitle', 'isComplex', 'isDependant', 'order', 'collectiveTitle', 'heCollectiveTitle', 'alts', 'lengths', 'length', 'textDepth', 'sectionNames', 'addressTypes', 'titleVariants', 'heTitleVariants', 'index_offsets_by_depth', 'warnings']
+2025-11-26 15:11:49 | DEBUG    | __main__:fetch_text_from_sefaria:191 | Sefaria returned 1 version(s) for 'Tosafot on Pesachim 2a'
+2025-11-26 15:11:49 | DEBUG    | __main__:fetch_text_from_sefaria:197 | Version 0: lang=he, title=Vilna Edition, text_type=list
+2025-11-26 15:11:49 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 1 items -> 1212 characters
+2025-11-26 15:11:49 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 1 items -> 127 characters
+2025-11-26 15:11:49 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 2 items -> 787 characters
+2025-11-26 15:11:49 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 1 items -> 169 characters
+2025-11-26 15:11:49 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 1 items -> 565 characters
+2025-11-26 15:11:49 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 0 items -> 0 characters
+2025-11-26 15:11:49 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 0 items -> 0 characters
+2025-11-26 15:11:49 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 1 items -> 203 characters
+2025-11-26 15:11:49 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 8 items -> 3070 characters
+2025-11-26 15:11:49 | DEBUG    | __main__:fetch_text_from_sefaria:205 | Hebrew text captured: 3070 characters
+2025-11-26 15:11:49 | INFO     | __main__:fetch_text_from_sefaria:210 | Sefaria fetch result for 'Tosafot on Pesachim 2a': he_text=yes en_text=no
+2025-11-26 15:11:49 | DEBUG    | httpcore.connection:atrace:87 | close.started
+2025-11-26 15:11:49 | DEBUG    | httpcore.connection:atrace:87 | close.complete
+2025-11-26 15:11:49 | INFO     | __main__:search_sources:292 | [9/14] Sefaria lookup result for 'Tosafot on Pesachim 2a': found=True
+2025-11-26 15:11:49 | DEBUG    | __main__:search_sources:304 | Added source: Tosafot on Pesachim 2a, has_he=True, has_en=False
+2025-11-26 15:11:49 | INFO     | __main__:search_sources:286 | [10/14] Looking up: 'Rambam Mishneh Torah, Hilchot Chametz U'Matzah 2:3' (category: Rishonim)
+2025-11-26 15:11:49 | INFO     | __main__:fetch_text_from_sefaria:168 | Fetching text from Sefaria for ref='Rambam Mishneh Torah, Hilchot Chametz U'Matzah 2:3'
+2025-11-26 15:11:49 | DEBUG    | __main__:fetch_text_from_sefaria:174 | Sefaria API URL: https://www.sefaria.org/api/v3/texts/Rambam%20Mishneh%20Torah,%20Hilchot%20Chametz%20U'Matzah%202:3
+2025-11-26 15:11:49 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.started host='www.sefaria.org' port=443 local_address=None timeout=10.0 socket_options=None
+2025-11-26 15:11:49 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063D7FEE0>
+2025-11-26 15:11:49 | DEBUG    | httpcore.connection:atrace:87 | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000024063D21F40> server_hostname='www.sefaria.org' timeout=10.0
+2025-11-26 15:11:49 | DEBUG    | httpcore.connection:atrace:87 | start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063D80730>
+2025-11-26 15:11:49 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.started request=<Request [b'GET']>
+2025-11-26 15:11:49 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.complete
+2025-11-26 15:11:49 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.started request=<Request [b'GET']>
+2025-11-26 15:11:49 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.complete
+2025-11-26 15:11:49 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.started request=<Request [b'GET']>
+2025-11-26 15:11:50 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.complete return_value=(b'HTTP/1.1', 404, b'Not Found', [(b'Date', b'Wed, 26 Nov 2025 20:11:49 GMT'), (b'Content-Type', b'application/json; charset=utf-8'), (b'Vary', b'Accept-Language, Cookie'), (b'Content-Language', b'en'), (b'url', b"/api/v3/texts/Rambam%20Mishneh%20Torah,%20Hilchot%20Chametz%20U'Matzah%202:3"), (b'x-varnish', b'320086313'), (b'Age', b'0'), (b'access-control-allow-origin', b'*'), (b'strict-transport-security', b'max-age=2592000'), (b'cf-cache-status', b'DYNAMIC'), (b'Nel', b'{"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}'), (b'Report-To', b'{"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=vgDvVEzY1mkfbN%2F0kt1chQD83Z9lvjJnFGwNt9n2VX%2F2G%2FKSxxCkGamSiBA6XSlLp4kpANcpkKOVXzAj5vfGmNrZZsg9jeGqkSi0ZH78"}]}'), (b'Content-Encoding', b'gzip'), (b'CF-RAY', b'9a4c097fa9efb1bc-EWR'), (b'Cache-Status', b'node6.env2.dc1.us.techloq.com;detail=no-cache'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Referrer-Policy', b'no-referrer-when-downgrade')])
+2025-11-26 15:11:50 | INFO     | httpx:_send_single_request:1740 | HTTP Request: GET https://www.sefaria.org/api/v3/texts/Rambam%20Mishneh%20Torah,%20Hilchot%20Chametz%20U'Matzah%202:3 "HTTP/1.1 404 Not Found"
+2025-11-26 15:11:50 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.started request=<Request [b'GET']>
+2025-11-26 15:11:50 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.complete
+2025-11-26 15:11:50 | DEBUG    | httpcore.http11:atrace:87 | response_closed.started
+2025-11-26 15:11:50 | DEBUG    | httpcore.http11:atrace:87 | response_closed.complete
+2025-11-26 15:11:50 | INFO     | __main__:fetch_text_from_sefaria:180 | Sefaria HTTP status code: 404 for ref='Rambam Mishneh Torah, Hilchot Chametz U'Matzah 2:3'
+2025-11-26 15:11:50 | WARNING  | __main__:fetch_text_from_sefaria:219 | Sefaria returned status 404 for 'Rambam Mishneh Torah, Hilchot Chametz U'Matzah 2:3'
+2025-11-26 15:11:50 | DEBUG    | __main__:fetch_text_from_sefaria:220 | Response content: {"error": "Could not find title in reference: Rambam Mishneh Torah, Hilchot Chametz U'Matzah 2.3"}
+2025-11-26 15:11:50 | DEBUG    | httpcore.connection:atrace:87 | close.started
+2025-11-26 15:11:50 | DEBUG    | httpcore.connection:atrace:87 | close.complete
+2025-11-26 15:11:50 | INFO     | __main__:search_sources:292 | [10/14] Sefaria lookup result for 'Rambam Mishneh Torah, Hilchot Chametz U'Matzah 2:3': found=False
+2025-11-26 15:11:50 | DEBUG    | __main__:search_sources:304 | Added source: Rambam Mishneh Torah, Hilchot Chametz U'Matzah 2:3, has_he=False, has_en=False
+2025-11-26 15:11:50 | INFO     | __main__:search_sources:286 | [11/14] Looking up: 'Tur, Orach Chayim 431' (category: Rishonim)
+2025-11-26 15:11:50 | INFO     | __main__:fetch_text_from_sefaria:168 | Fetching text from Sefaria for ref='Tur, Orach Chayim 431'
+2025-11-26 15:11:50 | DEBUG    | __main__:fetch_text_from_sefaria:174 | Sefaria API URL: https://www.sefaria.org/api/v3/texts/Tur,%20Orach%20Chayim%20431
+2025-11-26 15:11:50 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.started host='www.sefaria.org' port=443 local_address=None timeout=10.0 socket_options=None
+2025-11-26 15:11:50 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063C89730>
+2025-11-26 15:11:50 | DEBUG    | httpcore.connection:atrace:87 | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000024063C01BC0> server_hostname='www.sefaria.org' timeout=10.0
+2025-11-26 15:11:50 | DEBUG    | httpcore.connection:atrace:87 | start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063D11730>
+2025-11-26 15:11:50 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.started request=<Request [b'GET']>
+2025-11-26 15:11:50 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.complete
+2025-11-26 15:11:50 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.started request=<Request [b'GET']>
+2025-11-26 15:11:50 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.complete
+2025-11-26 15:11:50 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.started request=<Request [b'GET']>
+2025-11-26 15:11:50 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Wed, 26 Nov 2025 20:11:49 GMT'), (b'Content-Type', b'application/json; charset=utf-8'), (b'Vary', b'Accept-Language, Cookie'), (b'Content-Language', b'en'), (b'url', b'/api/v3/texts/Tur,%20Orach%20Chayim%20431'), (b'x-varnish', b'322704898'), (b'Age', b'0'), (b'Report-To', b'{"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=vhWoPm9COr1C4IrgPDz8nc62CS25RoLwQkSUC6JbLfJdqbwtiXU97%2BBCiS0bez%2B2Fl13rQaz0v9veDDlpdoef2E21IksOvQ7CTnGEE0Q"}]}'), (b'access-control-allow-origin', b'*'), (b'strict-transport-security', b'max-age=2592000'), (b'cf-cache-status', b'DYNAMIC'), (b'Nel', b'{"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}'), (b'Content-Encoding', b'gzip'), (b'CF-RAY', b'9a4c09831e7d4407-EWR'), (b'Cache-Status', b'node6.env2.dc1.us.techloq.com;detail=no-cache'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Referrer-Policy', b'no-referrer-when-downgrade')])
+2025-11-26 15:11:50 | INFO     | httpx:_send_single_request:1740 | HTTP Request: GET https://www.sefaria.org/api/v3/texts/Tur,%20Orach%20Chayim%20431 "HTTP/1.1 200 OK"
+2025-11-26 15:11:50 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.started request=<Request [b'GET']>
+2025-11-26 15:11:50 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.complete
+2025-11-26 15:11:50 | DEBUG    | httpcore.http11:atrace:87 | response_closed.started
+2025-11-26 15:11:50 | DEBUG    | httpcore.http11:atrace:87 | response_closed.complete
+2025-11-26 15:11:50 | INFO     | __main__:fetch_text_from_sefaria:180 | Sefaria HTTP status code: 200 for ref='Tur, Orach Chayim 431'
+2025-11-26 15:11:50 | DEBUG    | __main__:fetch_text_from_sefaria:183 | Sefaria response data keys: ['versions', 'available_versions', 'ref', 'heRef', 'sections', 'toSections', 'sectionRef', 'heSectionRef', 'firstAvailableSectionRef', 'isSpanning', 'next', 'prev', 'title', 'book', 'heTitle', 'primary_category', 'type', 'indexTitle', 'categories', 'heIndexTitle', 'isComplex', 'isDependant', 'order', 'collectiveTitle', 'heCollectiveTitle', 'alts', 'textDepth', 'sectionNames', 'addressTypes', 'titleVariants', 'heTitleVariants', 'index_offsets_by_depth', 'warnings']
+2025-11-26 15:11:50 | DEBUG    | __main__:fetch_text_from_sefaria:191 | Sefaria returned 1 version(s) for 'Tur, Orach Chayim 431'
+2025-11-26 15:11:50 | DEBUG    | __main__:fetch_text_from_sefaria:197 | Version 0: lang=he, title=Orach Chaim, Vilna, 1923, text_type=list
+2025-11-26 15:11:50 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 1 items -> 2685 characters
+2025-11-26 15:11:50 | DEBUG    | __main__:fetch_text_from_sefaria:205 | Hebrew text captured: 2685 characters
+2025-11-26 15:11:50 | INFO     | __main__:fetch_text_from_sefaria:210 | Sefaria fetch result for 'Tur, Orach Chayim 431': he_text=yes en_text=no
+2025-11-26 15:11:50 | DEBUG    | httpcore.connection:atrace:87 | close.started
+2025-11-26 15:11:50 | DEBUG    | httpcore.connection:atrace:87 | close.complete
+2025-11-26 15:11:50 | INFO     | __main__:search_sources:292 | [11/14] Sefaria lookup result for 'Tur, Orach Chayim 431': found=True
+2025-11-26 15:11:50 | DEBUG    | __main__:search_sources:304 | Added source: Tur, Orach Chayim 431, has_he=True, has_en=False
+2025-11-26 15:11:50 | INFO     | __main__:search_sources:286 | [12/14] Looking up: 'Shulchan Arukh, Orach Chayim 431:1' (category: Shulchan Aruch)
+2025-11-26 15:11:50 | INFO     | __main__:fetch_text_from_sefaria:168 | Fetching text from Sefaria for ref='Shulchan Arukh, Orach Chayim 431:1'
+2025-11-26 15:11:50 | DEBUG    | __main__:fetch_text_from_sefaria:174 | Sefaria API URL: https://www.sefaria.org/api/v3/texts/Shulchan%20Arukh,%20Orach%20Chayim%20431:1
+2025-11-26 15:11:50 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.started host='www.sefaria.org' port=443 local_address=None timeout=10.0 socket_options=None
+2025-11-26 15:11:50 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063D71040>
+2025-11-26 15:11:50 | DEBUG    | httpcore.connection:atrace:87 | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000024063D03F40> server_hostname='www.sefaria.org' timeout=10.0
+2025-11-26 15:11:50 | DEBUG    | httpcore.connection:atrace:87 | start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063D71C70>
+2025-11-26 15:11:50 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.started request=<Request [b'GET']>
+2025-11-26 15:11:50 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.complete
+2025-11-26 15:11:50 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.started request=<Request [b'GET']>
+2025-11-26 15:11:50 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.complete
+2025-11-26 15:11:50 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.started request=<Request [b'GET']>
+2025-11-26 15:11:50 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Wed, 26 Nov 2025 20:11:50 GMT'), (b'Content-Type', b'application/json; charset=utf-8'), (b'Vary', b'Accept-Language, Cookie'), (b'Content-Language', b'en'), (b'url', b'/api/v3/texts/Shulchan%20Arukh,%20Orach%20Chayim%20431:1'), (b'x-varnish', b'320086363'), (b'Age', b'0'), (b'Report-To', b'{"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=tiN8GLdB2mbYUeHJU%2Fp64x8zk1sgmOR%2F4hOfqKzlaITc97uolbGTU7bfKXOqVXHduZ%2F78gYoPy41cw2pjLsSiXf5%2F1KEH2W65oq0XDQV"}]}'), (b'access-control-allow-origin', b'*'), (b'strict-transport-security', b'max-age=2592000'), (b'cf-cache-status', b'DYNAMIC'), (b'Nel', b'{"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}'), (b'Content-Encoding', b'gzip'), (b'CF-RAY', b'9a4c09857d715f74-EWR'), (b'Cache-Status', b'node6.env2.dc1.us.techloq.com;detail=no-cache'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Referrer-Policy', b'no-referrer-when-downgrade')])
+2025-11-26 15:11:50 | INFO     | httpx:_send_single_request:1740 | HTTP Request: GET https://www.sefaria.org/api/v3/texts/Shulchan%20Arukh,%20Orach%20Chayim%20431:1 "HTTP/1.1 200 OK"
+2025-11-26 15:11:50 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.started request=<Request [b'GET']>
+2025-11-26 15:11:50 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.complete
+2025-11-26 15:11:50 | DEBUG    | httpcore.http11:atrace:87 | response_closed.started
+2025-11-26 15:11:50 | DEBUG    | httpcore.http11:atrace:87 | response_closed.complete
+2025-11-26 15:11:50 | INFO     | __main__:fetch_text_from_sefaria:180 | Sefaria HTTP status code: 200 for ref='Shulchan Arukh, Orach Chayim 431:1'
+2025-11-26 15:11:50 | DEBUG    | __main__:fetch_text_from_sefaria:183 | Sefaria response data keys: ['versions', 'available_versions', 'ref', 'heRef', 'sections', 'toSections', 'sectionRef', 'heSectionRef', 'firstAvailableSectionRef', 'isSpanning', 'next', 'prev', 'title', 'book', 'heTitle', 'primary_category', 'type', 'indexTitle', 'categories', 'heIndexTitle', 'isComplex', 'isDependant', 'order', 'collectiveTitle', 'heCollectiveTitle', 'alts', 'lengths', 'length', 'textDepth', 'sectionNames', 'addressTypes', 'titleVariants', 'heTitleVariants', 'index_offsets_by_depth', 'warnings']
+2025-11-26 15:11:50 | DEBUG    | __main__:fetch_text_from_sefaria:191 | Sefaria returned 1 version(s) for 'Shulchan Arukh, Orach Chayim 431:1'
+2025-11-26 15:11:50 | DEBUG    | __main__:fetch_text_from_sefaria:197 | Version 0: lang=he, title=Maginei Eretz: Shulchan Aruch Orach Chaim, Lemberg, 1893, text_type=str
+2025-11-26 15:11:50 | DEBUG    | __main__:fetch_text_from_sefaria:205 | Hebrew text captured: 663 characters
+2025-11-26 15:11:50 | INFO     | __main__:fetch_text_from_sefaria:210 | Sefaria fetch result for 'Shulchan Arukh, Orach Chayim 431:1': he_text=yes en_text=no
+2025-11-26 15:11:50 | DEBUG    | httpcore.connection:atrace:87 | close.started
+2025-11-26 15:11:50 | DEBUG    | httpcore.connection:atrace:87 | close.complete
+2025-11-26 15:11:50 | INFO     | __main__:search_sources:292 | [12/14] Sefaria lookup result for 'Shulchan Arukh, Orach Chayim 431:1': found=True
+2025-11-26 15:11:50 | DEBUG    | __main__:search_sources:304 | Added source: Shulchan Arukh, Orach Chayim 431:1, has_he=True, has_en=False
+2025-11-26 15:11:50 | INFO     | __main__:search_sources:286 | [13/14] Looking up: 'Shulchan Arukh, Orach Chayim 432:1' (category: Shulchan Aruch)
+2025-11-26 15:11:50 | INFO     | __main__:fetch_text_from_sefaria:168 | Fetching text from Sefaria for ref='Shulchan Arukh, Orach Chayim 432:1'
+2025-11-26 15:11:50 | DEBUG    | __main__:fetch_text_from_sefaria:174 | Sefaria API URL: https://www.sefaria.org/api/v3/texts/Shulchan%20Arukh,%20Orach%20Chayim%20432:1
+2025-11-26 15:11:50 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.started host='www.sefaria.org' port=443 local_address=None timeout=10.0 socket_options=None
+2025-11-26 15:11:50 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063D919D0>
+2025-11-26 15:11:50 | DEBUG    | httpcore.connection:atrace:87 | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000024063D033C0> server_hostname='www.sefaria.org' timeout=10.0
+2025-11-26 15:11:51 | DEBUG    | httpcore.connection:atrace:87 | start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063D91760>
+2025-11-26 15:11:51 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.started request=<Request [b'GET']>
+2025-11-26 15:11:51 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.complete
+2025-11-26 15:11:51 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.started request=<Request [b'GET']>
+2025-11-26 15:11:51 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.complete
+2025-11-26 15:11:51 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.started request=<Request [b'GET']>
+2025-11-26 15:11:56 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Wed, 26 Nov 2025 20:11:55 GMT'), (b'Content-Type', b'application/json; charset=utf-8'), (b'Vary', b'Accept-Language, Cookie'), (b'Content-Language', b'en'), (b'url', b'/api/v3/texts/Shulchan%20Arukh,%20Orach%20Chayim%20432:1'), (b'x-varnish', b'333939982'), (b'Age', b'0'), (b'Report-To', b'{"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=aABbRKKn6HiP5v0u5joiwKqdfe2dO%2BoDmsCWaCyeE29O1nbUWdLbTHkz%2B%2BllKDypbNphmh0oTNfQRJOFehdNP5a8v%2BbhO6oIPQnsNsHP"}]}'), (b'access-control-allow-origin', b'*'), (b'strict-transport-security', b'max-age=2592000'), (b'cf-cache-status', b'DYNAMIC'), (b'Nel', b'{"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}'), (b'Content-Encoding', b'gzip'), (b'CF-RAY', b'9a4c0987fe5cf78f-EWR'), (b'Cache-Status', b'node6.env2.dc1.us.techloq.com;detail=no-cache'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Referrer-Policy', b'no-referrer-when-downgrade')])
+2025-11-26 15:11:56 | INFO     | httpx:_send_single_request:1740 | HTTP Request: GET https://www.sefaria.org/api/v3/texts/Shulchan%20Arukh,%20Orach%20Chayim%20432:1 "HTTP/1.1 200 OK"
+2025-11-26 15:11:56 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.started request=<Request [b'GET']>
+2025-11-26 15:11:56 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.complete
+2025-11-26 15:11:56 | DEBUG    | httpcore.http11:atrace:87 | response_closed.started
+2025-11-26 15:11:56 | DEBUG    | httpcore.http11:atrace:87 | response_closed.complete
+2025-11-26 15:11:56 | INFO     | __main__:fetch_text_from_sefaria:180 | Sefaria HTTP status code: 200 for ref='Shulchan Arukh, Orach Chayim 432:1'
+2025-11-26 15:11:56 | DEBUG    | __main__:fetch_text_from_sefaria:183 | Sefaria response data keys: ['versions', 'available_versions', 'ref', 'heRef', 'sections', 'toSections', 'sectionRef', 'heSectionRef', 'firstAvailableSectionRef', 'isSpanning', 'next', 'prev', 'title', 'book', 'heTitle', 'primary_category', 'type', 'indexTitle', 'categories', 'heIndexTitle', 'isComplex', 'isDependant', 'order', 'collectiveTitle', 'heCollectiveTitle', 'alts', 'lengths', 'length', 'textDepth', 'sectionNames', 'addressTypes', 'titleVariants', 'heTitleVariants', 'index_offsets_by_depth', 'warnings']
+2025-11-26 15:11:56 | DEBUG    | __main__:fetch_text_from_sefaria:191 | Sefaria returned 1 version(s) for 'Shulchan Arukh, Orach Chayim 432:1'
+2025-11-26 15:11:56 | DEBUG    | __main__:fetch_text_from_sefaria:197 | Version 0: lang=he, title=Maginei Eretz: Shulchan Aruch Orach Chaim, Lemberg, 1893, text_type=str
+2025-11-26 15:11:56 | DEBUG    | __main__:fetch_text_from_sefaria:205 | Hebrew text captured: 1605 characters
+2025-11-26 15:11:56 | INFO     | __main__:fetch_text_from_sefaria:210 | Sefaria fetch result for 'Shulchan Arukh, Orach Chayim 432:1': he_text=yes en_text=no
+2025-11-26 15:11:56 | DEBUG    | httpcore.connection:atrace:87 | close.started
+2025-11-26 15:11:56 | DEBUG    | httpcore.connection:atrace:87 | close.complete
+2025-11-26 15:11:56 | INFO     | __main__:search_sources:292 | [13/14] Sefaria lookup result for 'Shulchan Arukh, Orach Chayim 432:1': found=True
+2025-11-26 15:11:56 | DEBUG    | __main__:search_sources:304 | Added source: Shulchan Arukh, Orach Chayim 432:1, has_he=True, has_en=False
+2025-11-26 15:11:56 | INFO     | __main__:search_sources:286 | [14/14] Looking up: 'Mishnah Berurah 431:1' (category: Acharonim)
+2025-11-26 15:11:56 | INFO     | __main__:fetch_text_from_sefaria:168 | Fetching text from Sefaria for ref='Mishnah Berurah 431:1'
+2025-11-26 15:11:56 | DEBUG    | __main__:fetch_text_from_sefaria:174 | Sefaria API URL: https://www.sefaria.org/api/v3/texts/Mishnah%20Berurah%20431:1
+2025-11-26 15:11:56 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.started host='www.sefaria.org' port=443 local_address=None timeout=10.0 socket_options=None
+2025-11-26 15:11:56 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063D940D0>
+2025-11-26 15:11:56 | DEBUG    | httpcore.connection:atrace:87 | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000024063D03240> server_hostname='www.sefaria.org' timeout=10.0
+2025-11-26 15:11:56 | DEBUG    | httpcore.connection:atrace:87 | start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063D92E20>
+2025-11-26 15:11:56 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.started request=<Request [b'GET']>
+2025-11-26 15:11:56 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.complete
+2025-11-26 15:11:56 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.started request=<Request [b'GET']>
+2025-11-26 15:11:56 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.complete
+2025-11-26 15:11:56 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.started request=<Request [b'GET']>
+2025-11-26 15:11:57 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Wed, 26 Nov 2025 20:11:56 GMT'), (b'Content-Type', b'application/json; charset=utf-8'), (b'Vary', b'Accept-Language, Cookie'), (b'Content-Language', b'en'), (b'url', b'/api/v3/texts/Mishnah%20Berurah%20431:1'), (b'x-varnish', b'330924826'), (b'Age', b'0'), (b'Report-To', b'{"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=%2Fkf6SYvozXq3M11hvBplxXhvnqPyNJMKdWJA40Qk2uIQXp6atGXESTc1U7Vu2jjiZPDqTyi0CLsgcl1rN61oBG%2B8TX1qoAqJ%2FSlxXoRN"}]}'), (b'access-control-allow-origin', b'*'), (b'strict-transport-security', b'max-age=2592000'), (b'cf-cache-status', b'DYNAMIC'), (b'Nel', b'{"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}'), (b'Content-Encoding', b'gzip'), (b'CF-RAY', b'9a4c09ab193a3453-EWR'), (b'Cache-Status', b'node6.env2.dc1.us.techloq.com;detail=no-cache'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Referrer-Policy', b'no-referrer-when-downgrade')])
+2025-11-26 15:11:57 | INFO     | httpx:_send_single_request:1740 | HTTP Request: GET https://www.sefaria.org/api/v3/texts/Mishnah%20Berurah%20431:1 "HTTP/1.1 200 OK"
+2025-11-26 15:11:57 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.started request=<Request [b'GET']>
+2025-11-26 15:11:57 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.complete
+2025-11-26 15:11:57 | DEBUG    | httpcore.http11:atrace:87 | response_closed.started
+2025-11-26 15:11:57 | DEBUG    | httpcore.http11:atrace:87 | response_closed.complete
+2025-11-26 15:11:57 | INFO     | __main__:fetch_text_from_sefaria:180 | Sefaria HTTP status code: 200 for ref='Mishnah Berurah 431:1'
+2025-11-26 15:11:57 | DEBUG    | __main__:fetch_text_from_sefaria:183 | Sefaria response data keys: ['versions', 'available_versions', 'ref', 'heRef', 'sections', 'toSections', 'sectionRef', 'heSectionRef', 'firstAvailableSectionRef', 'isSpanning', 'next', 'prev', 'title', 'book', 'heTitle', 'primary_category', 'type', 'indexTitle', 'categories', 'heIndexTitle', 'isComplex', 'isDependant', 'order', 'collectiveTitle', 'heCollectiveTitle', 'alts', 'textDepth', 'sectionNames', 'addressTypes', 'titleVariants', 'heTitleVariants', 'index_offsets_by_depth', 'warnings']
+2025-11-26 15:11:57 | DEBUG    | __main__:fetch_text_from_sefaria:191 | Sefaria returned 1 version(s) for 'Mishnah Berurah 431:1'
+2025-11-26 15:11:57 | DEBUG    | __main__:fetch_text_from_sefaria:197 | Version 0: lang=he, title=On Your Way, text_type=str
+2025-11-26 15:11:57 | DEBUG    | __main__:fetch_text_from_sefaria:205 | Hebrew text captured: 117 characters
+2025-11-26 15:11:57 | INFO     | __main__:fetch_text_from_sefaria:210 | Sefaria fetch result for 'Mishnah Berurah 431:1': he_text=yes en_text=no
+2025-11-26 15:11:57 | DEBUG    | httpcore.connection:atrace:87 | close.started
+2025-11-26 15:11:57 | DEBUG    | httpcore.connection:atrace:87 | close.complete
+2025-11-26 15:11:57 | INFO     | __main__:search_sources:292 | [14/14] Sefaria lookup result for 'Mishnah Berurah 431:1': found=True
+2025-11-26 15:11:57 | DEBUG    | __main__:search_sources:304 | Added source: Mishnah Berurah 431:1, has_he=True, has_en=False
+2025-11-26 15:11:57 | WARNING  | __main__:search_sources:312 | Filtered out 1 invalid/unfound sources
+2025-11-26 15:11:57 | DEBUG    | __main__:search_sources:314 | Invalid references: ["Rambam Mishneh Torah, Hilchot Chametz U'Matzah 2:3"]
+2025-11-26 15:11:57 | INFO     | __main__:search_sources:316 | ================================================================================
+2025-11-26 15:11:57 | INFO     | __main__:search_sources:317 | Request complete: Returning 13 valid sources to client
+2025-11-26 15:11:57 | INFO     | __main__:search_sources:318 | ================================================================================
+2025-11-26 20:59:48 | INFO     | __main__:search_sources:255 | ================================================================================
+2025-11-26 20:59:48 | INFO     | __main__:search_sources:256 | POST /search -> topic='bedikas chometz' level='intermediate'
+2025-11-26 20:59:48 | INFO     | __main__:search_sources:257 | ================================================================================
+2025-11-26 20:59:48 | INFO     | __main__:get_sources_from_claude:107 | Requesting sources from Claude for topic='bedikas chometz' level='intermediate'
+2025-11-26 20:59:48 | DEBUG    | __main__:get_sources_from_claude:121 | User message to Claude: Find marei mekomos for the topic: bedikas chometz
+
+Level: intermediate - Include Chumash, main sugyos in Gemara, key Rishonim, and Shulchan Aruch.
+
+Return 5-15 sources depending on the level, organized by category.
+2025-11-26 20:59:48 | DEBUG    | anthropic._base_client:_build_request:493 | Request options: {'method': 'post', 'url': '/v1/messages', 'timeout': Timeout(connect=5.0, read=600, write=600, pool=600), 'files': None, 'idempotency_key': 'stainless-python-retry-befbfd97-a582-4ee6-96a5-8e3090cab383', 'json_data': {'max_tokens': 2000, 'messages': [{'role': 'user', 'content': 'Find marei mekomos for the topic: bedikas chometz\n\nLevel: intermediate - Include Chumash, main sugyos in Gemara, key Rishonim, and Shulchan Aruch.\n\nReturn 5-15 sources depending on the level, organized by category.'}], 'model': 'claude-sonnet-4-20250514', 'system': 'You are a Torah scholar assistant that helps find marei mekomos (source references) for any Torah topic.\n\nWhen given a topic, you will return a JSON object with relevant sources organized by category.\n\nIMPORTANT RULES:\n1. Return ONLY valid Sefaria references. Use the exact format Sefaria expects.\n2. Be conservative - only suggest sources you are confident exist.\n3. Organize sources in this order: Chumash → Nach → Mishna → Gemara (Bavli) → Rishonim → Shulchan Aruch/Acharonim\n4. For Gemara, use format like "Kiddushin 31a" or "Berakhot 6b"\n5. For Chumash, use format like "Shemot 20:12" or "Bereishit 1:1"\n6. For Mishna, use format like "Mishnah Kiddushin 1:7"\n7. For Rashi on Chumash, use "Rashi on Shemot 20:12"\n8. For Rambam, use "Mishneh Torah, Hilchot Mamrim 6:1" \n9. For Shulchan Aruch, use "Shulchan Arukh, Yoreh De\'ah 240:1"\n10. Include the most important/foundational sources first within each category.\n\nReturn your response as valid JSON in this exact format:\n{\n  "sources": [\n    {"ref": "Shemot 20:12", "category": "Chumash"},\n    {"ref": "Kiddushin 31a", "category": "Gemara"},\n    ...\n  ],\n  "summary": "Brief 1-2 sentence summary of the topic"\n}\n\nOnly return the JSON, no other text.'}}
+2025-11-26 20:59:48 | DEBUG    | anthropic._base_client:request:1045 | Sending HTTP Request: POST https://api.anthropic.com/v1/messages
+2025-11-26 20:59:48 | DEBUG    | httpcore.connection:trace:47 | close.started
+2025-11-26 20:59:48 | DEBUG    | httpcore.connection:trace:47 | close.complete
+2025-11-26 20:59:48 | DEBUG    | httpcore.connection:trace:47 | connect_tcp.started host='api.anthropic.com' port=443 local_address=None timeout=5.0 socket_options=[(65535, 8, True), (6, 17, 60), (6, 16, 5), (6, 3, 60)]
+2025-11-26 20:59:48 | DEBUG    | httpcore.connection:trace:47 | connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000024063C1B790>
+2025-11-26 20:59:48 | DEBUG    | httpcore.connection:trace:47 | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000024062A45CC0> server_hostname='api.anthropic.com' timeout=5.0
+2025-11-26 20:59:48 | DEBUG    | httpcore.connection:trace:47 | start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000024063C1BD60>
+2025-11-26 20:59:48 | DEBUG    | httpcore.http11:trace:47 | send_request_headers.started request=<Request [b'POST']>
+2025-11-26 20:59:48 | DEBUG    | httpcore.http11:trace:47 | send_request_headers.complete
+2025-11-26 20:59:48 | DEBUG    | httpcore.http11:trace:47 | send_request_body.started request=<Request [b'POST']>
+2025-11-26 20:59:48 | DEBUG    | httpcore.http11:trace:47 | send_request_body.complete
+2025-11-26 20:59:48 | DEBUG    | httpcore.http11:trace:47 | receive_response_headers.started request=<Request [b'POST']>
+2025-11-26 20:59:56 | DEBUG    | httpcore.http11:trace:47 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Thu, 27 Nov 2025 01:59:55 GMT'), (b'Content-Type', b'application/json'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Content-Encoding', b'gzip'), (b'anthropic-ratelimit-input-tokens-limit', b'30000'), (b'anthropic-ratelimit-input-tokens-remaining', b'30000'), (b'anthropic-ratelimit-input-tokens-reset', b'2025-11-27T01:59:50Z'), (b'anthropic-ratelimit-output-tokens-limit', b'8000'), (b'anthropic-ratelimit-output-tokens-remaining', b'8000'), (b'anthropic-ratelimit-output-tokens-reset', b'2025-11-27T01:59:59Z'), (b'anthropic-ratelimit-requests-limit', b'50'), (b'anthropic-ratelimit-requests-remaining', b'49'), (b'anthropic-ratelimit-requests-reset', b'2025-11-27T01:59:49Z'), (b'retry-after', b'11'), (b'anthropic-ratelimit-tokens-limit', b'38000'), (b'anthropic-ratelimit-tokens-remaining', b'38000'), (b'anthropic-ratelimit-tokens-reset', b'2025-11-27T01:59:50Z'), (b'request-id', b'req_011CVXZsxgHG3JpixXtr2vUZ'), (b'strict-transport-security', b'max-age=31536000; includeSubDomains; preload'), (b'anthropic-organization-id', b'73a09491-cda3-40b4-8544-d00ca1bc9331'), (b'x-envoy-upstream-service-time', b'7813'), (b'cf-cache-status', b'DYNAMIC'), (b'X-Robots-Tag', b'none'), (b'Server', b'cloudflare'), (b'CF-RAY', b'9a4e073d3d2dfbf2-EWR')])
+2025-11-26 20:59:56 | INFO     | httpx:_send_single_request:1025 | HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2025-11-26 20:59:56 | DEBUG    | httpcore.http11:trace:47 | receive_response_body.started request=<Request [b'POST']>
+2025-11-26 20:59:56 | DEBUG    | httpcore.http11:trace:47 | receive_response_body.complete
+2025-11-26 20:59:56 | DEBUG    | httpcore.http11:trace:47 | response_closed.started
+2025-11-26 20:59:56 | DEBUG    | httpcore.http11:trace:47 | response_closed.complete
+2025-11-26 20:59:56 | DEBUG    | anthropic._base_client:request:1083 | HTTP Response: POST https://api.anthropic.com/v1/messages "200 OK" Headers({'date': 'Thu, 27 Nov 2025 01:59:55 GMT', 'content-type': 'application/json', 'transfer-encoding': 'chunked', 'connection': 'keep-alive', 'content-encoding': 'gzip', 'anthropic-ratelimit-input-tokens-limit': '30000', 'anthropic-ratelimit-input-tokens-remaining': '30000', 'anthropic-ratelimit-input-tokens-reset': '2025-11-27T01:59:50Z', 'anthropic-ratelimit-output-tokens-limit': '8000', 'anthropic-ratelimit-output-tokens-remaining': '8000', 'anthropic-ratelimit-output-tokens-reset': '2025-11-27T01:59:59Z', 'anthropic-ratelimit-requests-limit': '50', 'anthropic-ratelimit-requests-remaining': '49', 'anthropic-ratelimit-requests-reset': '2025-11-27T01:59:49Z', 'retry-after': '11', 'anthropic-ratelimit-tokens-limit': '38000', 'anthropic-ratelimit-tokens-remaining': '38000', 'anthropic-ratelimit-tokens-reset': '2025-11-27T01:59:50Z', 'request-id': 'req_011CVXZsxgHG3JpixXtr2vUZ', 'strict-transport-security': 'max-age=31536000; includeSubDomains; preload', 'anthropic-organization-id': '73a09491-cda3-40b4-8544-d00ca1bc9331', 'x-envoy-upstream-service-time': '7813', 'cf-cache-status': 'DYNAMIC', 'x-robots-tag': 'none', 'server': 'cloudflare', 'cf-ray': '9a4e073d3d2dfbf2-EWR'})
+2025-11-26 20:59:56 | DEBUG    | anthropic._base_client:request:1091 | request_id: req_011CVXZsxgHG3JpixXtr2vUZ
+2025-11-26 20:59:56 | DEBUG    | __main__:get_sources_from_claude:131 | Claude API response received. Usage: Usage(cache_creation=CacheCreation(ephemeral_1h_input_tokens=0, ephemeral_5m_input_tokens=0), cache_creation_input_tokens=0, cache_read_input_tokens=0, input_tokens=512, output_tokens=453, server_tool_use=None, service_tier='standard')
+2025-11-26 20:59:56 | DEBUG    | __main__:get_sources_from_claude:137 | Claude response text length: 1048 characters
+2025-11-26 20:59:56 | INFO     | __main__:get_sources_from_claude:139 | Claude response preview: ```json {   "sources": [     {"ref": "Shemot 12:15", "category": "Chumash"},     {"ref": "Shemot 12:19", "category": "Chumash"},     {"ref": "Devarim 16:4", "category": "Chumash"},     {"ref": "Pesachim 2a", "category": "Gemara"},     {"ref": "Pesachim 7b", "category": "Gemara"},     {"ref": "Pesachim 8a", "category": "Gemara"},     {"ref": "Pesachim 4a", "category": "Gemara"},     {"ref": "Rashi on Pesachim 7b", "category": "Rishonim"},     {"ref": "Rambam Mishneh Torah, Hilchot Chametz U'Matzah 2:3", "category": "Rishonim"},     {"ref": "Tur, Orach Chayim 431", "category": "Rishonim"},     {"ref": "Shulchan Arukh, Orach Chayim 431:1", "category": "Shulchan Aruch"},     {"ref": "Shulchan Arukh, Orach Chayim 432:1", "category": "Shulchan Aruch"},     {"ref": "Mishnah Berurah 431:1", "categ...
+2025-11-26 20:59:56 | DEBUG    | __main__:get_sources_from_claude:145 | Extracting JSON from markdown json fence
+2025-11-26 20:59:56 | INFO     | __main__:get_sources_from_claude:152 | Successfully parsed Claude response. Found 13 sources
+2025-11-26 20:59:56 | DEBUG    | __main__:get_sources_from_claude:153 | Parsed data: {'sources': [{'ref': 'Shemot 12:15', 'category': 'Chumash'}, {'ref': 'Shemot 12:19', 'category': 'Chumash'}, {'ref': 'Devarim 16:4', 'category': 'Chumash'}, {'ref': 'Pesachim 2a', 'category': 'Gemara'}, {'ref': 'Pesachim 7b', 'category': 'Gemara'}, {'ref': 'Pesachim 8a', 'category': 'Gemara'}, {'ref': 'Pesachim 4a', 'category': 'Gemara'}, {'ref': 'Rashi on Pesachim 7b', 'category': 'Rishonim'}, {'ref': "Rambam Mishneh Torah, Hilchot Chametz U'Matzah 2:3", 'category': 'Rishonim'}, {'ref': 'Tur, Orach Chayim 431', 'category': 'Rishonim'}, {'ref': 'Shulchan Arukh, Orach Chayim 431:1', 'category': 'Shulchan Aruch'}, {'ref': 'Shulchan Arukh, Orach Chayim 432:1', 'category': 'Shulchan Aruch'}, {'ref': 'Mishnah Berurah 431:1', 'category': 'Acharonim'}], 'summary': "Bedikas chometz is the mitzvah to search for and remove chametz before Pesach, performed on the night of the 14th of Nissan with a candle, based on the Torah's commandment to remove se'or from our homes."}
+2025-11-26 20:59:56 | INFO     | __main__:search_sources:269 | Claude suggested 13 sources (before Sefaria lookup)
+2025-11-26 20:59:56 | DEBUG    | __main__:search_sources:270 | Suggested sources: [{'ref': 'Shemot 12:15', 'category': 'Chumash'}, {'ref': 'Shemot 12:19', 'category': 'Chumash'}, {'ref': 'Devarim 16:4', 'category': 'Chumash'}, {'ref': 'Pesachim 2a', 'category': 'Gemara'}, {'ref': 'Pesachim 7b', 'category': 'Gemara'}, {'ref': 'Pesachim 8a', 'category': 'Gemara'}, {'ref': 'Pesachim 4a', 'category': 'Gemara'}, {'ref': 'Rashi on Pesachim 7b', 'category': 'Rishonim'}, {'ref': "Rambam Mishneh Torah, Hilchot Chametz U'Matzah 2:3", 'category': 'Rishonim'}, {'ref': 'Tur, Orach Chayim 431', 'category': 'Rishonim'}, {'ref': 'Shulchan Arukh, Orach Chayim 431:1', 'category': 'Shulchan Aruch'}, {'ref': 'Shulchan Arukh, Orach Chayim 432:1', 'category': 'Shulchan Aruch'}, {'ref': 'Mishnah Berurah 431:1', 'category': 'Acharonim'}]
+2025-11-26 20:59:56 | INFO     | __main__:search_sources:286 | [1/13] Looking up: 'Shemot 12:15' (category: Chumash)
+2025-11-26 20:59:56 | INFO     | __main__:fetch_text_from_sefaria:168 | Fetching text from Sefaria for ref='Shemot 12:15'
+2025-11-26 20:59:56 | DEBUG    | __main__:fetch_text_from_sefaria:174 | Sefaria API URL: https://www.sefaria.org/api/v3/texts/Shemot%2012:15
+2025-11-26 20:59:56 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.started host='www.sefaria.org' port=443 local_address=None timeout=10.0 socket_options=None
+2025-11-26 20:59:56 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063D92190>
+2025-11-26 20:59:56 | DEBUG    | httpcore.connection:atrace:87 | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000024063D035C0> server_hostname='www.sefaria.org' timeout=10.0
+2025-11-26 20:59:56 | DEBUG    | httpcore.connection:atrace:87 | start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063D40E20>
+2025-11-26 20:59:56 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.started request=<Request [b'GET']>
+2025-11-26 20:59:56 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.complete
+2025-11-26 20:59:56 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.started request=<Request [b'GET']>
+2025-11-26 20:59:56 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.complete
+2025-11-26 20:59:56 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.started request=<Request [b'GET']>
+2025-11-26 20:59:57 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Thu, 27 Nov 2025 01:59:56 GMT'), (b'Content-Type', b'application/json; charset=utf-8'), (b'Vary', b'Accept-Language, Cookie'), (b'Content-Language', b'en'), (b'url', b'/api/v3/texts/Shemot%2012:15'), (b'x-varnish', b'468356853'), (b'Age', b'0'), (b'Report-To', b'{"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=TskDnnHUIxV9BCvLUbHYv5bQYlxIr0DiLqpcTIVF5PJrgDIb2m0BbDuN5i7Y62XQiyvcHel1a%2Bz9GZU3W6FlfOpmSBWLyiG7eBuzpS%2BY"}]}'), (b'access-control-allow-origin', b'*'), (b'strict-transport-security', b'max-age=2592000'), (b'cf-cache-status', b'DYNAMIC'), (b'Nel', b'{"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}'), (b'Content-Encoding', b'gzip'), (b'CF-RAY', b'9a4e07706893c3ab-EWR'), (b'Cache-Status', b'node2.env2.dc1.us.techloq.com;detail=no-cache'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Referrer-Policy', b'no-referrer-when-downgrade')])
+2025-11-26 20:59:57 | INFO     | httpx:_send_single_request:1740 | HTTP Request: GET https://www.sefaria.org/api/v3/texts/Shemot%2012:15 "HTTP/1.1 200 OK"
+2025-11-26 20:59:57 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.started request=<Request [b'GET']>
+2025-11-26 20:59:57 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.complete
+2025-11-26 20:59:57 | DEBUG    | httpcore.http11:atrace:87 | response_closed.started
+2025-11-26 20:59:57 | DEBUG    | httpcore.http11:atrace:87 | response_closed.complete
+2025-11-26 20:59:57 | INFO     | __main__:fetch_text_from_sefaria:180 | Sefaria HTTP status code: 200 for ref='Shemot 12:15'
+2025-11-26 20:59:57 | DEBUG    | __main__:fetch_text_from_sefaria:183 | Sefaria response data keys: ['versions', 'available_versions', 'ref', 'heRef', 'sections', 'toSections', 'sectionRef', 'heSectionRef', 'firstAvailableSectionRef', 'isSpanning', 'next', 'prev', 'title', 'book', 'heTitle', 'primary_category', 'type', 'indexTitle', 'categories', 'heIndexTitle', 'isComplex', 'isDependant', 'order', 'collectiveTitle', 'heCollectiveTitle', 'alts', 'lengths', 'length', 'textDepth', 'sectionNames', 'addressTypes', 'titleVariants', 'heTitleVariants', 'index_offsets_by_depth', 'warnings']
+2025-11-26 20:59:57 | DEBUG    | __main__:fetch_text_from_sefaria:191 | Sefaria returned 1 version(s) for 'Shemot 12:15'
+2025-11-26 20:59:57 | DEBUG    | __main__:fetch_text_from_sefaria:197 | Version 0: lang=he, title=Miqra according to the Masorah, text_type=str
+2025-11-26 20:59:57 | DEBUG    | __main__:fetch_text_from_sefaria:205 | Hebrew text captured: 235 characters
+2025-11-26 20:59:57 | INFO     | __main__:fetch_text_from_sefaria:210 | Sefaria fetch result for 'Shemot 12:15': he_text=yes en_text=no
+2025-11-26 20:59:57 | DEBUG    | httpcore.connection:atrace:87 | close.started
+2025-11-26 20:59:57 | DEBUG    | httpcore.connection:atrace:87 | close.complete
+2025-11-26 20:59:57 | INFO     | __main__:search_sources:292 | [1/13] Sefaria lookup result for 'Shemot 12:15': found=True
+2025-11-26 20:59:57 | DEBUG    | __main__:search_sources:304 | Added source: Shemot 12:15, has_he=True, has_en=False
+2025-11-26 20:59:57 | INFO     | __main__:search_sources:286 | [2/13] Looking up: 'Shemot 12:19' (category: Chumash)
+2025-11-26 20:59:57 | INFO     | __main__:fetch_text_from_sefaria:168 | Fetching text from Sefaria for ref='Shemot 12:19'
+2025-11-26 20:59:57 | DEBUG    | __main__:fetch_text_from_sefaria:174 | Sefaria API URL: https://www.sefaria.org/api/v3/texts/Shemot%2012:19
+2025-11-26 20:59:57 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.started host='www.sefaria.org' port=443 local_address=None timeout=10.0 socket_options=None
+2025-11-26 20:59:57 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063D80FA0>
+2025-11-26 20:59:57 | DEBUG    | httpcore.connection:atrace:87 | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000024063D03640> server_hostname='www.sefaria.org' timeout=10.0
+2025-11-26 20:59:57 | DEBUG    | httpcore.connection:atrace:87 | start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063D80E20>
+2025-11-26 20:59:57 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.started request=<Request [b'GET']>
+2025-11-26 20:59:57 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.complete
+2025-11-26 20:59:57 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.started request=<Request [b'GET']>
+2025-11-26 20:59:57 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.complete
+2025-11-26 20:59:57 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.started request=<Request [b'GET']>
+2025-11-26 20:59:57 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Thu, 27 Nov 2025 01:59:56 GMT'), (b'Content-Type', b'application/json; charset=utf-8'), (b'Vary', b'Accept-Language, Cookie'), (b'Content-Language', b'en'), (b'url', b'/api/v3/texts/Shemot%2012:19'), (b'x-varnish', b'464429141'), (b'Age', b'0'), (b'Report-To', b'{"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=S9NAcQ7rf2ExdnvxHv5%2FbRDzlD%2BEhSGbVflz8q0s2Sq1%2FMMxjd8kJ7MxdqrRtUhyNEVsQKJJQwO3PpiwjA10QE%2FRvdN3B064Sn8pkraE"}]}'), (b'access-control-allow-origin', b'*'), (b'strict-transport-security', b'max-age=2592000'), (b'cf-cache-status', b'DYNAMIC'), (b'Nel', b'{"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}'), (b'Content-Encoding', b'gzip'), (b'CF-RAY', b'9a4e0772b8355e4b-EWR'), (b'Cache-Status', b'node2.env2.dc1.us.techloq.com;detail=no-cache'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Referrer-Policy', b'no-referrer-when-downgrade')])
+2025-11-26 20:59:57 | INFO     | httpx:_send_single_request:1740 | HTTP Request: GET https://www.sefaria.org/api/v3/texts/Shemot%2012:19 "HTTP/1.1 200 OK"
+2025-11-26 20:59:57 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.started request=<Request [b'GET']>
+2025-11-26 20:59:57 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.complete
+2025-11-26 20:59:57 | DEBUG    | httpcore.http11:atrace:87 | response_closed.started
+2025-11-26 20:59:57 | DEBUG    | httpcore.http11:atrace:87 | response_closed.complete
+2025-11-26 20:59:57 | INFO     | __main__:fetch_text_from_sefaria:180 | Sefaria HTTP status code: 200 for ref='Shemot 12:19'
+2025-11-26 20:59:57 | DEBUG    | __main__:fetch_text_from_sefaria:183 | Sefaria response data keys: ['versions', 'available_versions', 'ref', 'heRef', 'sections', 'toSections', 'sectionRef', 'heSectionRef', 'firstAvailableSectionRef', 'isSpanning', 'next', 'prev', 'title', 'book', 'heTitle', 'primary_category', 'type', 'indexTitle', 'categories', 'heIndexTitle', 'isComplex', 'isDependant', 'order', 'collectiveTitle', 'heCollectiveTitle', 'alts', 'lengths', 'length', 'textDepth', 'sectionNames', 'addressTypes', 'titleVariants', 'heTitleVariants', 'index_offsets_by_depth', 'warnings']
+2025-11-26 20:59:57 | DEBUG    | __main__:fetch_text_from_sefaria:191 | Sefaria returned 1 version(s) for 'Shemot 12:19'
+2025-11-26 20:59:57 | DEBUG    | __main__:fetch_text_from_sefaria:197 | Version 0: lang=he, title=Miqra according to the Masorah, text_type=str
+2025-11-26 20:59:57 | DEBUG    | __main__:fetch_text_from_sefaria:205 | Hebrew text captured: 184 characters
+2025-11-26 20:59:57 | INFO     | __main__:fetch_text_from_sefaria:210 | Sefaria fetch result for 'Shemot 12:19': he_text=yes en_text=no
+2025-11-26 20:59:57 | DEBUG    | httpcore.connection:atrace:87 | close.started
+2025-11-26 20:59:57 | DEBUG    | httpcore.connection:atrace:87 | close.complete
+2025-11-26 20:59:57 | INFO     | __main__:search_sources:292 | [2/13] Sefaria lookup result for 'Shemot 12:19': found=True
+2025-11-26 20:59:57 | DEBUG    | __main__:search_sources:304 | Added source: Shemot 12:19, has_he=True, has_en=False
+2025-11-26 20:59:57 | INFO     | __main__:search_sources:286 | [3/13] Looking up: 'Devarim 16:4' (category: Chumash)
+2025-11-26 20:59:57 | INFO     | __main__:fetch_text_from_sefaria:168 | Fetching text from Sefaria for ref='Devarim 16:4'
+2025-11-26 20:59:57 | DEBUG    | __main__:fetch_text_from_sefaria:174 | Sefaria API URL: https://www.sefaria.org/api/v3/texts/Devarim%2016:4
+2025-11-26 20:59:57 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.started host='www.sefaria.org' port=443 local_address=None timeout=10.0 socket_options=None
+2025-11-26 20:59:57 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063D71D00>
+2025-11-26 20:59:57 | DEBUG    | httpcore.connection:atrace:87 | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000024063D03B40> server_hostname='www.sefaria.org' timeout=10.0
+2025-11-26 20:59:57 | DEBUG    | httpcore.connection:atrace:87 | start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063D88340>
+2025-11-26 20:59:57 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.started request=<Request [b'GET']>
+2025-11-26 20:59:57 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.complete
+2025-11-26 20:59:57 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.started request=<Request [b'GET']>
+2025-11-26 20:59:57 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.complete
+2025-11-26 20:59:57 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.started request=<Request [b'GET']>
+2025-11-26 20:59:57 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Thu, 27 Nov 2025 01:59:57 GMT'), (b'Content-Type', b'application/json; charset=utf-8'), (b'Vary', b'Accept-Language, Cookie'), (b'Content-Language', b'en'), (b'url', b'/api/v3/texts/Devarim%2016:4'), (b'x-varnish', b'456270998'), (b'Age', b'0'), (b'Report-To', b'{"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=Md9J8WTGrGj6UwI5%2BCg3wQ9oiHYqfdzB65hEtWLNqcFNjt%2B7sJ3D0WycsJMFmD59cpicKRIfUakrcT5tj7jD6hxpyJQJkTak1XyZ1Dg1"}]}'), (b'access-control-allow-origin', b'*'), (b'strict-transport-security', b'max-age=2592000'), (b'cf-cache-status', b'DYNAMIC'), (b'Nel', b'{"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}'), (b'Content-Encoding', b'gzip'), (b'CF-RAY', b'9a4e077519804391-EWR'), (b'Cache-Status', b'node2.env2.dc1.us.techloq.com;detail=no-cache'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Referrer-Policy', b'no-referrer-when-downgrade')])
+2025-11-26 20:59:57 | INFO     | httpx:_send_single_request:1740 | HTTP Request: GET https://www.sefaria.org/api/v3/texts/Devarim%2016:4 "HTTP/1.1 200 OK"
+2025-11-26 20:59:57 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.started request=<Request [b'GET']>
+2025-11-26 20:59:57 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.complete
+2025-11-26 20:59:57 | DEBUG    | httpcore.http11:atrace:87 | response_closed.started
+2025-11-26 20:59:57 | DEBUG    | httpcore.http11:atrace:87 | response_closed.complete
+2025-11-26 20:59:57 | INFO     | __main__:fetch_text_from_sefaria:180 | Sefaria HTTP status code: 200 for ref='Devarim 16:4'
+2025-11-26 20:59:57 | DEBUG    | __main__:fetch_text_from_sefaria:183 | Sefaria response data keys: ['versions', 'available_versions', 'ref', 'heRef', 'sections', 'toSections', 'sectionRef', 'heSectionRef', 'firstAvailableSectionRef', 'isSpanning', 'next', 'prev', 'title', 'book', 'heTitle', 'primary_category', 'type', 'indexTitle', 'categories', 'heIndexTitle', 'isComplex', 'isDependant', 'order', 'collectiveTitle', 'heCollectiveTitle', 'alts', 'lengths', 'length', 'textDepth', 'sectionNames', 'addressTypes', 'titleVariants', 'heTitleVariants', 'index_offsets_by_depth', 'warnings']
+2025-11-26 20:59:57 | DEBUG    | __main__:fetch_text_from_sefaria:191 | Sefaria returned 1 version(s) for 'Devarim 16:4'
+2025-11-26 20:59:57 | DEBUG    | __main__:fetch_text_from_sefaria:197 | Version 0: lang=he, title=Miqra according to the Masorah, text_type=str
+2025-11-26 20:59:57 | DEBUG    | __main__:fetch_text_from_sefaria:205 | Hebrew text captured: 156 characters
+2025-11-26 20:59:57 | INFO     | __main__:fetch_text_from_sefaria:210 | Sefaria fetch result for 'Devarim 16:4': he_text=yes en_text=no
+2025-11-26 20:59:57 | DEBUG    | httpcore.connection:atrace:87 | close.started
+2025-11-26 20:59:57 | DEBUG    | httpcore.connection:atrace:87 | close.complete
+2025-11-26 20:59:57 | INFO     | __main__:search_sources:292 | [3/13] Sefaria lookup result for 'Devarim 16:4': found=True
+2025-11-26 20:59:57 | DEBUG    | __main__:search_sources:304 | Added source: Devarim 16:4, has_he=True, has_en=False
+2025-11-26 20:59:57 | INFO     | __main__:search_sources:286 | [4/13] Looking up: 'Pesachim 2a' (category: Gemara)
+2025-11-26 20:59:57 | INFO     | __main__:fetch_text_from_sefaria:168 | Fetching text from Sefaria for ref='Pesachim 2a'
+2025-11-26 20:59:57 | DEBUG    | __main__:fetch_text_from_sefaria:174 | Sefaria API URL: https://www.sefaria.org/api/v3/texts/Pesachim%202a
+2025-11-26 20:59:57 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.started host='www.sefaria.org' port=443 local_address=None timeout=10.0 socket_options=None
+2025-11-26 20:59:57 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063C72AC0>
+2025-11-26 20:59:57 | DEBUG    | httpcore.connection:atrace:87 | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000024063D036C0> server_hostname='www.sefaria.org' timeout=10.0
+2025-11-26 20:59:58 | DEBUG    | httpcore.connection:atrace:87 | start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063C72EB0>
+2025-11-26 20:59:58 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.started request=<Request [b'GET']>
+2025-11-26 20:59:58 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.complete
+2025-11-26 20:59:58 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.started request=<Request [b'GET']>
+2025-11-26 20:59:58 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.complete
+2025-11-26 20:59:58 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.started request=<Request [b'GET']>
+2025-11-26 20:59:58 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Thu, 27 Nov 2025 01:59:57 GMT'), (b'Content-Type', b'application/json; charset=utf-8'), (b'Vary', b'Accept-Language, Cookie'), (b'Content-Language', b'en'), (b'url', b'/api/v3/texts/Pesachim%202a'), (b'x-varnish', b'466947872'), (b'Age', b'0'), (b'Report-To', b'{"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=WfiquEQrluhBnoYjGJ4GE79Tduv%2F%2BJ1ZS7QyVoA7ZTa9dm9NwxH1btihxLm1FMu7L%2BvNCMZxofx989k24B9l4njo7dQwMo7UeuG66sEa"}]}'), (b'access-control-allow-origin', b'*'), (b'strict-transport-security', b'max-age=2592000'), (b'cf-cache-status', b'DYNAMIC'), (b'Nel', b'{"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}'), (b'Content-Encoding', b'gzip'), (b'CF-RAY', b'9a4e077799960d33-EWR'), (b'Cache-Status', b'node2.env2.dc1.us.techloq.com;detail=no-cache'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Referrer-Policy', b'no-referrer-when-downgrade')])
+2025-11-26 20:59:58 | INFO     | httpx:_send_single_request:1740 | HTTP Request: GET https://www.sefaria.org/api/v3/texts/Pesachim%202a "HTTP/1.1 200 OK"
+2025-11-26 20:59:58 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.started request=<Request [b'GET']>
+2025-11-26 20:59:58 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.complete
+2025-11-26 20:59:58 | DEBUG    | httpcore.http11:atrace:87 | response_closed.started
+2025-11-26 20:59:58 | DEBUG    | httpcore.http11:atrace:87 | response_closed.complete
+2025-11-26 20:59:58 | INFO     | __main__:fetch_text_from_sefaria:180 | Sefaria HTTP status code: 200 for ref='Pesachim 2a'
+2025-11-26 20:59:58 | DEBUG    | __main__:fetch_text_from_sefaria:183 | Sefaria response data keys: ['versions', 'available_versions', 'ref', 'heRef', 'sections', 'toSections', 'sectionRef', 'heSectionRef', 'firstAvailableSectionRef', 'isSpanning', 'next', 'prev', 'title', 'book', 'heTitle', 'primary_category', 'type', 'indexTitle', 'categories', 'heIndexTitle', 'isComplex', 'isDependant', 'order', 'collectiveTitle', 'heCollectiveTitle', 'alts', 'lengths', 'length', 'textDepth', 'sectionNames', 'addressTypes', 'titleVariants', 'heTitleVariants', 'index_offsets_by_depth', 'warnings']
+2025-11-26 20:59:58 | DEBUG    | __main__:fetch_text_from_sefaria:191 | Sefaria returned 1 version(s) for 'Pesachim 2a'
+2025-11-26 20:59:58 | DEBUG    | __main__:fetch_text_from_sefaria:197 | Version 0: lang=he, title=William Davidson Edition - Vocalized Aramaic, text_type=list
+2025-11-26 20:59:58 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 9 items -> 2124 characters
+2025-11-26 20:59:58 | DEBUG    | __main__:fetch_text_from_sefaria:205 | Hebrew text captured: 2124 characters
+2025-11-26 20:59:58 | INFO     | __main__:fetch_text_from_sefaria:210 | Sefaria fetch result for 'Pesachim 2a': he_text=yes en_text=no
+2025-11-26 20:59:58 | DEBUG    | httpcore.connection:atrace:87 | close.started
+2025-11-26 20:59:58 | DEBUG    | httpcore.connection:atrace:87 | close.complete
+2025-11-26 20:59:58 | INFO     | __main__:search_sources:292 | [4/13] Sefaria lookup result for 'Pesachim 2a': found=True
+2025-11-26 20:59:58 | DEBUG    | __main__:search_sources:304 | Added source: Pesachim 2a, has_he=True, has_en=False
+2025-11-26 20:59:58 | INFO     | __main__:search_sources:286 | [5/13] Looking up: 'Pesachim 7b' (category: Gemara)
+2025-11-26 20:59:58 | INFO     | __main__:fetch_text_from_sefaria:168 | Fetching text from Sefaria for ref='Pesachim 7b'
+2025-11-26 20:59:58 | DEBUG    | __main__:fetch_text_from_sefaria:174 | Sefaria API URL: https://www.sefaria.org/api/v3/texts/Pesachim%207b
+2025-11-26 20:59:58 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.started host='www.sefaria.org' port=443 local_address=None timeout=10.0 socket_options=None
+2025-11-26 20:59:58 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063D882E0>
+2025-11-26 20:59:58 | DEBUG    | httpcore.connection:atrace:87 | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000024063C01B40> server_hostname='www.sefaria.org' timeout=10.0
+2025-11-26 20:59:58 | DEBUG    | httpcore.connection:atrace:87 | start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063D71B80>
+2025-11-26 20:59:58 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.started request=<Request [b'GET']>
+2025-11-26 20:59:58 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.complete
+2025-11-26 20:59:58 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.started request=<Request [b'GET']>
+2025-11-26 20:59:58 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.complete
+2025-11-26 20:59:58 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.started request=<Request [b'GET']>
+2025-11-26 20:59:58 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Thu, 27 Nov 2025 01:59:57 GMT'), (b'Content-Type', b'application/json; charset=utf-8'), (b'Vary', b'Accept-Language, Cookie'), (b'Content-Language', b'en'), (b'url', b'/api/v3/texts/Pesachim%207b'), (b'x-varnish', b'467408521'), (b'Age', b'0'), (b'Report-To', b'{"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=ZZFR5Dw0jNhEauAgz8G2Id02ei2Qzm43MMC7DkJYKACYFUqhGhTi0jtFTKhJSIUYre8UgFeAOfyAG5c9Lu81QlopGHlIZiPe5AK6Tyiz"}]}'), (b'access-control-allow-origin', b'*'), (b'strict-transport-security', b'max-age=2592000'), (b'cf-cache-status', b'DYNAMIC'), (b'Nel', b'{"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}'), (b'Content-Encoding', b'gzip'), (b'CF-RAY', b'9a4e0779e8c18dd6-EWR'), (b'Cache-Status', b'node2.env2.dc1.us.techloq.com;detail=no-cache'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Referrer-Policy', b'no-referrer-when-downgrade')])
+2025-11-26 20:59:58 | INFO     | httpx:_send_single_request:1740 | HTTP Request: GET https://www.sefaria.org/api/v3/texts/Pesachim%207b "HTTP/1.1 200 OK"
+2025-11-26 20:59:58 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.started request=<Request [b'GET']>
+2025-11-26 20:59:58 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.complete
+2025-11-26 20:59:58 | DEBUG    | httpcore.http11:atrace:87 | response_closed.started
+2025-11-26 20:59:58 | DEBUG    | httpcore.http11:atrace:87 | response_closed.complete
+2025-11-26 20:59:58 | INFO     | __main__:fetch_text_from_sefaria:180 | Sefaria HTTP status code: 200 for ref='Pesachim 7b'
+2025-11-26 20:59:58 | DEBUG    | __main__:fetch_text_from_sefaria:183 | Sefaria response data keys: ['versions', 'available_versions', 'ref', 'heRef', 'sections', 'toSections', 'sectionRef', 'heSectionRef', 'firstAvailableSectionRef', 'isSpanning', 'next', 'prev', 'title', 'book', 'heTitle', 'primary_category', 'type', 'indexTitle', 'categories', 'heIndexTitle', 'isComplex', 'isDependant', 'order', 'collectiveTitle', 'heCollectiveTitle', 'alts', 'lengths', 'length', 'textDepth', 'sectionNames', 'addressTypes', 'titleVariants', 'heTitleVariants', 'index_offsets_by_depth', 'warnings']
+2025-11-26 20:59:58 | DEBUG    | __main__:fetch_text_from_sefaria:191 | Sefaria returned 1 version(s) for 'Pesachim 7b'
+2025-11-26 20:59:58 | DEBUG    | __main__:fetch_text_from_sefaria:197 | Version 0: lang=he, title=William Davidson Edition - Vocalized Aramaic, text_type=list
+2025-11-26 20:59:58 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 19 items -> 3605 characters
+2025-11-26 20:59:58 | DEBUG    | __main__:fetch_text_from_sefaria:205 | Hebrew text captured: 3605 characters
+2025-11-26 20:59:58 | INFO     | __main__:fetch_text_from_sefaria:210 | Sefaria fetch result for 'Pesachim 7b': he_text=yes en_text=no
+2025-11-26 20:59:58 | DEBUG    | httpcore.connection:atrace:87 | close.started
+2025-11-26 20:59:58 | DEBUG    | httpcore.connection:atrace:87 | close.complete
+2025-11-26 20:59:58 | INFO     | __main__:search_sources:292 | [5/13] Sefaria lookup result for 'Pesachim 7b': found=True
+2025-11-26 20:59:58 | DEBUG    | __main__:search_sources:304 | Added source: Pesachim 7b, has_he=True, has_en=False
+2025-11-26 20:59:58 | INFO     | __main__:search_sources:286 | [6/13] Looking up: 'Pesachim 8a' (category: Gemara)
+2025-11-26 20:59:58 | INFO     | __main__:fetch_text_from_sefaria:168 | Fetching text from Sefaria for ref='Pesachim 8a'
+2025-11-26 20:59:58 | DEBUG    | __main__:fetch_text_from_sefaria:174 | Sefaria API URL: https://www.sefaria.org/api/v3/texts/Pesachim%208a
+2025-11-26 20:59:58 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.started host='www.sefaria.org' port=443 local_address=None timeout=10.0 socket_options=None
+2025-11-26 20:59:58 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063D7FE20>
+2025-11-26 20:59:58 | DEBUG    | httpcore.connection:atrace:87 | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000024063D210C0> server_hostname='www.sefaria.org' timeout=10.0
+2025-11-26 20:59:58 | DEBUG    | httpcore.connection:atrace:87 | start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063D80A90>
+2025-11-26 20:59:58 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.started request=<Request [b'GET']>
+2025-11-26 20:59:58 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.complete
+2025-11-26 20:59:58 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.started request=<Request [b'GET']>
+2025-11-26 20:59:58 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.complete
+2025-11-26 20:59:58 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.started request=<Request [b'GET']>
+2025-11-26 20:59:58 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Thu, 27 Nov 2025 01:59:58 GMT'), (b'Content-Type', b'application/json; charset=utf-8'), (b'Vary', b'Accept-Language, Cookie'), (b'Content-Language', b'en'), (b'url', b'/api/v3/texts/Pesachim%208a'), (b'x-varnish', b'468290012'), (b'Age', b'0'), (b'Report-To', b'{"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=ppJYnYM7Ue4VZSBe6O6VQZcqpy5dnG2dcIWal%2Bwi2xo%2BrMzNSJ5GigEHvfy6FwhcvA1wDDfpKs65XK%2FpfxcN3rzjvm%2BOkBTj3CFpOxww"}]}'), (b'access-control-allow-origin', b'*'), (b'strict-transport-security', b'max-age=2592000'), (b'cf-cache-status', b'DYNAMIC'), (b'Nel', b'{"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}'), (b'Content-Encoding', b'gzip'), (b'CF-RAY', b'9a4e077bdedd7206-EWR'), (b'Cache-Status', b'node2.env2.dc1.us.techloq.com;detail=no-cache'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Referrer-Policy', b'no-referrer-when-downgrade')])
+2025-11-26 20:59:58 | INFO     | httpx:_send_single_request:1740 | HTTP Request: GET https://www.sefaria.org/api/v3/texts/Pesachim%208a "HTTP/1.1 200 OK"
+2025-11-26 20:59:58 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.started request=<Request [b'GET']>
+2025-11-26 20:59:58 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.complete
+2025-11-26 20:59:58 | DEBUG    | httpcore.http11:atrace:87 | response_closed.started
+2025-11-26 20:59:58 | DEBUG    | httpcore.http11:atrace:87 | response_closed.complete
+2025-11-26 20:59:58 | INFO     | __main__:fetch_text_from_sefaria:180 | Sefaria HTTP status code: 200 for ref='Pesachim 8a'
+2025-11-26 20:59:58 | DEBUG    | __main__:fetch_text_from_sefaria:183 | Sefaria response data keys: ['versions', 'available_versions', 'ref', 'heRef', 'sections', 'toSections', 'sectionRef', 'heSectionRef', 'firstAvailableSectionRef', 'isSpanning', 'next', 'prev', 'title', 'book', 'heTitle', 'primary_category', 'type', 'indexTitle', 'categories', 'heIndexTitle', 'isComplex', 'isDependant', 'order', 'collectiveTitle', 'heCollectiveTitle', 'alts', 'lengths', 'length', 'textDepth', 'sectionNames', 'addressTypes', 'titleVariants', 'heTitleVariants', 'index_offsets_by_depth', 'warnings']
+2025-11-26 20:59:58 | DEBUG    | __main__:fetch_text_from_sefaria:191 | Sefaria returned 1 version(s) for 'Pesachim 8a'
+2025-11-26 20:59:58 | DEBUG    | __main__:fetch_text_from_sefaria:197 | Version 0: lang=he, title=William Davidson Edition - Vocalized Aramaic, text_type=list
+2025-11-26 20:59:58 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 18 items -> 3613 characters
+2025-11-26 20:59:58 | DEBUG    | __main__:fetch_text_from_sefaria:205 | Hebrew text captured: 3613 characters
+2025-11-26 20:59:58 | INFO     | __main__:fetch_text_from_sefaria:210 | Sefaria fetch result for 'Pesachim 8a': he_text=yes en_text=no
+2025-11-26 20:59:58 | DEBUG    | httpcore.connection:atrace:87 | close.started
+2025-11-26 20:59:58 | DEBUG    | httpcore.connection:atrace:87 | close.complete
+2025-11-26 20:59:58 | INFO     | __main__:search_sources:292 | [6/13] Sefaria lookup result for 'Pesachim 8a': found=True
+2025-11-26 20:59:58 | DEBUG    | __main__:search_sources:304 | Added source: Pesachim 8a, has_he=True, has_en=False
+2025-11-26 20:59:58 | INFO     | __main__:search_sources:286 | [7/13] Looking up: 'Pesachim 4a' (category: Gemara)
+2025-11-26 20:59:58 | INFO     | __main__:fetch_text_from_sefaria:168 | Fetching text from Sefaria for ref='Pesachim 4a'
+2025-11-26 20:59:58 | DEBUG    | __main__:fetch_text_from_sefaria:174 | Sefaria API URL: https://www.sefaria.org/api/v3/texts/Pesachim%204a
+2025-11-26 20:59:58 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.started host='www.sefaria.org' port=443 local_address=None timeout=10.0 socket_options=None
+2025-11-26 20:59:58 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063C894F0>
+2025-11-26 20:59:58 | DEBUG    | httpcore.connection:atrace:87 | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000024063D21040> server_hostname='www.sefaria.org' timeout=10.0
+2025-11-26 20:59:59 | DEBUG    | httpcore.connection:atrace:87 | start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063D40F40>
+2025-11-26 20:59:59 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.started request=<Request [b'GET']>
+2025-11-26 20:59:59 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.complete
+2025-11-26 20:59:59 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.started request=<Request [b'GET']>
+2025-11-26 20:59:59 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.complete
+2025-11-26 20:59:59 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.started request=<Request [b'GET']>
+2025-11-26 20:59:59 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Thu, 27 Nov 2025 01:59:58 GMT'), (b'Content-Type', b'application/json; charset=utf-8'), (b'Vary', b'Accept-Language, Cookie'), (b'Content-Language', b'en'), (b'url', b'/api/v3/texts/Pesachim%204a'), (b'x-varnish', b'467798757'), (b'Age', b'0'), (b'Report-To', b'{"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=%2BCmVeBUsjBgrQ%2BA9MjqtdT5o6oYT%2BFDZDd9yJtmfJO1p%2BuiON6pnMoDzC8P7PEfHphyGki7iWVj3kizxLuK7og1b50gIbYimKiw%2B4BJ4"}]}'), (b'access-control-allow-origin', b'*'), (b'strict-transport-security', b'max-age=2592000'), (b'cf-cache-status', b'DYNAMIC'), (b'Nel', b'{"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}'), (b'Content-Encoding', b'gzip'), (b'CF-RAY', b'9a4e077e1fa83356-EWR'), (b'Cache-Status', b'node2.env2.dc1.us.techloq.com;detail=no-cache'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Referrer-Policy', b'no-referrer-when-downgrade')])
+2025-11-26 20:59:59 | INFO     | httpx:_send_single_request:1740 | HTTP Request: GET https://www.sefaria.org/api/v3/texts/Pesachim%204a "HTTP/1.1 200 OK"
+2025-11-26 20:59:59 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.started request=<Request [b'GET']>
+2025-11-26 20:59:59 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.complete
+2025-11-26 20:59:59 | DEBUG    | httpcore.http11:atrace:87 | response_closed.started
+2025-11-26 20:59:59 | DEBUG    | httpcore.http11:atrace:87 | response_closed.complete
+2025-11-26 20:59:59 | INFO     | __main__:fetch_text_from_sefaria:180 | Sefaria HTTP status code: 200 for ref='Pesachim 4a'
+2025-11-26 20:59:59 | DEBUG    | __main__:fetch_text_from_sefaria:183 | Sefaria response data keys: ['versions', 'available_versions', 'ref', 'heRef', 'sections', 'toSections', 'sectionRef', 'heSectionRef', 'firstAvailableSectionRef', 'isSpanning', 'next', 'prev', 'title', 'book', 'heTitle', 'primary_category', 'type', 'indexTitle', 'categories', 'heIndexTitle', 'isComplex', 'isDependant', 'order', 'collectiveTitle', 'heCollectiveTitle', 'alts', 'lengths', 'length', 'textDepth', 'sectionNames', 'addressTypes', 'titleVariants', 'heTitleVariants', 'index_offsets_by_depth', 'warnings']
+2025-11-26 20:59:59 | DEBUG    | __main__:fetch_text_from_sefaria:191 | Sefaria returned 1 version(s) for 'Pesachim 4a'
+2025-11-26 20:59:59 | DEBUG    | __main__:fetch_text_from_sefaria:197 | Version 0: lang=he, title=William Davidson Edition - Vocalized Aramaic, text_type=list
+2025-11-26 20:59:59 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 12 items -> 2706 characters
+2025-11-26 20:59:59 | DEBUG    | __main__:fetch_text_from_sefaria:205 | Hebrew text captured: 2706 characters
+2025-11-26 20:59:59 | INFO     | __main__:fetch_text_from_sefaria:210 | Sefaria fetch result for 'Pesachim 4a': he_text=yes en_text=no
+2025-11-26 20:59:59 | DEBUG    | httpcore.connection:atrace:87 | close.started
+2025-11-26 20:59:59 | DEBUG    | httpcore.connection:atrace:87 | close.complete
+2025-11-26 20:59:59 | INFO     | __main__:search_sources:292 | [7/13] Sefaria lookup result for 'Pesachim 4a': found=True
+2025-11-26 20:59:59 | DEBUG    | __main__:search_sources:304 | Added source: Pesachim 4a, has_he=True, has_en=False
+2025-11-26 20:59:59 | INFO     | __main__:search_sources:286 | [8/13] Looking up: 'Rashi on Pesachim 7b' (category: Rishonim)
+2025-11-26 20:59:59 | INFO     | __main__:fetch_text_from_sefaria:168 | Fetching text from Sefaria for ref='Rashi on Pesachim 7b'
+2025-11-26 20:59:59 | DEBUG    | __main__:fetch_text_from_sefaria:174 | Sefaria API URL: https://www.sefaria.org/api/v3/texts/Rashi%20on%20Pesachim%207b
+2025-11-26 20:59:59 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.started host='www.sefaria.org' port=443 local_address=None timeout=10.0 socket_options=None
+2025-11-26 20:59:59 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063D8F7F0>
+2025-11-26 20:59:59 | DEBUG    | httpcore.connection:atrace:87 | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000024063D21DC0> server_hostname='www.sefaria.org' timeout=10.0
+2025-11-26 20:59:59 | DEBUG    | httpcore.connection:atrace:87 | start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063D913D0>
+2025-11-26 20:59:59 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.started request=<Request [b'GET']>
+2025-11-26 20:59:59 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.complete
+2025-11-26 20:59:59 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.started request=<Request [b'GET']>
+2025-11-26 20:59:59 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.complete
+2025-11-26 20:59:59 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.started request=<Request [b'GET']>
+2025-11-26 20:59:59 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Thu, 27 Nov 2025 01:59:58 GMT'), (b'Content-Type', b'application/json; charset=utf-8'), (b'Vary', b'Accept-Language, Cookie'), (b'Content-Language', b'en'), (b'url', b'/api/v3/texts/Rashi%20on%20Pesachim%207b'), (b'x-varnish', b'466786788'), (b'Age', b'0'), (b'Report-To', b'{"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=0xQ1qHdHgsu0Kdk%2FLHoTT2LvDUwqpLGggJtxTDQvKhl48VzKfolDzpm2V5AF2uX84qD9h9z9GYN9QXbTqknrzpdWZJr0%2BG5hhyiilg%3D%3D"}]}'), (b'access-control-allow-origin', b'*'), (b'strict-transport-security', b'max-age=2592000'), (b'cf-cache-status', b'DYNAMIC'), (b'Nel', b'{"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}'), (b'Content-Encoding', b'gzip'), (b'CF-RAY', b'9a4e07804ec761ce-EWR'), (b'Cache-Status', b'node2.env2.dc1.us.techloq.com;detail=no-cache'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Referrer-Policy', b'no-referrer-when-downgrade')])
+2025-11-26 20:59:59 | INFO     | httpx:_send_single_request:1740 | HTTP Request: GET https://www.sefaria.org/api/v3/texts/Rashi%20on%20Pesachim%207b "HTTP/1.1 200 OK"
+2025-11-26 20:59:59 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.started request=<Request [b'GET']>
+2025-11-26 20:59:59 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.complete
+2025-11-26 20:59:59 | DEBUG    | httpcore.http11:atrace:87 | response_closed.started
+2025-11-26 20:59:59 | DEBUG    | httpcore.http11:atrace:87 | response_closed.complete
+2025-11-26 20:59:59 | INFO     | __main__:fetch_text_from_sefaria:180 | Sefaria HTTP status code: 200 for ref='Rashi on Pesachim 7b'
+2025-11-26 20:59:59 | DEBUG    | __main__:fetch_text_from_sefaria:183 | Sefaria response data keys: ['versions', 'available_versions', 'ref', 'heRef', 'sections', 'toSections', 'sectionRef', 'heSectionRef', 'firstAvailableSectionRef', 'isSpanning', 'next', 'prev', 'title', 'book', 'heTitle', 'primary_category', 'type', 'indexTitle', 'categories', 'heIndexTitle', 'isComplex', 'isDependant', 'order', 'collectiveTitle', 'heCollectiveTitle', 'alts', 'lengths', 'length', 'textDepth', 'sectionNames', 'addressTypes', 'titleVariants', 'heTitleVariants', 'index_offsets_by_depth', 'warnings']
+2025-11-26 20:59:59 | DEBUG    | __main__:fetch_text_from_sefaria:191 | Sefaria returned 1 version(s) for 'Rashi on Pesachim 7b'
+2025-11-26 20:59:59 | DEBUG    | __main__:fetch_text_from_sefaria:197 | Version 0: lang=he, title=Vilna Edition, text_type=list
+2025-11-26 20:59:59 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 1 items -> 96 characters
+2025-11-26 20:59:59 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 0 items -> 0 characters
+2025-11-26 20:59:59 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 4 items -> 428 characters
+2025-11-26 20:59:59 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 0 items -> 0 characters
+2025-11-26 20:59:59 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 1 items -> 60 characters
+2025-11-26 20:59:59 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 1 items -> 24 characters
+2025-11-26 20:59:59 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 0 items -> 0 characters
+2025-11-26 20:59:59 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 1 items -> 111 characters
+2025-11-26 20:59:59 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 1 items -> 49 characters
+2025-11-26 20:59:59 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 1 items -> 36 characters
+2025-11-26 20:59:59 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 1 items -> 175 characters
+2025-11-26 20:59:59 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 0 items -> 0 characters
+2025-11-26 20:59:59 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 3 items -> 316 characters
+2025-11-26 20:59:59 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 0 items -> 0 characters
+2025-11-26 20:59:59 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 1 items -> 87 characters
+2025-11-26 20:59:59 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 1 items -> 101 characters
+2025-11-26 20:59:59 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 0 items -> 0 characters
+2025-11-26 20:59:59 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 2 items -> 158 characters
+2025-11-26 20:59:59 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 18 items -> 1658 characters
+2025-11-26 20:59:59 | DEBUG    | __main__:fetch_text_from_sefaria:205 | Hebrew text captured: 1658 characters
+2025-11-26 20:59:59 | INFO     | __main__:fetch_text_from_sefaria:210 | Sefaria fetch result for 'Rashi on Pesachim 7b': he_text=yes en_text=no
+2025-11-26 20:59:59 | DEBUG    | httpcore.connection:atrace:87 | close.started
+2025-11-26 20:59:59 | DEBUG    | httpcore.connection:atrace:87 | close.complete
+2025-11-26 20:59:59 | INFO     | __main__:search_sources:292 | [8/13] Sefaria lookup result for 'Rashi on Pesachim 7b': found=True
+2025-11-26 20:59:59 | DEBUG    | __main__:search_sources:304 | Added source: Rashi on Pesachim 7b, has_he=True, has_en=False
+2025-11-26 20:59:59 | INFO     | __main__:search_sources:286 | [9/13] Looking up: 'Rambam Mishneh Torah, Hilchot Chametz U'Matzah 2:3' (category: Rishonim)
+2025-11-26 20:59:59 | INFO     | __main__:fetch_text_from_sefaria:168 | Fetching text from Sefaria for ref='Rambam Mishneh Torah, Hilchot Chametz U'Matzah 2:3'
+2025-11-26 20:59:59 | DEBUG    | __main__:fetch_text_from_sefaria:174 | Sefaria API URL: https://www.sefaria.org/api/v3/texts/Rambam%20Mishneh%20Torah,%20Hilchot%20Chametz%20U'Matzah%202:3
+2025-11-26 20:59:59 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.started host='www.sefaria.org' port=443 local_address=None timeout=10.0 socket_options=None
+2025-11-26 20:59:59 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063DA0280>
+2025-11-26 20:59:59 | DEBUG    | httpcore.connection:atrace:87 | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000024063D21F40> server_hostname='www.sefaria.org' timeout=10.0
+2025-11-26 20:59:59 | DEBUG    | httpcore.connection:atrace:87 | start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063D9EAF0>
+2025-11-26 20:59:59 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.started request=<Request [b'GET']>
+2025-11-26 20:59:59 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.complete
+2025-11-26 20:59:59 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.started request=<Request [b'GET']>
+2025-11-26 20:59:59 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.complete
+2025-11-26 20:59:59 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.started request=<Request [b'GET']>
+2025-11-26 20:59:59 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.complete return_value=(b'HTTP/1.1', 404, b'Not Found', [(b'Date', b'Thu, 27 Nov 2025 01:59:59 GMT'), (b'Content-Type', b'application/json; charset=utf-8'), (b'Vary', b'Accept-Language, Cookie'), (b'Content-Language', b'en'), (b'url', b"/api/v3/texts/Rambam%20Mishneh%20Torah,%20Hilchot%20Chametz%20U'Matzah%202:3"), (b'x-varnish', b'464327286'), (b'Age', b'0'), (b'access-control-allow-origin', b'*'), (b'strict-transport-security', b'max-age=2592000'), (b'cf-cache-status', b'DYNAMIC'), (b'Nel', b'{"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}'), (b'Report-To', b'{"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=Rs6he5i6I9W2TN%2Fhj1pITL7dpKvdKHUCjXcu4P%2BWI8%2BWtxSlk2tUZP1EIX774%2Bq4TQczY4KxHabFKKfdVJZ59FYCIZgs0qiAh1tWctGJ"}]}'), (b'Content-Encoding', b'gzip'), (b'CF-RAY', b'9a4e07824e378c6d-EWR'), (b'Cache-Status', b'node2.env2.dc1.us.techloq.com;detail=no-cache'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Referrer-Policy', b'no-referrer-when-downgrade')])
+2025-11-26 20:59:59 | INFO     | httpx:_send_single_request:1740 | HTTP Request: GET https://www.sefaria.org/api/v3/texts/Rambam%20Mishneh%20Torah,%20Hilchot%20Chametz%20U'Matzah%202:3 "HTTP/1.1 404 Not Found"
+2025-11-26 20:59:59 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.started request=<Request [b'GET']>
+2025-11-26 20:59:59 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.complete
+2025-11-26 20:59:59 | DEBUG    | httpcore.http11:atrace:87 | response_closed.started
+2025-11-26 20:59:59 | DEBUG    | httpcore.http11:atrace:87 | response_closed.complete
+2025-11-26 20:59:59 | INFO     | __main__:fetch_text_from_sefaria:180 | Sefaria HTTP status code: 404 for ref='Rambam Mishneh Torah, Hilchot Chametz U'Matzah 2:3'
+2025-11-26 20:59:59 | WARNING  | __main__:fetch_text_from_sefaria:219 | Sefaria returned status 404 for 'Rambam Mishneh Torah, Hilchot Chametz U'Matzah 2:3'
+2025-11-26 20:59:59 | DEBUG    | __main__:fetch_text_from_sefaria:220 | Response content: {"error": "Could not find title in reference: Rambam Mishneh Torah, Hilchot Chametz U'Matzah 2.3"}
+2025-11-26 20:59:59 | DEBUG    | httpcore.connection:atrace:87 | close.started
+2025-11-26 20:59:59 | DEBUG    | httpcore.connection:atrace:87 | close.complete
+2025-11-26 20:59:59 | INFO     | __main__:search_sources:292 | [9/13] Sefaria lookup result for 'Rambam Mishneh Torah, Hilchot Chametz U'Matzah 2:3': found=False
+2025-11-26 20:59:59 | DEBUG    | __main__:search_sources:304 | Added source: Rambam Mishneh Torah, Hilchot Chametz U'Matzah 2:3, has_he=False, has_en=False
+2025-11-26 20:59:59 | INFO     | __main__:search_sources:286 | [10/13] Looking up: 'Tur, Orach Chayim 431' (category: Rishonim)
+2025-11-26 20:59:59 | INFO     | __main__:fetch_text_from_sefaria:168 | Fetching text from Sefaria for ref='Tur, Orach Chayim 431'
+2025-11-26 20:59:59 | DEBUG    | __main__:fetch_text_from_sefaria:174 | Sefaria API URL: https://www.sefaria.org/api/v3/texts/Tur,%20Orach%20Chayim%20431
+2025-11-26 20:59:59 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.started host='www.sefaria.org' port=443 local_address=None timeout=10.0 socket_options=None
+2025-11-26 20:59:59 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063DA2910>
+2025-11-26 20:59:59 | DEBUG    | httpcore.connection:atrace:87 | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000024063D21140> server_hostname='www.sefaria.org' timeout=10.0
+2025-11-26 21:00:00 | DEBUG    | httpcore.connection:atrace:87 | start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063DA26A0>
+2025-11-26 21:00:00 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.started request=<Request [b'GET']>
+2025-11-26 21:00:00 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.complete
+2025-11-26 21:00:00 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.started request=<Request [b'GET']>
+2025-11-26 21:00:00 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.complete
+2025-11-26 21:00:00 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.started request=<Request [b'GET']>
+2025-11-26 21:00:00 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Thu, 27 Nov 2025 01:59:59 GMT'), (b'Content-Type', b'application/json; charset=utf-8'), (b'Vary', b'Accept-Language, Cookie'), (b'Content-Language', b'en'), (b'url', b'/api/v3/texts/Tur,%20Orach%20Chayim%20431'), (b'x-varnish', b'456271090'), (b'Age', b'0'), (b'Report-To', b'{"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=pDlwwcJDMH8eJZb%2FkCKX9CH6PT9hoUTiXD%2FCD%2FzZLg68GN%2FxwBX3fcz5YZa%2F9C1pTBBBlBoa%2BhpRLX5L8lW3IvnBCunD2HNtWker4w%3D%3D"}]}'), (b'access-control-allow-origin', b'*'), (b'strict-transport-security', b'max-age=2592000'), (b'cf-cache-status', b'DYNAMIC'), (b'Nel', b'{"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}'), (b'Content-Encoding', b'gzip'), (b'CF-RAY', b'9a4e07843a87fd66-EWR'), (b'Cache-Status', b'node2.env2.dc1.us.techloq.com;detail=no-cache'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Referrer-Policy', b'no-referrer-when-downgrade')])
+2025-11-26 21:00:00 | INFO     | httpx:_send_single_request:1740 | HTTP Request: GET https://www.sefaria.org/api/v3/texts/Tur,%20Orach%20Chayim%20431 "HTTP/1.1 200 OK"
+2025-11-26 21:00:00 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.started request=<Request [b'GET']>
+2025-11-26 21:00:00 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.complete
+2025-11-26 21:00:00 | DEBUG    | httpcore.http11:atrace:87 | response_closed.started
+2025-11-26 21:00:00 | DEBUG    | httpcore.http11:atrace:87 | response_closed.complete
+2025-11-26 21:00:00 | INFO     | __main__:fetch_text_from_sefaria:180 | Sefaria HTTP status code: 200 for ref='Tur, Orach Chayim 431'
+2025-11-26 21:00:00 | DEBUG    | __main__:fetch_text_from_sefaria:183 | Sefaria response data keys: ['versions', 'available_versions', 'ref', 'heRef', 'sections', 'toSections', 'sectionRef', 'heSectionRef', 'firstAvailableSectionRef', 'isSpanning', 'next', 'prev', 'title', 'book', 'heTitle', 'primary_category', 'type', 'indexTitle', 'categories', 'heIndexTitle', 'isComplex', 'isDependant', 'order', 'collectiveTitle', 'heCollectiveTitle', 'alts', 'textDepth', 'sectionNames', 'addressTypes', 'titleVariants', 'heTitleVariants', 'index_offsets_by_depth', 'warnings']
+2025-11-26 21:00:00 | DEBUG    | __main__:fetch_text_from_sefaria:191 | Sefaria returned 1 version(s) for 'Tur, Orach Chayim 431'
+2025-11-26 21:00:00 | DEBUG    | __main__:fetch_text_from_sefaria:197 | Version 0: lang=he, title=Orach Chaim, Vilna, 1923, text_type=list
+2025-11-26 21:00:00 | DEBUG    | __main__:flatten_text:237 | Flattened text array: 1 items -> 2685 characters
+2025-11-26 21:00:00 | DEBUG    | __main__:fetch_text_from_sefaria:205 | Hebrew text captured: 2685 characters
+2025-11-26 21:00:00 | INFO     | __main__:fetch_text_from_sefaria:210 | Sefaria fetch result for 'Tur, Orach Chayim 431': he_text=yes en_text=no
+2025-11-26 21:00:00 | DEBUG    | httpcore.connection:atrace:87 | close.started
+2025-11-26 21:00:00 | DEBUG    | httpcore.connection:atrace:87 | close.complete
+2025-11-26 21:00:00 | INFO     | __main__:search_sources:292 | [10/13] Sefaria lookup result for 'Tur, Orach Chayim 431': found=True
+2025-11-26 21:00:00 | DEBUG    | __main__:search_sources:304 | Added source: Tur, Orach Chayim 431, has_he=True, has_en=False
+2025-11-26 21:00:00 | INFO     | __main__:search_sources:286 | [11/13] Looking up: 'Shulchan Arukh, Orach Chayim 431:1' (category: Shulchan Aruch)
+2025-11-26 21:00:00 | INFO     | __main__:fetch_text_from_sefaria:168 | Fetching text from Sefaria for ref='Shulchan Arukh, Orach Chayim 431:1'
+2025-11-26 21:00:00 | DEBUG    | __main__:fetch_text_from_sefaria:174 | Sefaria API URL: https://www.sefaria.org/api/v3/texts/Shulchan%20Arukh,%20Orach%20Chayim%20431:1
+2025-11-26 21:00:00 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.started host='www.sefaria.org' port=443 local_address=None timeout=10.0 socket_options=None
+2025-11-26 21:00:00 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063DA2FD0>
+2025-11-26 21:00:00 | DEBUG    | httpcore.connection:atrace:87 | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000024063D03B40> server_hostname='www.sefaria.org' timeout=10.0
+2025-11-26 21:00:00 | DEBUG    | httpcore.connection:atrace:87 | start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063DA2FA0>
+2025-11-26 21:00:00 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.started request=<Request [b'GET']>
+2025-11-26 21:00:00 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.complete
+2025-11-26 21:00:00 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.started request=<Request [b'GET']>
+2025-11-26 21:00:00 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.complete
+2025-11-26 21:00:00 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.started request=<Request [b'GET']>
+2025-11-26 21:00:00 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Thu, 27 Nov 2025 01:59:59 GMT'), (b'Content-Type', b'application/json; charset=utf-8'), (b'Vary', b'Accept-Language, Cookie'), (b'Content-Language', b'en'), (b'url', b'/api/v3/texts/Shulchan%20Arukh,%20Orach%20Chayim%20431:1'), (b'x-varnish', b'456271099'), (b'Age', b'0'), (b'Report-To', b'{"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=3UOFZuBzEoAfmzguSMw2%2FGTqHKAGUc3viH4DT%2Bo2U4DuxUE23MowOd7DKgcFTJnnHRuYaLglvPfB7LzfT9nLRJWjJc9HkY4%2FdPP59usI"}]}'), (b'access-control-allow-origin', b'*'), (b'strict-transport-security', b'max-age=2592000'), (b'cf-cache-status', b'DYNAMIC'), (b'Nel', b'{"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}'), (b'Content-Encoding', b'gzip'), (b'CF-RAY', b'9a4e078688885a29-EWR'), (b'Cache-Status', b'node2.env2.dc1.us.techloq.com;detail=no-cache'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Referrer-Policy', b'no-referrer-when-downgrade')])
+2025-11-26 21:00:00 | INFO     | httpx:_send_single_request:1740 | HTTP Request: GET https://www.sefaria.org/api/v3/texts/Shulchan%20Arukh,%20Orach%20Chayim%20431:1 "HTTP/1.1 200 OK"
+2025-11-26 21:00:00 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.started request=<Request [b'GET']>
+2025-11-26 21:00:00 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.complete
+2025-11-26 21:00:00 | DEBUG    | httpcore.http11:atrace:87 | response_closed.started
+2025-11-26 21:00:00 | DEBUG    | httpcore.http11:atrace:87 | response_closed.complete
+2025-11-26 21:00:00 | INFO     | __main__:fetch_text_from_sefaria:180 | Sefaria HTTP status code: 200 for ref='Shulchan Arukh, Orach Chayim 431:1'
+2025-11-26 21:00:00 | DEBUG    | __main__:fetch_text_from_sefaria:183 | Sefaria response data keys: ['versions', 'available_versions', 'ref', 'heRef', 'sections', 'toSections', 'sectionRef', 'heSectionRef', 'firstAvailableSectionRef', 'isSpanning', 'next', 'prev', 'title', 'book', 'heTitle', 'primary_category', 'type', 'indexTitle', 'categories', 'heIndexTitle', 'isComplex', 'isDependant', 'order', 'collectiveTitle', 'heCollectiveTitle', 'alts', 'lengths', 'length', 'textDepth', 'sectionNames', 'addressTypes', 'titleVariants', 'heTitleVariants', 'index_offsets_by_depth', 'warnings']
+2025-11-26 21:00:00 | DEBUG    | __main__:fetch_text_from_sefaria:191 | Sefaria returned 1 version(s) for 'Shulchan Arukh, Orach Chayim 431:1'
+2025-11-26 21:00:00 | DEBUG    | __main__:fetch_text_from_sefaria:197 | Version 0: lang=he, title=Maginei Eretz: Shulchan Aruch Orach Chaim, Lemberg, 1893, text_type=str
+2025-11-26 21:00:00 | DEBUG    | __main__:fetch_text_from_sefaria:205 | Hebrew text captured: 663 characters
+2025-11-26 21:00:00 | INFO     | __main__:fetch_text_from_sefaria:210 | Sefaria fetch result for 'Shulchan Arukh, Orach Chayim 431:1': he_text=yes en_text=no
+2025-11-26 21:00:00 | DEBUG    | httpcore.connection:atrace:87 | close.started
+2025-11-26 21:00:00 | DEBUG    | httpcore.connection:atrace:87 | close.complete
+2025-11-26 21:00:00 | INFO     | __main__:search_sources:292 | [11/13] Sefaria lookup result for 'Shulchan Arukh, Orach Chayim 431:1': found=True
+2025-11-26 21:00:00 | DEBUG    | __main__:search_sources:304 | Added source: Shulchan Arukh, Orach Chayim 431:1, has_he=True, has_en=False
+2025-11-26 21:00:00 | INFO     | __main__:search_sources:286 | [12/13] Looking up: 'Shulchan Arukh, Orach Chayim 432:1' (category: Shulchan Aruch)
+2025-11-26 21:00:00 | INFO     | __main__:fetch_text_from_sefaria:168 | Fetching text from Sefaria for ref='Shulchan Arukh, Orach Chayim 432:1'
+2025-11-26 21:00:00 | DEBUG    | __main__:fetch_text_from_sefaria:174 | Sefaria API URL: https://www.sefaria.org/api/v3/texts/Shulchan%20Arukh,%20Orach%20Chayim%20432:1
+2025-11-26 21:00:00 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.started host='www.sefaria.org' port=443 local_address=None timeout=10.0 socket_options=None
+2025-11-26 21:00:00 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063DA08B0>
+2025-11-26 21:00:00 | DEBUG    | httpcore.connection:atrace:87 | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000024063D21040> server_hostname='www.sefaria.org' timeout=10.0
+2025-11-26 21:00:00 | DEBUG    | httpcore.connection:atrace:87 | start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063DA0580>
+2025-11-26 21:00:00 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.started request=<Request [b'GET']>
+2025-11-26 21:00:00 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.complete
+2025-11-26 21:00:00 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.started request=<Request [b'GET']>
+2025-11-26 21:00:00 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.complete
+2025-11-26 21:00:00 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.started request=<Request [b'GET']>
+2025-11-26 21:00:01 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Thu, 27 Nov 2025 02:00:00 GMT'), (b'Content-Type', b'application/json; charset=utf-8'), (b'Vary', b'Accept-Language, Cookie'), (b'Content-Language', b'en'), (b'url', b'/api/v3/texts/Shulchan%20Arukh,%20Orach%20Chayim%20432:1'), (b'x-varnish', b'456271120'), (b'Age', b'0'), (b'Report-To', b'{"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=6e0XvVoioR%2BEbRPBffXp4u%2FnhvoiqrjkxJwsIYSrMFBgtzcOnMQbc1W6ecFXONGWU5MT5bRqUIlZ6xWL%2Fgt7PUNBMWFwhdRm6S10UUeJ"}]}'), (b'access-control-allow-origin', b'*'), (b'strict-transport-security', b'max-age=2592000'), (b'cf-cache-status', b'DYNAMIC'), (b'Nel', b'{"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}'), (b'Content-Encoding', b'gzip'), (b'CF-RAY', b'9a4e0788ecea10f3-EWR'), (b'Cache-Status', b'node2.env2.dc1.us.techloq.com;detail=no-cache'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Referrer-Policy', b'no-referrer-when-downgrade')])
+2025-11-26 21:00:01 | INFO     | httpx:_send_single_request:1740 | HTTP Request: GET https://www.sefaria.org/api/v3/texts/Shulchan%20Arukh,%20Orach%20Chayim%20432:1 "HTTP/1.1 200 OK"
+2025-11-26 21:00:01 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.started request=<Request [b'GET']>
+2025-11-26 21:00:01 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.complete
+2025-11-26 21:00:01 | DEBUG    | httpcore.http11:atrace:87 | response_closed.started
+2025-11-26 21:00:01 | DEBUG    | httpcore.http11:atrace:87 | response_closed.complete
+2025-11-26 21:00:01 | INFO     | __main__:fetch_text_from_sefaria:180 | Sefaria HTTP status code: 200 for ref='Shulchan Arukh, Orach Chayim 432:1'
+2025-11-26 21:00:01 | DEBUG    | __main__:fetch_text_from_sefaria:183 | Sefaria response data keys: ['versions', 'available_versions', 'ref', 'heRef', 'sections', 'toSections', 'sectionRef', 'heSectionRef', 'firstAvailableSectionRef', 'isSpanning', 'next', 'prev', 'title', 'book', 'heTitle', 'primary_category', 'type', 'indexTitle', 'categories', 'heIndexTitle', 'isComplex', 'isDependant', 'order', 'collectiveTitle', 'heCollectiveTitle', 'alts', 'lengths', 'length', 'textDepth', 'sectionNames', 'addressTypes', 'titleVariants', 'heTitleVariants', 'index_offsets_by_depth', 'warnings']
+2025-11-26 21:00:01 | DEBUG    | __main__:fetch_text_from_sefaria:191 | Sefaria returned 1 version(s) for 'Shulchan Arukh, Orach Chayim 432:1'
+2025-11-26 21:00:01 | DEBUG    | __main__:fetch_text_from_sefaria:197 | Version 0: lang=he, title=Maginei Eretz: Shulchan Aruch Orach Chaim, Lemberg, 1893, text_type=str
+2025-11-26 21:00:01 | DEBUG    | __main__:fetch_text_from_sefaria:205 | Hebrew text captured: 1605 characters
+2025-11-26 21:00:01 | INFO     | __main__:fetch_text_from_sefaria:210 | Sefaria fetch result for 'Shulchan Arukh, Orach Chayim 432:1': he_text=yes en_text=no
+2025-11-26 21:00:01 | DEBUG    | httpcore.connection:atrace:87 | close.started
+2025-11-26 21:00:01 | DEBUG    | httpcore.connection:atrace:87 | close.complete
+2025-11-26 21:00:01 | INFO     | __main__:search_sources:292 | [12/13] Sefaria lookup result for 'Shulchan Arukh, Orach Chayim 432:1': found=True
+2025-11-26 21:00:01 | DEBUG    | __main__:search_sources:304 | Added source: Shulchan Arukh, Orach Chayim 432:1, has_he=True, has_en=False
+2025-11-26 21:00:01 | INFO     | __main__:search_sources:286 | [13/13] Looking up: 'Mishnah Berurah 431:1' (category: Acharonim)
+2025-11-26 21:00:01 | INFO     | __main__:fetch_text_from_sefaria:168 | Fetching text from Sefaria for ref='Mishnah Berurah 431:1'
+2025-11-26 21:00:01 | DEBUG    | __main__:fetch_text_from_sefaria:174 | Sefaria API URL: https://www.sefaria.org/api/v3/texts/Mishnah%20Berurah%20431:1
+2025-11-26 21:00:01 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.started host='www.sefaria.org' port=443 local_address=None timeout=10.0 socket_options=None
+2025-11-26 21:00:01 | DEBUG    | httpcore.connection:atrace:87 | connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x00000240620DE250>
+2025-11-26 21:00:01 | DEBUG    | httpcore.connection:atrace:87 | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000024063D035C0> server_hostname='www.sefaria.org' timeout=10.0
+2025-11-26 21:00:01 | DEBUG    | httpcore.connection:atrace:87 | start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000024063C1BEB0>
+2025-11-26 21:00:01 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.started request=<Request [b'GET']>
+2025-11-26 21:00:01 | DEBUG    | httpcore.http11:atrace:87 | send_request_headers.complete
+2025-11-26 21:00:01 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.started request=<Request [b'GET']>
+2025-11-26 21:00:01 | DEBUG    | httpcore.http11:atrace:87 | send_request_body.complete
+2025-11-26 21:00:01 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.started request=<Request [b'GET']>
+2025-11-26 21:00:01 | DEBUG    | httpcore.http11:atrace:87 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Thu, 27 Nov 2025 02:00:00 GMT'), (b'Content-Type', b'application/json; charset=utf-8'), (b'Vary', b'Accept-Language, Cookie'), (b'Content-Language', b'en'), (b'url', b'/api/v3/texts/Mishnah%20Berurah%20431:1'), (b'x-varnish', b'456271129'), (b'Age', b'0'), (b'Report-To', b'{"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=q%2F%2FuHNWnNkSD851YEp5s%2FwmPqYhAs8WGfsDjAmMzUDmloI%2BvrrO9JaRP0gzp4OUwMHTD%2FZn7D%2ByXTDwa5PsRrUQorH%2BoVJQpttplpQ%3D%3D"}]}'), (b'access-control-allow-origin', b'*'), (b'strict-transport-security', b'max-age=2592000'), (b'cf-cache-status', b'DYNAMIC'), (b'Nel', b'{"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}'), (b'Content-Encoding', b'gzip'), (b'CF-RAY', b'9a4e078b496d0f8c-EWR'), (b'Cache-Status', b'node2.env2.dc1.us.techloq.com;detail=no-cache'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Referrer-Policy', b'no-referrer-when-downgrade')])
+2025-11-26 21:00:01 | INFO     | httpx:_send_single_request:1740 | HTTP Request: GET https://www.sefaria.org/api/v3/texts/Mishnah%20Berurah%20431:1 "HTTP/1.1 200 OK"
+2025-11-26 21:00:01 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.started request=<Request [b'GET']>
+2025-11-26 21:00:01 | DEBUG    | httpcore.http11:atrace:87 | receive_response_body.complete
+2025-11-26 21:00:01 | DEBUG    | httpcore.http11:atrace:87 | response_closed.started
+2025-11-26 21:00:01 | DEBUG    | httpcore.http11:atrace:87 | response_closed.complete
+2025-11-26 21:00:01 | INFO     | __main__:fetch_text_from_sefaria:180 | Sefaria HTTP status code: 200 for ref='Mishnah Berurah 431:1'
+2025-11-26 21:00:01 | DEBUG    | __main__:fetch_text_from_sefaria:183 | Sefaria response data keys: ['versions', 'available_versions', 'ref', 'heRef', 'sections', 'toSections', 'sectionRef', 'heSectionRef', 'firstAvailableSectionRef', 'isSpanning', 'next', 'prev', 'title', 'book', 'heTitle', 'primary_category', 'type', 'indexTitle', 'categories', 'heIndexTitle', 'isComplex', 'isDependant', 'order', 'collectiveTitle', 'heCollectiveTitle', 'alts', 'textDepth', 'sectionNames', 'addressTypes', 'titleVariants', 'heTitleVariants', 'index_offsets_by_depth', 'warnings']
+2025-11-26 21:00:01 | DEBUG    | __main__:fetch_text_from_sefaria:191 | Sefaria returned 1 version(s) for 'Mishnah Berurah 431:1'
+2025-11-26 21:00:01 | DEBUG    | __main__:fetch_text_from_sefaria:197 | Version 0: lang=he, title=On Your Way, text_type=str
+2025-11-26 21:00:01 | DEBUG    | __main__:fetch_text_from_sefaria:205 | Hebrew text captured: 117 characters
+2025-11-26 21:00:01 | INFO     | __main__:fetch_text_from_sefaria:210 | Sefaria fetch result for 'Mishnah Berurah 431:1': he_text=yes en_text=no
+2025-11-26 21:00:01 | DEBUG    | httpcore.connection:atrace:87 | close.started
+2025-11-26 21:00:01 | DEBUG    | httpcore.connection:atrace:87 | close.complete
+2025-11-26 21:00:01 | INFO     | __main__:search_sources:292 | [13/13] Sefaria lookup result for 'Mishnah Berurah 431:1': found=True
+2025-11-26 21:00:01 | DEBUG    | __main__:search_sources:304 | Added source: Mishnah Berurah 431:1, has_he=True, has_en=False
+2025-11-26 21:00:01 | WARNING  | __main__:search_sources:312 | Filtered out 1 invalid/unfound sources
+2025-11-26 21:00:01 | DEBUG    | __main__:search_sources:314 | Invalid references: ["Rambam Mishneh Torah, Hilchot Chametz U'Matzah 2:3"]
+2025-11-26 21:00:01 | INFO     | __main__:search_sources:316 | ================================================================================
+2025-11-26 21:00:01 | INFO     | __main__:search_sources:317 | Request complete: Returning 12 valid sources to client
+2025-11-26 21:00:01 | INFO     | __main__:search_sources:318 | ================================================================================
