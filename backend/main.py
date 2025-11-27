@@ -1,73 +1,86 @@
 """
-Marei Mekomos - Backend API
+Marei Mekomos Backend API
 
-This file implements a small FastAPI backend that does two main things:
-1) Asks an AI (Claude) to suggest relevant "marei mekomos" (Torah source
-    references) for a given topic.
-2) Looks up those suggested references on Sefaria (via its public API) and
-    returns the found texts (Hebrew / English) together with the references.
-
-The edits in this file add beginner-friendly comments (for dummies) and
-print statements so you can see what the server is doing when you run it.
-
-Read this file top-to-bottom and follow the printed messages in the console
-to understand the runtime flow.
+This FastAPI server connects Claude AI (for suggesting sources) with Sefaria's API
+(for fetching actual Torah texts), allowing users to search for Torah sources on any topic.
 """
 
+import os
+import json
+import httpx
+import html
+import re
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import httpx
-import os
-import json
 from anthropic import Anthropic
+from typing import List, Optional
+
+# Import our logging configuration
 from logging_config import setup_logging, get_logger
 
-# Initialize logging system
+# Initialize logging
 setup_logging()
 logger = get_logger(__name__)
 
-app = FastAPI(title="Marei Mekomos API")
 
-# Allow React frontend to connect
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Initialize Anthropic client - reads ANTHROPIC_API_KEY from environment
-# Initialize the Anthropic client.
-# NOTE for beginners: The Anthropic library expects an environment variable
-# named `ANTHROPIC_API_KEY` to be set. If you haven't set it, the client may
-# raise an error when used. We keep the constructor call here like before.
-client = Anthropic()
-
+# =============================
+# PYDANTIC MODELS (data validation)
+# =============================
 
 class TopicRequest(BaseModel):
+    """Request model for /search endpoint"""
     topic: str
-    level: str = "intermediate"  # beginner, intermediate, advanced
+    level: str = "intermediate"  # beginner | intermediate | advanced
 
 
 class SourceReference(BaseModel):
-    ref: str           # Sefaria reference format, e.g., "Shemot 20:12"
-    category: str      # e.g., "Chumash", "Gemara", "Rishonim"
+    """A single source reference with text"""
+    ref: str
+    category: str
     he_text: str = ""
     en_text: str = ""
-    he_ref: str = ""   # Hebrew reference
+    he_ref: str = ""
     sefaria_url: str = ""
     found: bool = True
 
 
 class MareiMekomosResponse(BaseModel):
+    """Response model for /search endpoint"""
     topic: str
-    sources: list[SourceReference]
+    sources: List[SourceReference]
     summary: str = ""
 
 
-# The prompt that tells Claude how to find sources
+# =============================
+# FASTAPI APP SETUP
+# =============================
+
+app = FastAPI(title="Marei Mekomos API", version="1.0.0")
+
+# Allow requests from frontend running on localhost:5173
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Initialize Anthropic client
+api_key = os.environ.get("ANTHROPIC_API_KEY")
+if not api_key:
+    logger.critical("ANTHROPIC_API_KEY not found in environment variables!")
+    raise RuntimeError("ANTHROPIC_API_KEY environment variable is required. "
+                       "Set it before running the server.")
+client = Anthropic(api_key=api_key)
+logger.info("Anthropic client initialized successfully")
+
+
+# =============================
+# SYSTEM PROMPT FOR CLAUDE
+# =============================
+
 CLAUDE_SYSTEM_PROMPT = """You are a Torah scholar assistant that helps find marei mekomos (source references) for any Torah topic.
 
 When given a topic, you will return a JSON object with relevant sources organized by category.
@@ -97,25 +110,57 @@ Return your response as valid JSON in this exact format:
 Only return the JSON, no other text."""
 
 
+# =============================
+# HELPER FUNCTIONS
+# =============================
+
+def clean_html_from_text(text: str) -> str:
+    """
+    Clean HTML entities and tags from Sefaria text.
+
+    Sefaria returns text with HTML formatting like:
+    - HTML entities: &thinsp; &nbsp; etc.
+    - HTML tags: <b>, <i>, <br>, etc.
+
+    This function removes them to get clean plain text.
+    """
+    if not text:
+        return text
+
+    # First, decode HTML entities like &thinsp; &nbsp; etc.
+    text = html.unescape(text)
+
+    # Then remove all HTML tags like <b>, <i>, <br>, etc.
+    text = re.sub(r'<[^>]+>', '', text)
+
+    # Clean up any extra whitespace that might have been created
+    text = re.sub(r'\s+', ' ', text).strip()
+
+    return text
+
+
 async def get_sources_from_claude(topic: str, level: str) -> dict:
     """
-    Ask Claude (the AI) to suggest relevant sources for a topic.
+    Ask Claude to suggest relevant Torah sources for a given topic.
 
-    Returns a dict with keys `sources` (a list) and `summary` (string).
+    Returns a dict like {"sources": [...], "summary": "..."}
     """
+    logger.info(
+        f"Requesting sources from Claude for topic='{topic}' level='{level}'")
 
-    logger.info(f"Requesting sources from Claude for topic='{topic}' level='{level}'")
-
-    level_instruction = {
-        "beginner": "Focus on basic sources: main pesukim and a key gemara or two.",
-        "intermediate": "Include Chumash, main sugyos in Gemara, key Rishonim, and Shulchan Aruch.",
-        "advanced": "Be comprehensive: include lesser-known sources, multiple Rishonim, and Acharonim."
+    # Customize the prompt based on user's level
+    level_instructions = {
+        "beginner": "Return 3-5 basic sources: primarily Chumash and well-known pesukim.",
+        "intermediate": "Return 5-15 sources: Include Chumash, main sugyos in Gemara, key Rishonim, and Shulchan Aruch.",
+        "advanced": "Return 10-20 sources: Include lesser-known gemaras, multiple Rishonim, Acharonim, and nuanced applications."
     }
 
+    instruction = level_instructions.get(
+        level, level_instructions["intermediate"])
     user_message = (
         f"Find marei mekomos for the topic: {topic}\n\n"
-        f"Level: {level} - {level_instruction.get(level, level_instruction['intermediate'])}\n\n"
-        "Return 5-15 sources depending on the level, organized by category."
+        f"Level: {level} - {instruction}\n\n"
+        f"Return 5-15 sources depending on the level, organized by category."
     )
 
     logger.debug(f"User message to Claude: {user_message}")
@@ -134,9 +179,11 @@ async def get_sources_from_claude(topic: str, level: str) -> dict:
         raise
 
     response_text = response.content[0].text
-    logger.debug(f"Claude response text length: {len(response_text)} characters")
+    logger.debug(
+        f"Claude response text length: {len(response_text)} characters")
     preview = response_text[:800].replace("\n", " ")
-    logger.info(f"Claude response preview: {preview}{'...' if len(response_text) > 800 else ''}")
+    logger.info(
+        f"Claude response preview: {preview}{'...' if len(response_text) > 800 else ''}")
 
     # Parse JSON from the AI response (it may be wrapped in markdown fences)
     try:
@@ -149,11 +196,13 @@ async def get_sources_from_claude(topic: str, level: str) -> dict:
             response_text = response_text.split("```")[1].split("```")[0]
 
         parsed_data = json.loads(response_text.strip())
-        logger.info(f"Successfully parsed Claude response. Found {len(parsed_data.get('sources', []))} sources")
+        logger.info(
+            f"Successfully parsed Claude response. Found {len(parsed_data.get('sources', []))} sources")
         logger.debug(f"Parsed data: {parsed_data}")
         return parsed_data
     except json.JSONDecodeError as e:
-        logger.error(f"JSON parse error while decoding Claude response: {e}", exc_info=True)
+        logger.error(
+            f"JSON parse error while decoding Claude response: {e}", exc_info=True)
         logger.error(f"Full response text (raw): {original_text}")
         return {"sources": [], "summary": "Error parsing sources from Claude"}
 
@@ -177,10 +226,12 @@ async def fetch_text_from_sefaria(ref: str) -> dict:
         try:
             response = await client.get(url, timeout=10.0)
 
-            logger.info(f"Sefaria HTTP status code: {response.status_code} for ref='{ref}'")
+            logger.info(
+                f"Sefaria HTTP status code: {response.status_code} for ref='{ref}'")
             if response.status_code == 200:
                 data = response.json()
-                logger.debug(f"Sefaria response data keys: {list(data.keys())}")
+                logger.debug(
+                    f"Sefaria response data keys: {list(data.keys())}")
 
                 # Extract Hebrew and English text
                 he_text = ""
@@ -188,13 +239,15 @@ async def fetch_text_from_sefaria(ref: str) -> dict:
                 he_ref = data.get("heRef", "")
 
                 versions = data.get("versions", [])
-                logger.debug(f"Sefaria returned {len(versions)} version(s) for '{ref}'")
+                logger.debug(
+                    f"Sefaria returned {len(versions)} version(s) for '{ref}'")
 
                 for idx, version in enumerate(versions):
                     lang = version.get("language", "")
                     text = version.get("text", "")
                     version_title = version.get("versionTitle", "")
-                    logger.debug(f"Version {idx}: lang={lang}, title={version_title}, text_type={type(text).__name__}")
+                    logger.debug(
+                        f"Version {idx}: lang={lang}, title={version_title}, text_type={type(text).__name__}")
 
                     # Handle nested arrays (common in Sefaria responses)
                     if isinstance(text, list):
@@ -202,12 +255,24 @@ async def fetch_text_from_sefaria(ref: str) -> dict:
 
                     if lang == "he" and not he_text:
                         he_text = text
-                        logger.debug(f"Hebrew text captured: {len(he_text)} characters")
+                        logger.debug(
+                            f"Hebrew text captured (before cleaning): {len(he_text)} characters")
                     elif lang == "en" and not en_text:
                         en_text = text
-                        logger.debug(f"English text captured: {len(en_text)} characters")
+                        logger.debug(
+                            f"English text captured (before cleaning): {len(en_text)} characters")
 
-                logger.info(f"Sefaria fetch result for '{ref}': he_text={'yes' if he_text else 'no'} en_text={'yes' if en_text else 'no'}")
+                # Clean HTML from both Hebrew and English text
+                he_text = clean_html_from_text(he_text)
+                en_text = clean_html_from_text(en_text)
+
+                logger.debug(
+                    f"Hebrew text after cleaning: {len(he_text)} characters")
+                logger.debug(
+                    f"English text after cleaning: {len(en_text)} characters")
+
+                logger.info(
+                    f"Sefaria fetch result for '{ref}': he_text={'yes' if he_text else 'no'} en_text={'yes' if en_text else 'no'}")
                 return {
                     "found": True,
                     "he_text": he_text[:1000] if he_text else "",
@@ -216,12 +281,14 @@ async def fetch_text_from_sefaria(ref: str) -> dict:
                     "sefaria_url": f"https://www.sefaria.org/{encoded_ref}",
                 }
             else:
-                logger.warning(f"Sefaria returned status {response.status_code} for '{ref}'")
+                logger.warning(
+                    f"Sefaria returned status {response.status_code} for '{ref}'")
                 logger.debug(f"Response content: {response.text[:500]}")
                 return {"found": False}
 
         except Exception as e:
-            logger.error(f"Exception while fetching from Sefaria for '{ref}': {e}", exc_info=True)
+            logger.error(
+                f"Exception while fetching from Sefaria for '{ref}': {e}", exc_info=True)
             return {"found": False}
 
 
@@ -234,11 +301,16 @@ def flatten_text(text_data) -> str:
         for item in text_data:
             parts.append(flatten_text(item))
         result = " ".join(parts)
-        logger.debug(f"Flattened text array: {len(text_data)} items -> {len(result)} characters")
+        logger.debug(
+            f"Flattened text array: {len(text_data)} items -> {len(result)} characters")
         return result
     logger.debug(f"Unexpected text_data type: {type(text_data)}")
     return ""
 
+
+# =============================
+# API ENDPOINTS
+# =============================
 
 @app.get("/")
 async def root():
@@ -253,7 +325,8 @@ async def search_sources(request: TopicRequest):
     """Main endpoint: takes a topic and returns organized sources with texts"""
     # Log the incoming request so you can follow along in the logs.
     logger.info("="*80)
-    logger.info(f"POST /search -> topic='{request.topic}' level='{request.level}'")
+    logger.info(
+        f"POST /search -> topic='{request.topic}' level='{request.level}'")
     logger.info("="*80)
 
     # Step 1: Ask Claude for source suggestions (this may take a couple
@@ -262,11 +335,13 @@ async def search_sources(request: TopicRequest):
         claude_response = await get_sources_from_claude(request.topic, request.level)
     except Exception as e:
         logger.error(f"Failed to get sources from Claude: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error communicating with Claude API: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error communicating with Claude API: {str(e)}")
 
     # `claude_response` is expected to be a dict like {"sources": [...], "summary": "..."}
     suggested = claude_response.get("sources", [])
-    logger.info(f"Claude suggested {len(suggested)} sources (before Sefaria lookup)")
+    logger.info(
+        f"Claude suggested {len(suggested)} sources (before Sefaria lookup)")
     logger.debug(f"Suggested sources: {suggested}")
 
     sources = []
@@ -283,13 +358,15 @@ async def search_sources(request: TopicRequest):
             logger.warning(f"Skipping empty suggestion at index {idx}")
             continue
 
-        logger.info(f"[{idx}/{len(suggested)}] Looking up: '{ref}' (category: {category})")
+        logger.info(
+            f"[{idx}/{len(suggested)}] Looking up: '{ref}' (category: {category})")
 
         # Fetch the text from Sefaria
         sefaria_data = await fetch_text_from_sefaria(ref)
 
         was_found = sefaria_data.get("found", False)
-        logger.info(f"[{idx}/{len(suggested)}] Sefaria lookup result for '{ref}': found={was_found}")
+        logger.info(
+            f"[{idx}/{len(suggested)}] Sefaria lookup result for '{ref}': found={was_found}")
 
         source_ref = SourceReference(
             ref=ref,
@@ -301,7 +378,8 @@ async def search_sources(request: TopicRequest):
             found=was_found
         )
         sources.append(source_ref)
-        logger.debug(f"Added source: {ref}, has_he={bool(source_ref.he_text)}, has_en={bool(source_ref.en_text)}")
+        logger.debug(
+            f"Added source: {ref}, has_he={bool(source_ref.he_text)}, has_en={bool(source_ref.en_text)}")
 
     # Remove any sources Sefaria didn't return so the frontend doesn't
     # display broken links or missing texts.
@@ -314,7 +392,8 @@ async def search_sources(request: TopicRequest):
         logger.debug(f"Invalid references: {invalid_refs}")
 
     logger.info("="*80)
-    logger.info(f"Request complete: Returning {len(valid_sources)} valid sources to client")
+    logger.info(
+        f"Request complete: Returning {len(valid_sources)} valid sources to client")
     logger.info("="*80)
 
     return MareiMekomosResponse(

@@ -884,3 +884,11 @@ Return 5-15 sources depending on the level, organized by category.
 2025-11-26 21:00:01 | INFO     | __main__:search_sources:316 | ================================================================================
 2025-11-26 21:00:01 | INFO     | __main__:search_sources:317 | Request complete: Returning 12 valid sources to client
 2025-11-26 21:00:01 | INFO     | __main__:search_sources:318 | ================================================================================
+2025-11-26 21:10:23 | DEBUG    | httpcore.connection:trace:47 | close.started
+2025-11-26 21:10:23 | DEBUG    | httpcore.connection:trace:47 | close.complete
+2025-11-26 21:10:27 | INFO     | root:setup_logging:66 | ================================================================================
+2025-11-26 21:10:27 | INFO     | root:setup_logging:67 | Logging system initialized - Log file: c:\Projects\marei-mekomos\backend\logs\marei_mekomos_20251126.log
+2025-11-26 21:10:27 | INFO     | root:setup_logging:68 | ================================================================================
+2025-11-26 21:10:27 | INFO     | __main__:<module>:77 | Anthropic client initialized successfully
+2025-11-26 21:10:27 | INFO     | __main__:<module>:418 | Starting Marei Mekomos API on http://0.0.0.0:8000
+2025-11-26 21:10:27 | DEBUG    | asyncio:__init__:623 | Using proactor: IocpProactor
