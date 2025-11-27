@@ -1,0 +1,5 @@
+# Ignore all cache files but keep the directory structure
+*.json
+
+# Keep the .gitignore itself
+!.gitignore

@@ -18,10 +18,16 @@ from typing import List, Optional
 
 # Import our logging configuration
 from logging_config import setup_logging, get_logger
+from cache_manager import claude_cache, sefaria_cache
 
 # Initialize logging
 setup_logging()
 logger = get_logger(__name__)
+
+# Development mode flag - set to True to avoid API calls during testing
+DEV_MODE = os.environ.get("DEV_MODE", "false").lower() == "true"
+if DEV_MODE:
+    logger.warning("⚠️  DEV_MODE is ENABLED - using mock responses to save API costs")
 
 
 # =============================
@@ -145,6 +151,24 @@ async def get_sources_from_claude(topic: str, level: str) -> dict:
 
     Returns a dict like {"sources": [...], "summary": "..."}
     """
+    # Check cache first
+    cache_key = f"{topic}|{level}"
+    cached_response = claude_cache.get(cache_key)
+    if cached_response:
+        logger.info(f"💰 Using CACHED Claude response for '{topic}' (saved API call!)")
+        return cached_response
+
+    # If in dev mode, return mock data instead of calling API
+    if DEV_MODE:
+        logger.warning(f"🧪 DEV_MODE: Returning mock response for '{topic}'")
+        return {
+            "sources": [
+                {"ref": "Shemot 20:12", "category": "Chumash"},
+                {"ref": "Kiddushin 31a", "category": "Gemara"},
+            ],
+            "summary": f"Mock summary for {topic} (DEV_MODE)"
+        }
+
     logger.info(
         f"Requesting sources from Claude for topic='{topic}' level='{level}'")
 
@@ -199,6 +223,11 @@ async def get_sources_from_claude(topic: str, level: str) -> dict:
         logger.info(
             f"Successfully parsed Claude response. Found {len(parsed_data.get('sources', []))} sources")
         logger.debug(f"Parsed data: {parsed_data}")
+
+        # Save to cache for future requests
+        claude_cache.set(cache_key, parsed_data)
+        logger.debug(f"Saved Claude response to cache")
+
         return parsed_data
     except json.JSONDecodeError as e:
         logger.error(
@@ -213,6 +242,11 @@ async def fetch_text_from_sefaria(ref: str) -> dict:
 
     Returns a dict with `found`, `he_text`, `en_text`, `he_ref`, `sefaria_url`.
     """
+    # Check cache first (Sefaria data doesn't change, so we cache for 1 week)
+    cached_response = sefaria_cache.get(ref)
+    if cached_response:
+        logger.info(f"💰 Using CACHED Sefaria response for '{ref}'")
+        return cached_response
 
     logger.info(f"Fetching text from Sefaria for ref='{ref}'")
 
@@ -273,13 +307,20 @@ async def fetch_text_from_sefaria(ref: str) -> dict:
 
                 logger.info(
                     f"Sefaria fetch result for '{ref}': he_text={'yes' if he_text else 'no'} en_text={'yes' if en_text else 'no'}")
-                return {
+
+                result = {
                     "found": True,
                     "he_text": he_text[:1000] if he_text else "",
                     "en_text": en_text[:1000] if en_text else "",
                     "he_ref": he_ref,
                     "sefaria_url": f"https://www.sefaria.org/{encoded_ref}",
                 }
+
+                # Save to cache
+                sefaria_cache.set(ref, result)
+                logger.debug(f"Saved Sefaria response to cache")
+
+                return result
             else:
                 logger.warning(
                     f"Sefaria returned status {response.status_code} for '{ref}'")
@@ -408,6 +449,44 @@ async def health_check():
     """Health check endpoint"""
     logger.info("GET /health -> health check called")
     return {"status": "healthy"}
+
+
+@app.get("/cache/stats")
+async def cache_stats():
+    """Get cache statistics to see how much money you're saving"""
+    claude_stats = claude_cache.stats()
+    sefaria_stats = sefaria_cache.stats()
+
+    logger.info("GET /cache/stats -> returning cache statistics")
+
+    return {
+        "claude_cache": {
+            "entries": claude_stats['total_entries'],
+            "size_kb": claude_stats['total_size_kb'],
+            "ttl_hours": 24
+        },
+        "sefaria_cache": {
+            "entries": sefaria_stats['total_entries'],
+            "size_kb": sefaria_stats['total_size_kb'],
+            "ttl_hours": 168
+        },
+        "dev_mode": DEV_MODE,
+        "message": f"💰 Cached {claude_stats['total_entries']} Claude responses (saving ${claude_stats['total_entries'] * 0.02:.2f}+)"
+    }
+
+
+@app.post("/cache/clear")
+async def clear_cache():
+    """Clear all caches - use this if you want fresh results"""
+    logger.warning("POST /cache/clear -> clearing all caches")
+
+    claude_cache.clear()
+    sefaria_cache.clear()
+
+    return {
+        "status": "success",
+        "message": "All caches cleared. Next requests will hit the APIs."
+    }
 
 
 if __name__ == "__main__":

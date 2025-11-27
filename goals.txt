@@ -7,3 +7,8 @@ Goals:
 --- Shayla setting ---
 - Simple question and answer setting
 - "Where can i find info about tfillah in the rashba" or "how many times does the word yissachar appear?"
+
+
+--- Notes ---
+- smooth out the responses, maybe bold important lines
+- lines finish in middle of a word
