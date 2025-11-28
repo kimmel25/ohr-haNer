@@ -15,6 +15,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from anthropic import Anthropic
 from typing import List, Optional
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Import our logging configuration
 from logging_config import setup_logging, get_logger
@@ -23,11 +27,6 @@ from cache_manager import claude_cache, sefaria_cache
 # Initialize logging
 setup_logging()
 logger = get_logger(__name__)
-
-# Development mode flag - set to True to avoid API calls during testing
-DEV_MODE = os.environ.get("DEV_MODE", "false").lower() == "true"
-if DEV_MODE:
-    logger.warning("⚠️  DEV_MODE is ENABLED - using mock responses to save API costs")
 
 
 # =============================
@@ -87,33 +86,79 @@ logger.info("Anthropic client initialized successfully")
 # SYSTEM PROMPT FOR CLAUDE
 # =============================
 
-CLAUDE_SYSTEM_PROMPT = """You are a Torah scholar assistant that helps find marei mekomos (source references) for any Torah topic.
+CLAUDE_SYSTEM_PROMPT = """You are a Torah scholar assistant that helps find marei mekomos (source references) for any Torah topic using a "sugya archaeology" approach.
 
-When given a topic, you will return a JSON object with relevant sources organized by category.
+METHODOLOGY - WORK BACKWARDS FROM ACHARONIM:
+Instead of guessing which sources are important, you will search through later commentaries (acharonim and late rishonim) to discover which earlier sources THEY cite most frequently. This reveals the true "ikkar" (foundation) of the sugya.
 
-IMPORTANT RULES:
-1. Return ONLY valid Sefaria references. Use the exact format Sefaria expects.
-2. Be conservative - only suggest sources you are confident exist.
-3. Organize sources in this order: Chumash → Nach → Mishna → Gemara (Bavli) → Rishonim → Shulchan Aruch/Acharonim
-4. For Gemara, use format like "Kiddushin 31a" or "Berakhot 6b"
-5. For Chumash, use format like "Shemot 20:12" or "Bereishit 1:1"
-6. For Mishna, use format like "Mishnah Kiddushin 1:7"
-7. For Rashi on Chumash, use "Rashi on Shemot 20:12"
-8. For Rambam, use "Mishneh Torah, Hilchot Mamrim 6:1" 
-9. For Shulchan Aruch, use "Shulchan Arukh, Yoreh De'ah 240:1"
-10. Include the most important/foundational sources first within each category.
+STEP 1 - IDENTIFY RELEVANT META-COMMENTARIES:
+Based on the topic, determine which acharonim/late rishonim would discuss it:
 
-Return your response as valid JSON in this exact format:
+For Gemara topics:
+- Pnei Yehoshua (on most masechtos)
+- Rabbi Akiva Eiger
+- Late Rishonim who quote earlier sources: Ran, Ritva, Rashba, Nimukei Yosef
+
+For Halachic topics (Orach Chaim/Yoreh Deah):
+- Mishnah Berurah
+- Shach, Taz
+- Beur Halacha
+
+For Even HaEzer/Choshen Mishpat:
+- Ketzos HaChoshen, Nesivos HaMishpat
+- Chelkas Mechokek, Beis Shmuel
+
+For Rambam:
+- Kesef Mishneh, Magid Mishneh, Lechem Mishneh
+
+Always include:
+- Shulchan Aruch, Rama, Tur
+- Beis Yosef, Darchei Moshe
+
+STEP 2 - SEARCH THESE SOURCES ON SEFARIA:
+Return Sefaria references to WHERE these acharonim discuss this topic. For example:
+- "Pnei Yehoshua on Kiddushin 5a"
+- "Mishnah Berurah 431:1"
+- "Ketzos HaChoshen 201:1"
+
+STEP 3 - IDENTIFY CITATION PATTERNS:
+You will be given the TEXT of these acharonim. Your job is to:
+1. Extract which earlier sources they cite (ignore their lomdus/svara)
+2. Count how many times each source appears across multiple acharonim
+3. Prioritize sources cited by multiple acharonim - these are the ikkar!
+
+CRITICAL RULES:
+1. Use EXACT Sefaria reference formats
+2. DO NOT make up sources - only suggest what exists on Sefaria
+3. For Gemara: "Kiddushin 5a", "Berakhot 6b"
+4. For Chumash: "Shemot 12:15", "Bereishit 1:1"
+5. For Rishonim: "Rashi on Kiddushin 5a", "Tosafot on Kiddushin 5a"
+6. For Rambam: "Mishneh Torah, Ishut 10:2"
+7. For Shulchan Aruch: "Shulchan Arukh, Even HaEzer 55:1"
+
+RESPONSE FORMAT:
+Return TWO JSON objects:
+
+First - the acharonim to search:
 {
-  "sources": [
-    {"ref": "Shemot 20:12", "category": "Chumash"},
-    {"ref": "Kiddushin 31a", "category": "Gemara"},
+  "acharonim_to_search": [
+    {"ref": "Pnei Yehoshua on Kiddushin 5a", "category": "Acharonim"},
+    {"ref": "Ketzos HaChoshen 201:1", "category": "Acharonim"},
     ...
-  ],
-  "summary": "Brief 1-2 sentence summary of the topic"
+  ]
 }
 
-Only return the JSON, no other text."""
+After analyzing their texts, return the final sources:
+{
+  "sources": [
+    {"ref": "Kiddushin 5a", "category": "Gemara", "citation_count": 5},
+    {"ref": "Rashi on Kiddushin 5a", "category": "Rishonim", "citation_count": 4},
+    ...
+  ],
+  "summary": "Brief summary of the sugya"
+}
+
+Only return valid JSON, no other text."""
 
 
 # =============================
@@ -123,73 +168,247 @@ Only return the JSON, no other text."""
 def clean_html_from_text(text: str) -> str:
     """
     Clean HTML entities and tags from Sefaria text.
-
+    
     Sefaria returns text with HTML formatting like:
     - HTML entities: &thinsp; &nbsp; etc.
     - HTML tags: <b>, <i>, <br>, etc.
-
+    
     This function removes them to get clean plain text.
     """
     if not text:
         return text
-
+    
     # First, decode HTML entities like &thinsp; &nbsp; etc.
     text = html.unescape(text)
-
+    
     # Then remove all HTML tags like <b>, <i>, <br>, etc.
     text = re.sub(r'<[^>]+>', '', text)
-
+    
     # Clean up any extra whitespace that might have been created
     text = re.sub(r'\s+', ' ', text).strip()
-
+    
     return text
 
 
 async def get_sources_from_claude(topic: str, level: str) -> dict:
     """
-    Ask Claude to suggest relevant Torah sources for a given topic.
-
+    Ask Claude to suggest relevant Torah sources using the "sugya archaeology" method.
+    
+    This is a two-step process:
+    1. Ask Claude which acharonim/late rishonim discuss this topic
+    2. Fetch those texts from Sefaria (with caching)
+    3. Have Claude analyze what sources THEY cite
+    
     Returns a dict like {"sources": [...], "summary": "..."}
     """
-    # Check cache first
+    # Check cache first for final results
     cache_key = f"{topic}|{level}"
     cached_response = claude_cache.get(cache_key)
     if cached_response:
-        logger.info(f"💰 Using CACHED Claude response for '{topic}' (saved API call!)")
+        logger.info(f"💰 Using CACHED final results for '{topic}' (saved API call!)")
         return cached_response
 
-    # If in dev mode, return mock data instead of calling API
-    if DEV_MODE:
-        logger.warning(f"🧪 DEV_MODE: Returning mock response for '{topic}'")
-        return {
-            "sources": [
-                {"ref": "Shemot 20:12", "category": "Chumash"},
-                {"ref": "Kiddushin 31a", "category": "Gemara"},
-            ],
-            "summary": f"Mock summary for {topic} (DEV_MODE)"
-        }
+    # ============================================================
+    # STAGE 0: Interpret the user's query first
+    # This prevents mistakes like searching Issurei Biah when they mean Ishut
+    # ============================================================
+    logger.info(f"STAGE 0: Interpreting query '{topic}'")
+    
+    interpretation_prompt = f"""The user searched for: "{topic}"
 
-    logger.info(
-        f"Requesting sources from Claude for topic='{topic}' level='{level}'")
+This might be a shorthand query that needs interpretation. Your job is to figure out what they're REALLY asking about.
+
+Examples:
+- "rav huna chuppas niddah rambam" → They want sources about whether chuppah creates kiddushin when the woman is a niddah (Rav Huna's position and Rambam's ruling in Hilchos Ishut, NOT Issurei Biah)
+- "bedikas chometz" → They want sources about the obligation to search for chometz before Pesach (Orach Chaim)  
+- "kibud av" → They want sources about the mitzvah to honor parents (Yoreh Deah)
+
+Think carefully about:
+1. What is the MAIN TOPIC? (e.g., kiddushin/marriage, chometz, kibud av)
+2. What SPECIFIC ASPECT? (e.g., chuppah as kinyan, bedikah obligation, honoring father)
+3. Which seforim/chapters would discuss this? (Be precise - Hilchos Ishut vs. Issurei Biah matters!)
+4. Are specific people/positions mentioned? (e.g., Rav Huna, Rambam, Rashi)
+
+CRITICAL: Don't get confused by keywords! "chuppas niddah" is about KIDDUSHIN (marriage), not about niddah laws.
+
+Return ONLY a JSON object:
+{{
+  "interpreted_query": "A clear, detailed description of what the user is asking",
+  "main_topic": "The primary subject area",
+  "relevant_areas": ["Specific Rambam chapters, SA sections, or masechtos"],
+  "specific_question": "The exact question or case being asked about"
+}}
+"""
+    
+    try:
+        interp_response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=500,
+            system="You are a Torah scholar who interprets user queries to understand what they're really asking about. Pay close attention to context, not just keywords.",
+            messages=[{"role": "user", "content": interpretation_prompt}],
+        )
+        interpretation = parse_claude_json(interp_response.content[0].text)
+        interpreted_query = interpretation.get('interpreted_query', topic)
+        logger.info(f"✓ Interpreted query as: {interpreted_query}")
+        logger.debug(f"Full interpretation: {interpretation}")
+    except Exception as e:
+        logger.warning(f"Failed to interpret query, using original: {e}")
+        interpreted_query = topic
+    
+    # ============================================================
+    # STAGE 1: Now use the interpreted query to find acharonim
+    # ============================================================
+    logger.info(f"STAGE 1: Requesting acharonim to search")
 
     # Customize the prompt based on user's level
+    level_instructions = {
+        "beginner": "Focus on the most basic, foundational sources - return 3-5 core sources.",
+        "intermediate": "Include the main sugya and key rishonim - return 5-15 sources.",
+        "advanced": "Include comprehensive coverage with multiple shittos - return 10-20 sources."
+    }
+
+    instruction = level_instructions.get(level, level_instructions["intermediate"])
+    
+    # STEP 1: Ask Claude which acharonim to search (using interpreted query)
+    step1_message = (
+        f"User's original query: \"{topic}\"\n\n"
+        f"INTERPRETED QUERY: {interpreted_query}\n\n"
+        f"Level: {level} - {instruction}\n\n"
+        f"STEP 1: Based on the INTERPRETED QUERY above, identify which acharonim and late rishonim "
+        f"on Sefaria would discuss THIS SPECIFIC TOPIC.\n\n"
+        f"Return a JSON object with 'acharonim_to_search' containing 5-10 relevant sources.\n\n"
+        f"CRITICAL REMINDERS:\n"
+        f"- Use the INTERPRETED QUERY to understand what the user wants\n"
+        f"- Be specific about WHERE in each acharon (e.g., 'Pnei Yehoshua on Kiddushin 5a', not just 'Pnei Yehoshua')\n"
+        f"- Don't be fooled by keywords - understand the actual topic (e.g., 'chuppas niddah' is about kiddushin, not niddah laws)\n"
+        f"- Choose acharonim that discuss the SPECIFIC QUESTION asked, not just the general topic"
+    )
+
+    logger.debug(f"Step 1 message to Claude: {step1_message}")
+
+    try:
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1500,
+            system=CLAUDE_SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": step1_message}],
+        )
+        logger.debug(f"Claude Step 1 response received. Usage: {response.usage}")
+    except Exception as e:
+        logger.error(f"Error calling Claude API (Step 1): {e}", exc_info=True)
+        raise
+
+    response_text = response.content[0].text
+    logger.debug(f"Step 1 response length: {len(response_text)} characters")
+    
+    # Parse the acharonim list
+    acharonim_data = parse_claude_json(response_text)
+    if not acharonim_data or "acharonim_to_search" not in acharonim_data:
+        logger.error("Failed to get acharonim list from Claude")
+        return {"sources": [], "summary": "Error: Could not identify relevant acharonim"}
+    
+    acharonim_list = acharonim_data["acharonim_to_search"]
+    logger.info(f"Claude identified {len(acharonim_list)} acharonim to search")
+    
+    # STEP 2: Fetch texts from Sefaria for each acharon (with caching)
+    acharon_texts = []
+    for acharon in acharonim_list[:10]:  # Limit to 10 to avoid too many API calls
+        ref = acharon.get("ref", "")
+        if not ref:
+            continue
+            
+        logger.info(f"Fetching acharon text: {ref}")
+        # Sefaria cache already handles this in fetch_text_from_sefaria
+        sefaria_data = await fetch_text_from_sefaria(ref)
+        
+        if sefaria_data.get("found"):
+            text_content = sefaria_data.get("he_text", "") or sefaria_data.get("en_text", "")
+            if text_content:
+                acharon_texts.append({
+                    "ref": ref,
+                    "text": text_content[:2000]  # Limit text length to avoid token overflow
+                })
+                logger.debug(f"Successfully fetched text for {ref}")
+        else:
+            logger.warning(f"Could not fetch text for {ref}")
+    
+    if not acharon_texts:
+        logger.warning("No acharon texts found - falling back to direct source search")
+        # Fallback: just ask Claude directly
+        result = await get_sources_from_claude_fallback(topic, level)
+        # Cache the fallback result
+        claude_cache.set(cache_key, result)
+        return result
+    
+    # STEP 3: Have Claude analyze the acharon texts to extract citations
+    logger.info(f"STAGE 2: Analyzing {len(acharon_texts)} acharon texts to extract citations")
+    
+    acharon_texts_formatted = "\n\n".join([
+        f"=== {item['ref']} ===\n{item['text']}"
+        for item in acharon_texts
+    ])
+    
+    step2_message = (
+        f"Topic: {topic}\n"
+        f"Level: {level} - {instruction}\n\n"
+        f"STEP 2: Below are texts from acharonim discussing this topic.\n"
+        f"Extract which EARLIER SOURCES they cite (ignore their lomdus).\n"
+        f"Count how many acharonim cite each source.\n"
+        f"Return the sources cited by multiple acharonim as the 'ikkar' of the sugya.\n\n"
+        f"Acharon texts:\n{acharon_texts_formatted}\n\n"
+        f"Return final JSON with 'sources' and 'summary'."
+    )
+    
+    logger.debug(f"Step 2 message length: {len(step2_message)} characters")
+    
+    try:
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=2000,
+            system=CLAUDE_SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": step2_message}],
+        )
+        logger.debug(f"Claude Step 2 response received. Usage: {response.usage}")
+    except Exception as e:
+        logger.error(f"Error calling Claude API (Step 2): {e}", exc_info=True)
+        raise
+
+    response_text = response.content[0].text
+    logger.debug(f"Step 2 response length: {len(response_text)} characters")
+    
+    parsed_data = parse_claude_json(response_text)
+    if not parsed_data or "sources" not in parsed_data:
+        logger.error("Failed to parse final sources from Claude")
+        return {"sources": [], "summary": "Error parsing final sources"}
+    
+    logger.info(f"Successfully extracted {len(parsed_data.get('sources', []))} sources from acharon analysis")
+    
+    # Cache the final result
+    claude_cache.set(cache_key, parsed_data)
+    logger.debug(f"Saved final result to cache")
+    
+    return parsed_data
+
+
+async def get_sources_from_claude_fallback(topic: str, level: str) -> dict:
+    """
+    Fallback method if acharon search fails - direct source suggestion.
+    """
+    logger.warning("Using fallback direct source search")
+    
     level_instructions = {
         "beginner": "Return 3-5 basic sources: primarily Chumash and well-known pesukim.",
         "intermediate": "Return 5-15 sources: Include Chumash, main sugyos in Gemara, key Rishonim, and Shulchan Aruch.",
         "advanced": "Return 10-20 sources: Include lesser-known gemaras, multiple Rishonim, Acharonim, and nuanced applications."
     }
-
-    instruction = level_instructions.get(
-        level, level_instructions["intermediate"])
+    
+    instruction = level_instructions.get(level, level_instructions["intermediate"])
     user_message = (
         f"Find marei mekomos for the topic: {topic}\n\n"
         f"Level: {level} - {instruction}\n\n"
-        f"Return 5-15 sources depending on the level, organized by category."
+        f"Return sources organized by category in JSON format."
     )
-
-    logger.debug(f"User message to Claude: {user_message}")
-
-    # Send request to Claude
+    
     try:
         response = client.messages.create(
             model="claude-sonnet-4-20250514",
@@ -197,56 +416,59 @@ async def get_sources_from_claude(topic: str, level: str) -> dict:
             system=CLAUDE_SYSTEM_PROMPT,
             messages=[{"role": "user", "content": user_message}],
         )
-        logger.debug(f"Claude API response received. Usage: {response.usage}")
     except Exception as e:
-        logger.error(f"Error calling Claude API: {e}", exc_info=True)
-        raise
-
+        logger.error(f"Error in fallback Claude call: {e}", exc_info=True)
+        return {"sources": [], "summary": "Error in fallback search"}
+    
     response_text = response.content[0].text
-    logger.debug(
-        f"Claude response text length: {len(response_text)} characters")
-    preview = response_text[:800].replace("\n", " ")
-    logger.info(
-        f"Claude response preview: {preview}{'...' if len(response_text) > 800 else ''}")
+    return parse_claude_json(response_text)
 
-    # Parse JSON from the AI response (it may be wrapped in markdown fences)
+
+def parse_claude_json(response_text: str) -> dict:
+    """
+    Parse JSON from Claude's response, handling markdown fences and commentary text.
+    """
     try:
         original_text = response_text
+        
+        # First try to extract from markdown fences
         if "```json" in response_text:
             logger.debug("Extracting JSON from markdown json fence")
             response_text = response_text.split("```json")[1].split("```")[0]
         elif "```" in response_text:
             logger.debug("Extracting JSON from generic markdown fence")
             response_text = response_text.split("```")[1].split("```")[0]
+        
+        # If parsing fails, try to find the JSON by locating the first {
+        response_text = response_text.strip()
+        
+        # If there's text before the JSON, strip it
+        if not response_text.startswith("{"):
+            logger.debug("Response has text before JSON, finding first brace")
+            brace_index = response_text.find("{")
+            if brace_index != -1:
+                response_text = response_text[brace_index:]
+                logger.debug(f"Stripped text before JSON, starting from position {brace_index}")
+            else:
+                logger.error("No opening brace found in response")
+                return {}
 
         parsed_data = json.loads(response_text.strip())
-        logger.info(
-            f"Successfully parsed Claude response. Found {len(parsed_data.get('sources', []))} sources")
-        logger.debug(f"Parsed data: {parsed_data}")
-
-        # Save to cache for future requests
-        claude_cache.set(cache_key, parsed_data)
-        logger.debug(f"Saved Claude response to cache")
-
+        logger.debug(f"Successfully parsed JSON")
         return parsed_data
     except json.JSONDecodeError as e:
-        logger.error(
-            f"JSON parse error while decoding Claude response: {e}", exc_info=True)
-        logger.error(f"Full response text (raw): {original_text}")
-        return {"sources": [], "summary": "Error parsing sources from Claude"}
+        logger.error(f"JSON parse error: {e}", exc_info=True)
+        logger.error(f"Full response text: {original_text[:500]}")
+        return {}
 
 
-async def fetch_text_from_sefaria(ref: str) -> dict:
+async def fetch_text_from_sefaria(ref: str, max_retries: int = 2) -> dict:
     """
     Fetch actual text from the Sefaria API for a given reference string.
+    Retries up to max_retries times on timeout.
 
     Returns a dict with `found`, `he_text`, `en_text`, `he_ref`, `sefaria_url`.
     """
-    # Check cache first (Sefaria data doesn't change, so we cache for 1 week)
-    cached_response = sefaria_cache.get(ref)
-    if cached_response:
-        logger.info(f"💰 Using CACHED Sefaria response for '{ref}'")
-        return cached_response
 
     logger.info(f"Fetching text from Sefaria for ref='{ref}'")
 
@@ -257,80 +479,74 @@ async def fetch_text_from_sefaria(ref: str) -> dict:
     logger.debug(f"Sefaria API URL: {url}")
 
     async with httpx.AsyncClient(verify=False) as client:
-        try:
-            response = await client.get(url, timeout=10.0)
+        for attempt in range(max_retries + 1):
+            try:
+                if attempt > 0:
+                    logger.info(f"Retry attempt {attempt} for '{ref}'")
+                
+                response = await client.get(url, timeout=30.0)
 
-            logger.info(
-                f"Sefaria HTTP status code: {response.status_code} for ref='{ref}'")
-            if response.status_code == 200:
-                data = response.json()
-                logger.debug(
-                    f"Sefaria response data keys: {list(data.keys())}")
+                logger.info(f"Sefaria HTTP status code: {response.status_code} for ref='{ref}'")
+                if response.status_code == 200:
+                    data = response.json()
+                    logger.debug(f"Sefaria response data keys: {list(data.keys())}")
 
-                # Extract Hebrew and English text
-                he_text = ""
-                en_text = ""
-                he_ref = data.get("heRef", "")
+                    # Extract Hebrew and English text
+                    he_text = ""
+                    en_text = ""
+                    he_ref = data.get("heRef", "")
 
-                versions = data.get("versions", [])
-                logger.debug(
-                    f"Sefaria returned {len(versions)} version(s) for '{ref}'")
+                    versions = data.get("versions", [])
+                    logger.debug(f"Sefaria returned {len(versions)} version(s) for '{ref}'")
 
-                for idx, version in enumerate(versions):
-                    lang = version.get("language", "")
-                    text = version.get("text", "")
-                    version_title = version.get("versionTitle", "")
-                    logger.debug(
-                        f"Version {idx}: lang={lang}, title={version_title}, text_type={type(text).__name__}")
+                    for idx, version in enumerate(versions):
+                        lang = version.get("language", "")
+                        text = version.get("text", "")
+                        version_title = version.get("versionTitle", "")
+                        logger.debug(f"Version {idx}: lang={lang}, title={version_title}, text_type={type(text).__name__}")
 
-                    # Handle nested arrays (common in Sefaria responses)
-                    if isinstance(text, list):
-                        text = flatten_text(text)
+                        # Handle nested arrays (common in Sefaria responses)
+                        if isinstance(text, list):
+                            text = flatten_text(text)
 
-                    if lang == "he" and not he_text:
-                        he_text = text
-                        logger.debug(
-                            f"Hebrew text captured (before cleaning): {len(he_text)} characters")
-                    elif lang == "en" and not en_text:
-                        en_text = text
-                        logger.debug(
-                            f"English text captured (before cleaning): {len(en_text)} characters")
+                        if lang == "he" and not he_text:
+                            he_text = text
+                            logger.debug(f"Hebrew text captured (before cleaning): {len(he_text)} characters")
+                        elif lang == "en" and not en_text:
+                            en_text = text
+                            logger.debug(f"English text captured (before cleaning): {len(en_text)} characters")
 
-                # Clean HTML from both Hebrew and English text
-                he_text = clean_html_from_text(he_text)
-                en_text = clean_html_from_text(en_text)
+                    # Clean HTML from both Hebrew and English text
+                    he_text = clean_html_from_text(he_text)
+                    en_text = clean_html_from_text(en_text)
+                    
+                    logger.debug(f"Hebrew text after cleaning: {len(he_text)} characters")
+                    logger.debug(f"English text after cleaning: {len(en_text)} characters")
 
-                logger.debug(
-                    f"Hebrew text after cleaning: {len(he_text)} characters")
-                logger.debug(
-                    f"English text after cleaning: {len(en_text)} characters")
+                    logger.info(f"Sefaria fetch result for '{ref}': he_text={'yes' if he_text else 'no'} en_text={'yes' if en_text else 'no'}")
+                    return {
+                        "found": True,
+                        "he_text": he_text[:1000] if he_text else "",
+                        "en_text": en_text[:1000] if en_text else "",
+                        "he_ref": he_ref,
+                        "sefaria_url": f"https://www.sefaria.org/{encoded_ref}",
+                    }
+                else:
+                    logger.warning(f"Sefaria returned status {response.status_code} for '{ref}'")
+                    logger.debug(f"Response content: {response.text[:500]}")
+                    return {"found": False}
 
-                logger.info(
-                    f"Sefaria fetch result for '{ref}': he_text={'yes' if he_text else 'no'} en_text={'yes' if en_text else 'no'}")
-
-                result = {
-                    "found": True,
-                    "he_text": he_text[:1000] if he_text else "",
-                    "en_text": en_text[:1000] if en_text else "",
-                    "he_ref": he_ref,
-                    "sefaria_url": f"https://www.sefaria.org/{encoded_ref}",
-                }
-
-                # Save to cache
-                sefaria_cache.set(ref, result)
-                logger.debug(f"Saved Sefaria response to cache")
-
-                return result
-            else:
-                logger.warning(
-                    f"Sefaria returned status {response.status_code} for '{ref}'")
-                logger.debug(f"Response content: {response.text[:500]}")
+            except httpx.ReadTimeout:
+                if attempt < max_retries:
+                    logger.warning(f"Timeout fetching '{ref}', retrying... (attempt {attempt + 1}/{max_retries})")
+                    continue  # Retry
+                else:
+                    logger.error(f"Failed to fetch '{ref}' after {max_retries + 1} attempts (timeout)")
+                    return {"found": False}
+                    
+            except Exception as e:
+                logger.error(f"Exception while fetching from Sefaria for '{ref}': {e}", exc_info=True)
                 return {"found": False}
-
-        except Exception as e:
-            logger.error(
-                f"Exception while fetching from Sefaria for '{ref}': {e}", exc_info=True)
-            return {"found": False}
 
 
 def flatten_text(text_data) -> str:
@@ -342,8 +558,7 @@ def flatten_text(text_data) -> str:
         for item in text_data:
             parts.append(flatten_text(item))
         result = " ".join(parts)
-        logger.debug(
-            f"Flattened text array: {len(text_data)} items -> {len(result)} characters")
+        logger.debug(f"Flattened text array: {len(text_data)} items -> {len(result)} characters")
         return result
     logger.debug(f"Unexpected text_data type: {type(text_data)}")
     return ""
@@ -366,8 +581,7 @@ async def search_sources(request: TopicRequest):
     """Main endpoint: takes a topic and returns organized sources with texts"""
     # Log the incoming request so you can follow along in the logs.
     logger.info("="*80)
-    logger.info(
-        f"POST /search -> topic='{request.topic}' level='{request.level}'")
+    logger.info(f"POST /search -> topic='{request.topic}' level='{request.level}'")
     logger.info("="*80)
 
     # Step 1: Ask Claude for source suggestions (this may take a couple
@@ -376,13 +590,11 @@ async def search_sources(request: TopicRequest):
         claude_response = await get_sources_from_claude(request.topic, request.level)
     except Exception as e:
         logger.error(f"Failed to get sources from Claude: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=500, detail=f"Error communicating with Claude API: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error communicating with Claude API: {str(e)}")
 
     # `claude_response` is expected to be a dict like {"sources": [...], "summary": "..."}
     suggested = claude_response.get("sources", [])
-    logger.info(
-        f"Claude suggested {len(suggested)} sources (before Sefaria lookup)")
+    logger.info(f"Claude suggested {len(suggested)} sources (before Sefaria lookup)")
     logger.debug(f"Suggested sources: {suggested}")
 
     sources = []
@@ -399,15 +611,13 @@ async def search_sources(request: TopicRequest):
             logger.warning(f"Skipping empty suggestion at index {idx}")
             continue
 
-        logger.info(
-            f"[{idx}/{len(suggested)}] Looking up: '{ref}' (category: {category})")
+        logger.info(f"[{idx}/{len(suggested)}] Looking up: '{ref}' (category: {category})")
 
         # Fetch the text from Sefaria
         sefaria_data = await fetch_text_from_sefaria(ref)
 
         was_found = sefaria_data.get("found", False)
-        logger.info(
-            f"[{idx}/{len(suggested)}] Sefaria lookup result for '{ref}': found={was_found}")
+        logger.info(f"[{idx}/{len(suggested)}] Sefaria lookup result for '{ref}': found={was_found}")
 
         source_ref = SourceReference(
             ref=ref,
@@ -419,8 +629,7 @@ async def search_sources(request: TopicRequest):
             found=was_found
         )
         sources.append(source_ref)
-        logger.debug(
-            f"Added source: {ref}, has_he={bool(source_ref.he_text)}, has_en={bool(source_ref.en_text)}")
+        logger.debug(f"Added source: {ref}, has_he={bool(source_ref.he_text)}, has_en={bool(source_ref.en_text)}")
 
     # Remove any sources Sefaria didn't return so the frontend doesn't
     # display broken links or missing texts.
@@ -433,8 +642,7 @@ async def search_sources(request: TopicRequest):
         logger.debug(f"Invalid references: {invalid_refs}")
 
     logger.info("="*80)
-    logger.info(
-        f"Request complete: Returning {len(valid_sources)} valid sources to client")
+    logger.info(f"Request complete: Returning {len(valid_sources)} valid sources to client")
     logger.info("="*80)
 
     return MareiMekomosResponse(
@@ -449,44 +657,6 @@ async def health_check():
     """Health check endpoint"""
     logger.info("GET /health -> health check called")
     return {"status": "healthy"}
-
-
-@app.get("/cache/stats")
-async def cache_stats():
-    """Get cache statistics to see how much money you're saving"""
-    claude_stats = claude_cache.stats()
-    sefaria_stats = sefaria_cache.stats()
-
-    logger.info("GET /cache/stats -> returning cache statistics")
-
-    return {
-        "claude_cache": {
-            "entries": claude_stats['total_entries'],
-            "size_kb": claude_stats['total_size_kb'],
-            "ttl_hours": 24
-        },
-        "sefaria_cache": {
-            "entries": sefaria_stats['total_entries'],
-            "size_kb": sefaria_stats['total_size_kb'],
-            "ttl_hours": 168
-        },
-        "dev_mode": DEV_MODE,
-        "message": f"💰 Cached {claude_stats['total_entries']} Claude responses (saving ${claude_stats['total_entries'] * 0.02:.2f}+)"
-    }
-
-
-@app.post("/cache/clear")
-async def clear_cache():
-    """Clear all caches - use this if you want fresh results"""
-    logger.warning("POST /cache/clear -> clearing all caches")
-
-    claude_cache.clear()
-    sefaria_cache.clear()
-
-    return {
-        "status": "success",
-        "message": "All caches cleared. Next requests will hit the APIs."
-    }
 
 
 if __name__ == "__main__":

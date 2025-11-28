@@ -28,8 +28,9 @@ class SimpleCache:
         """
         self.cache_dir = os.path.join(os.path.dirname(__file__), cache_dir)
         self.ttl = timedelta(hours=ttl_hours)
+        self.enabled = os.environ.get("USE_CACHE", "true").lower() in ("true", "1", "yes")
         os.makedirs(self.cache_dir, exist_ok=True)
-        logger.info(f"Cache initialized at {self.cache_dir} with TTL={ttl_hours}h")
+        logger.info(f"Cache initialized at {self.cache_dir} with TTL={ttl_hours}h, enabled={self.enabled}")
 
     def _get_cache_key(self, key: str) -> str:
         """Generate a safe filename from a cache key using hash"""
@@ -47,6 +48,10 @@ class SimpleCache:
 
         Returns None if not found or expired.
         """
+        if not self.enabled:
+            logger.debug(f"Cache DISABLED (via USE_CACHE env var)")
+            return None
+
         cache_path = self._get_cache_path(key)
 
         if not os.path.exists(cache_path):
@@ -78,6 +83,10 @@ class SimpleCache:
 
     def set(self, key: str, value: dict):
         """Save a value to cache"""
+        if not self.enabled:
+            logger.debug(f"Cache DISABLED - not saving")
+            return
+
         cache_path = self._get_cache_path(key)
 
         cached_data = {

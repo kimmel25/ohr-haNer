@@ -12,3 +12,4 @@ Goals:
 --- Notes ---
 - smooth out the responses, maybe bold important lines
 - lines finish in middle of a word
+- an email feature would be really cool! at least a query but maybe even dialougue

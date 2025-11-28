@@ -1,2 +1,3 @@
 backend/.env.example
+backend/.env
 backend/logs/marei_mekomos_20251126.log
