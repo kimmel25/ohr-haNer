@@ -82,9 +82,9 @@ function App() {
   return (
     <div className="app">
       <header className="header">
-        <h1>מראי מקומות</h1>
+        <h1>אור הנר</h1>
         <h2>Marei Mekomos Finder</h2>
-        <p>Enter any Torah topic to find relevant sources</p>
+        <p>Enter any topic to find relevant מקומות</p>
       </header>
 
       <form onSubmit={handleSearch} className="search-form">
@@ -93,7 +93,7 @@ function App() {
             type="text"
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
-            placeholder="Enter a topic (e.g., כיבוד אב ואם, bedikas chometz, tefilla)"
+            placeholder="Enter a topic (e.g, bedikas chometz, ביטול חמץ, baal yiraeh baal yimatze derabanan)"
             className="topic-input"
             dir="auto"
             disabled={loading}
@@ -101,7 +101,7 @@ function App() {
         </div>
 
         <button type="submit" disabled={loading || !topic.trim()}>
-          {loading ? 'Searching...' : 'Find Sources'}
+          {loading ? 'Searching...' : 'בודק'}
         </button>
       </form>
 

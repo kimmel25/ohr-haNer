@@ -23,7 +23,7 @@ body {
 
 .header h1 {
   font-size: 2.5rem;
-  color: #1a365d;
+  color: #b64001;
   margin-bottom: 5px;
   font-family: 'Times New Roman', serif;
 }
@@ -75,8 +75,8 @@ button[type="submit"] {
   padding: 15px;
   font-size: 1.1rem;
   font-weight: 600;
-  color: white;
-  background: #3182ce;
+  color: #ffffff;
+  background: #bb7955;
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -84,11 +84,11 @@ button[type="submit"] {
 }
 
 button[type="submit"]:hover:not(:disabled) {
-  background: #2c5282;
+  background: #b64001;
 }
 
 button[type="submit"]:disabled {
-  background: #a0aec0;
+  background: #b8937d;
   cursor: not-allowed;
 }
 
