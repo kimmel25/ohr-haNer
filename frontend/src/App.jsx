@@ -3,26 +3,33 @@ import './App.css'
 
 function App() {
   const [topic, setTopic] = useState('')
-  const [level, setLevel] = useState('intermediate')
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState(null)
+  const [clarification, setClarification] = useState(null)
+  const [userClarification, setUserClarification] = useState('')
   const [error, setError] = useState('')
 
-  const handleSearch = async (e) => {
+  const handleSearch = async (e, withClarification = '') => {
     e.preventDefault()
     if (!topic.trim()) return
 
     setLoading(true)
     setError('')
     setResults(null)
+    setClarification(null)
 
     try {
+      const body = { topic }
+      if (withClarification) {
+        body.clarification = withClarification
+      }
+
       const response = await fetch('http://localhost:8000/search', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ topic, level }),
+        body: JSON.stringify(body),
       })
 
       if (!response.ok) {
@@ -30,13 +37,30 @@ function App() {
       }
 
       const data = await response.json()
-      setResults(data)
+      
+      // Check if we need clarification
+      if (data.needs_clarification && data.clarifying_questions && data.clarifying_questions.length > 0) {
+        setClarification({
+          interpreted_as: data.interpreted_query,
+          questions: data.clarifying_questions
+        })
+        setUserClarification('')
+      } else {
+        // We have results
+        setResults(data)
+      }
     } catch (err) {
       setError('Error connecting to server. Make sure the backend is running.')
       console.error(err)
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleClarificationSubmit = (e) => {
+    e.preventDefault()
+    if (!userClarification.trim()) return
+    handleSearch(e, userClarification)
   }
 
   // Group sources by category
@@ -72,16 +96,8 @@ function App() {
             placeholder="Enter a topic (e.g., כיבוד אב ואם, bedikas chometz, tefilla)"
             className="topic-input"
             dir="auto"
+            disabled={loading}
           />
-        </div>
-
-        <div className="level-group">
-          <label>Level:</label>
-          <select value={level} onChange={(e) => setLevel(e.target.value)}>
-            <option value="beginner">Beginner - Basic sources</option>
-            <option value="intermediate">Intermediate - Main sugyos & halacha</option>
-            <option value="advanced">Advanced - Comprehensive</option>
-          </select>
         </div>
 
         <button type="submit" disabled={loading || !topic.trim()}>
@@ -90,6 +106,43 @@ function App() {
       </form>
 
       {error && <div className="error">{error}</div>}
+
+      {clarification && (
+        <div className="clarification-box">
+          <h3>📋 I need a bit more info...</h3>
+          <p className="interpreted-as">
+            I understood you're asking about: <em>{clarification.interpreted_as}</em>
+          </p>
+          <div className="questions">
+            {clarification.questions.map((q, idx) => (
+              <p key={idx} className="question">
+                <strong>{idx + 1}.</strong> {q}
+              </p>
+            ))}
+          </div>
+          <form onSubmit={handleClarificationSubmit} className="clarification-form">
+            <textarea
+              value={userClarification}
+              onChange={(e) => setUserClarification(e.target.value)}
+              placeholder="Your answer... (e.g., 'I'm looking for the foundational sugya about chuppah being koneh')"
+              className="clarification-input"
+              rows="3"
+            />
+            <div className="clarification-buttons">
+              <button type="submit" disabled={!userClarification.trim()}>
+                Continue Search
+              </button>
+              <button 
+                type="button" 
+                onClick={(e) => handleSearch(e, "Search for all related sources")}
+                className="secondary-button"
+              >
+                Just show me everything related
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {results && (
         <div className="results">

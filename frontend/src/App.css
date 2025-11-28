@@ -65,25 +65,9 @@ body {
   border-color: #3182ce;
 }
 
-.level-group {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 15px;
-}
-
-.level-group label {
-  font-weight: 500;
-  color: #4a5568;
-}
-
-.level-group select {
-  padding: 8px 12px;
-  font-size: 1rem;
-  border: 2px solid #e2e8f0;
-  border-radius: 6px;
-  background: white;
-  cursor: pointer;
+.topic-input:disabled {
+  background: #f7fafc;
+  cursor: not-allowed;
 }
 
 button[type="submit"] {
@@ -116,6 +100,108 @@ button[type="submit"]:disabled {
   margin-bottom: 20px;
 }
 
+/* Clarification Box Styles */
+.clarification-box {
+  background: #fffbeb;
+  border: 2px solid #fbbf24;
+  border-radius: 12px;
+  padding: 25px;
+  margin-bottom: 30px;
+}
+
+.clarification-box h3 {
+  color: #92400e;
+  margin-bottom: 15px;
+  font-size: 1.3rem;
+}
+
+.interpreted-as {
+  background: white;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  color: #4a5568;
+  border-left: 4px solid #3182ce;
+}
+
+.interpreted-as em {
+  color: #2d3748;
+  font-weight: 600;
+  font-style: normal;
+}
+
+.questions {
+  margin-bottom: 20px;
+}
+
+.question {
+  padding: 10px;
+  margin-bottom: 10px;
+  color: #2d3748;
+  line-height: 1.6;
+}
+
+.question strong {
+  color: #3182ce;
+  margin-right: 8px;
+}
+
+.clarification-form {
+  margin-top: 20px;
+}
+
+.clarification-input {
+  width: 100%;
+  padding: 12px;
+  font-size: 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.clarification-input:focus {
+  outline: none;
+  border-color: #3182ce;
+}
+
+.clarification-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.clarification-buttons button {
+  flex: 1;
+  padding: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.clarification-buttons button:first-child {
+  background: #3182ce;
+  color: white;
+}
+
+.clarification-buttons button:first-child:hover:not(:disabled) {
+  background: #2c5282;
+}
+
+.secondary-button {
+  background: white;
+  color: #3182ce;
+  border: 2px solid #3182ce !important;
+}
+
+.secondary-button:hover {
+  background: #ebf8ff;
+}
+
+/* Results Styles */
 .results {
   background: white;
   padding: 25px;
@@ -234,7 +320,11 @@ button[type="submit"]:disabled {
     padding: 15px;
   }
   
-  .search-form, .results {
+  .search-form, .results, .clarification-box {
     padding: 15px;
+  }
+  
+  .clarification-buttons {
+    flex-direction: column;
   }
 }
