@@ -1,5 +1,15 @@
-fastapi==0.109.0
-uvicorn==0.27.0
-httpx==0.26.0
-anthropic==0.43.0
-pydantic==2.5.3
+# Marei Mekomos V5 Backend Dependencies
+
+# Web framework
+fastapi>=0.100.0
+uvicorn[standard]>=0.23.0
+
+# HTTP client for Sefaria API
+httpx>=0.24.0
+
+# Anthropic Claude API
+anthropic>=0.18.0
+
+# Utilities
+pydantic>=2.0.0
+python-dotenv>=1.0.0
