@@ -1,7 +1,7 @@
 {
-  "name": "marei-mekomos-frontend",
+  "name": "marei-mekomos-v6",
   "private": true,
-  "version": "5.0.0",
+  "version": "6.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",

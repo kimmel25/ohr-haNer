@@ -1,17 +1,6 @@
 import { useState } from 'react'
 import './App.css'
 
-/**
- * Marei Mekomos Frontend v5.0
- * 
- * Features:
- * - Query intent display (lomdus/psak/makor)
- * - Primary masechta highlighting
- * - VGR validation indicator
- * - Methodology notes display
- * - Improved clarification UI (chavrusa-style)
- */
-
 function App() {
   const [topic, setTopic] = useState('')
   const [loading, setLoading] = useState(false)
@@ -19,6 +8,7 @@ function App() {
   const [clarification, setClarification] = useState(null)
   const [userClarification, setUserClarification] = useState('')
   const [error, setError] = useState('')
+  const [searchScope, setSearchScope] = useState('standard')
   const [showMethodology, setShowMethodology] = useState(false)
 
   const handleSearch = async (e, withClarification = '') => {
@@ -31,7 +21,10 @@ function App() {
     setClarification(null)
 
     try {
-      const body = { topic }
+      const body = { 
+        topic,
+        scope: searchScope
+      }
       if (withClarification) {
         body.clarification = withClarification
       }
@@ -50,7 +43,7 @@ function App() {
 
       const data = await response.json()
       
-      if (data.needs_clarification && data.clarifying_questions && data.clarifying_questions.length > 0) {
+      if (data.needs_clarification && data.clarifying_questions?.length > 0) {
         setClarification({
           interpreted_as: data.interpreted_query,
           questions: data.clarifying_questions
@@ -73,28 +66,52 @@ function App() {
     handleSearch(e, userClarification)
   }
 
-  // Group sources by category
-  const groupedSources = results?.sources?.reduce((acc, source) => {
-    const category = source.category || 'Other'
-    if (!acc[category]) {
-      acc[category] = []
+  const handleFeedback = async (isGood) => {
+    if (!results) return
+    
+    try {
+      await fetch('http://localhost:8000/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: results.topic,
+          good_sources: isGood ? results.sources.map(s => s.ref) : [],
+          bad_sources: !isGood ? results.sources.map(s => s.ref) : [],
+          notes: ""
+        })
+      })
+      alert(isGood ? 'Thanks! These sources will help future searches.' : 'Thanks for the feedback!')
+    } catch (err) {
+      console.error('Feedback error:', err)
     }
-    acc[category].push(source)
+  }
+
+  // Group sources by layer
+  const sourcesByLayer = results?.sources?.reduce((acc, source) => {
+    const layer = source.layer || source.category || 'Other'
+    if (!acc[layer]) {
+      acc[layer] = []
+    }
+    acc[layer].push(source)
     return acc
   }, {})
 
-  // Category order - Gemara first (primary sources), then chronological
-  const categoryOrder = [
-    'Gemara', 'Chumash', 'Nach', 'Mishna', 'Rishonim', 
-    'Shulchan Aruch', 'Acharonim', 'Other'
+  // Define layer order (Chumash to Acharonim)
+  const layerOrder = [
+    'Chumash', 'Nach', 'Mishna', 'Gemara', 
+    'Rishonim', 'Shulchan Aruch', 'Acharonim', 'Other'
   ]
 
-  // Intent display names
-  const intentDisplayNames = {
-    'lomdus': '📚 Lomdus (Analytical)',
-    'psak': '⚖️ Psak (Practical Halacha)',
-    'makor': '🔍 Makor (Source Finding)',
-    'general': '📖 General'
+  // Layer colors
+  const layerColors = {
+    'Chumash': '#8B4513',
+    'Nach': '#6B8E23',
+    'Mishna': '#4169E1',
+    'Gemara': '#DC143C',
+    'Rishonim': '#9932CC',
+    'Shulchan Aruch': '#008B8B',
+    'Acharonim': '#FF8C00',
+    'Other': '#696969'
   }
 
   return (
@@ -102,8 +119,7 @@ function App() {
       <header className="header">
         <h1>אור הנר</h1>
         <h2>Marei Mekomos Finder</h2>
-        <p className="subtitle">Sugya Archaeology + VGR Protocol</p>
-        <p className="tagline">Enter any topic to find relevant מקומות</p>
+        <p className="subtitle">Living Knowledge - From Chumash to Acharonim</p>
       </header>
 
       <form onSubmit={handleSearch} className="search-form">
@@ -112,69 +128,88 @@ function App() {
             type="text"
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
-            placeholder="e.g., chuppas niddah, bitul chametz, safek sotah, kinyan agav"
+            placeholder="Enter a topic (e.g., chuppas niddah, bitul chametz, safek sotah)"
             className="topic-input"
             dir="auto"
             disabled={loading}
           />
         </div>
 
-        <div className="examples-row">
-          <span className="examples-label">Try:</span>
-          <button type="button" className="example-btn" onClick={() => setTopic('chuppas niddah')}>
-            chuppas niddah
-          </button>
-          <button type="button" className="example-btn" onClick={() => setTopic('bitul chametz')}>
-            bitul chametz
-          </button>
-          <button type="button" className="example-btn" onClick={() => setTopic('safek sotah')}>
-            safek sotah
-          </button>
+        {/* Scope Selection */}
+        <div className="scope-selector">
+          <label>Search Depth:</label>
+          <div className="scope-options">
+            <button
+              type="button"
+              className={`scope-btn ${searchScope === 'focused' ? 'active' : ''}`}
+              onClick={() => setSearchScope('focused')}
+            >
+              Focused
+              <span className="scope-desc">Gemara + Key Rishonim</span>
+            </button>
+            <button
+              type="button"
+              className={`scope-btn ${searchScope === 'standard' ? 'active' : ''}`}
+              onClick={() => setSearchScope('standard')}
+            >
+              Standard
+              <span className="scope-desc">Gemara → Shulchan Aruch</span>
+            </button>
+            <button
+              type="button"
+              className={`scope-btn ${searchScope === 'comprehensive' ? 'active' : ''}`}
+              onClick={() => setSearchScope('comprehensive')}
+            >
+              Comprehensive
+              <span className="scope-desc">Chumash → Acharonim</span>
+            </button>
+          </div>
         </div>
 
-        <button type="submit" disabled={loading || !topic.trim()} className="search-btn">
-          {loading ? 'Searching...' : 'חפש מקורות'}
+        <button type="submit" disabled={loading || !topic.trim()}>
+          {loading ? 'Searching All Layers...' : 'בודק'}
         </button>
       </form>
 
+      {/* Quick Examples */}
+      <div className="examples">
+        <span>Try: </span>
+        <button onClick={() => setTopic('chuppas niddah')}>chuppas niddah</button>
+        <button onClick={() => setTopic('bitul chametz')}>bitul chametz</button>
+        <button onClick={() => setTopic('kim lei bgavei')}>kim lei bgavei</button>
+        <button onClick={() => setTopic('safek sotah')}>safek sotah</button>
+      </div>
+
       {error && <div className="error">{error}</div>}
 
-      {/* Chavrusa-style clarification */}
       {clarification && (
         <div className="clarification-box">
-          <div className="clarification-header">
-            <span className="chavrusa-icon">🤝</span>
-            <h3>Let me make sure I understand...</h3>
-          </div>
-          
+          <h3>🤝 Chavrusa Question...</h3>
           <p className="interpreted-as">
-            I'm understanding you're asking about: <em>{clarification.interpreted_as}</em>
+            I think you're asking about: <em>{clarification.interpreted_as}</em>
           </p>
-          
           <div className="questions">
-            <p className="questions-intro">To find the best mekomos, could you clarify:</p>
             {clarification.questions.map((q, idx) => (
               <p key={idx} className="question">
-                <span className="question-bullet">•</span> {q}
+                <strong>{idx + 1}.</strong> {q}
               </p>
             ))}
           </div>
-          
           <form onSubmit={handleClarificationSubmit} className="clarification-form">
             <textarea
               value={userClarification}
               onChange={(e) => setUserClarification(e.target.value)}
-              placeholder="Your answer... (e.g., 'I'm looking for the machlokes rishonim about whether chuppah is koneh when she's a niddah')"
+              placeholder="Tell me more about what you're looking for..."
               className="clarification-input"
               rows="3"
             />
             <div className="clarification-buttons">
               <button type="submit" disabled={!userClarification.trim()}>
-                Continue with clarification
+                Continue Search
               </button>
               <button 
                 type="button" 
-                onClick={(e) => handleSearch(e, "Search broadly for all related sources")}
+                onClick={(e) => handleSearch(e, "Give me everything related")}
                 className="secondary-button"
               >
                 Just show me everything
@@ -184,74 +219,72 @@ function App() {
         </div>
       )}
 
-      {/* Results */}
       {results && (
         <div className="results">
           <div className="results-header">
             <h3>Sources for: {results.topic}</h3>
             
-            {/* Query metadata */}
-            <div className="query-metadata">
+            {/* Metadata badges */}
+            <div className="metadata">
               {results.query_intent && (
-                <span className={`intent-badge intent-${results.query_intent}`}>
-                  {intentDisplayNames[results.query_intent] || results.query_intent}
+                <span className={`badge intent-${results.query_intent}`}>
+                  {results.query_intent}
                 </span>
               )}
-              {results.primary_masechta && (
-                <span className="masechta-badge">
-                  📖 {results.primary_masechta}
+              {results.search_scope && (
+                <span className="badge scope">
+                  {results.search_scope}
+                </span>
+              )}
+              {results.layers_searched?.length > 0 && (
+                <span className="badge layers">
+                  {results.layers_searched.length} layers
                 </span>
               )}
             </div>
           </div>
           
-          {results.interpreted_query && results.interpreted_query !== results.topic && (
-            <p className="interpreted">
-              Interpreted as: <em>{results.interpreted_query}</em>
-            </p>
-          )}
-          
           {results.summary && (
-            <div className="summary-box">
-              <h4>Overview</h4>
-              <p>{results.summary}</p>
-            </div>
+            <p className="summary">{results.summary}</p>
           )}
 
           {/* Methodology toggle */}
-          {results.methodology_notes && (
-            <div className="methodology-section">
-              <button 
-                className="methodology-toggle"
-                onClick={() => setShowMethodology(!showMethodology)}
-              >
-                {showMethodology ? '▼' : '▶'} How we found these sources
-              </button>
-              {showMethodology && (
-                <div className="methodology-notes">
-                  <p>{results.methodology_notes}</p>
-                </div>
-              )}
-            </div>
-          )}
+          <div className="methodology-section">
+            <button 
+              className="methodology-toggle"
+              onClick={() => setShowMethodology(!showMethodology)}
+            >
+              {showMethodology ? '▼' : '▶'} How we found these sources
+            </button>
+            {showMethodology && results.methodology_notes && (
+              <p className="methodology-notes">{results.methodology_notes}</p>
+            )}
+          </div>
 
           {results.sources.length === 0 ? (
-            <p className="no-results">No validated sources found. Try a different topic or spelling.</p>
+            <p>No sources found. Try a different topic or broader search scope.</p>
           ) : (
             <div className="sources-container">
-              {categoryOrder.map(category => {
-                const sources = groupedSources?.[category]
+              {layerOrder.map(layer => {
+                const sources = sourcesByLayer?.[layer]
                 if (!sources || sources.length === 0) return null
 
                 return (
-                  <div key={category} className="category-section">
-                    <h4 className="category-title">
-                      {category}
-                      <span className="category-count">({sources.length})</span>
+                  <div key={layer} className="layer-section">
+                    <h4 
+                      className="layer-title"
+                      style={{ borderLeftColor: layerColors[layer] }}
+                    >
+                      <span 
+                        className="layer-dot"
+                        style={{ backgroundColor: layerColors[layer] }}
+                      />
+                      {layer}
+                      <span className="layer-count">({sources.length})</span>
                     </h4>
                     
                     {sources.map((source, idx) => (
-                      <div key={idx} className={`source-card ${source.citation_count >= 99 ? 'primary-source' : ''}`}>
+                      <div key={idx} className="source-card">
                         <div className="source-header">
                           <a 
                             href={source.sefaria_url} 
@@ -262,40 +295,26 @@ function App() {
                             {source.he_ref || source.ref}
                           </a>
                           <span className="source-ref-en">({source.ref})</span>
-                          
-                          {source.citation_count >= 99 && (
-                            <span className="primary-badge">Primary Sugya</span>
-                          )}
-                          {source.citation_count > 1 && source.citation_count < 99 && (
-                            <span className="citation-badge">
-                              Cited {source.citation_count}x
-                            </span>
-                          )}
-                          {source.validated && (
-                            <span className="validated-badge" title="Verified via Sefaria API">✓</span>
-                          )}
+                          <span className="validated-badge" title="Validated against Sefaria">✓</span>
                         </div>
                         
                         {source.relevance && (
-                          <p className="source-relevance">{source.relevance}</p>
-                        )}
-                        
-                        {source.cited_by && source.cited_by.length > 0 && (
-                          <p className="cited-by">
-                            <strong>Cited by:</strong> {source.cited_by.slice(0, 3).join(', ')}
-                            {source.cited_by.length > 3 && ` +${source.cited_by.length - 3} more`}
-                          </p>
+                          <p className="relevance">{source.relevance}</p>
                         )}
                         
                         {source.he_text && (
                           <div className="source-text he" dir="rtl">
-                            {source.he_text}
+                            {source.he_text.length > 500 
+                              ? source.he_text.substring(0, 500) + '...' 
+                              : source.he_text}
                           </div>
                         )}
                         
                         {source.en_text && (
                           <div className="source-text en">
-                            {source.en_text}
+                            {source.en_text.length > 400 
+                              ? source.en_text.substring(0, 400) + '...' 
+                              : source.en_text}
                           </div>
                         )}
                       </div>
@@ -306,17 +325,22 @@ function App() {
             </div>
           )}
 
-          <div className="results-footer">
-            <p className="source-count">
-              ✓ {results.sources.length} validated sources returned
-            </p>
+          {/* Feedback */}
+          <div className="feedback-section">
+            <p>Were these sources helpful?</p>
+            <button onClick={() => handleFeedback(true)} className="feedback-btn good">
+              👍 Yes, great sources!
+            </button>
+            <button onClick={() => handleFeedback(false)} className="feedback-btn bad">
+              👎 Not what I needed
+            </button>
           </div>
+
+          <p className="source-count">
+            Found {results.sources.length} validated sources across {results.layers_searched?.length || 0} layers
+          </p>
         </div>
       )}
-      
-      <footer className="footer">
-        <p>Sugya Archaeology + VGR Protocol - discovering sources through citation networks</p>
-      </footer>
     </div>
   )
 }
