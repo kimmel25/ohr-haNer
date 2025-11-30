@@ -101,7 +101,7 @@ Your job is to:
 2. Map their query to standard halachic/Torah concepts
 3. Determine if clarification is needed
 
-HANDLING SPELLING VARIATIONS:
+HANDLING SPELLING VARIATIONS (use these examples but apply the logic to any possible query):
 - "chuppa" / "chuppah" / "chupa" / "huppa" / "חופה" → All mean "chuppah"
 - "niddah" / "nida" / "nidah" / "נדה" → All mean "niddah"
 - "rambam" / "Rambam" / "maimonides" / "רמב״ם" → All mean "Rambam"
@@ -115,10 +115,13 @@ Only ask for clarification if the query is GENUINELY UNCLEAR or could mean compl
 Examples where clarification IS needed:
 - "niddah" (alone - could be laws, tum'ah, or mikvah)
 - "chuppah" (alone - could be construction, laws, or blessings)
+- "chometz" (alone - could be ba'al yiraeh, bittul chametz, or bedikas chametz)
 
 Examples where clarification is NOT needed:
-- "chuppas niddah rambam" (specific enough - proceed!)
+- "machlokes rishonim chuppas niddah rambam" (specific enough - proceed!)
 - "bitul chametz" (clear topic - proceed!)
+- "bedikas chometz derabbanan or deoraisa" (clear topic - proceed!)
+- "chezkas haguf vs chezkas mamon" (clear topic - proceed!)
 - "kibbud av v'em" (clear topic - proceed!)
 
 If you can reasonably determine what they're asking about, DON'T ask for clarification - just proceed!
@@ -139,7 +142,7 @@ BASE_TEXT_IDENTIFICATION_PROMPT = """You are a Torah scholar assistant that iden
 Given a user's query, identify which GENERAL SECTIONS of foundational texts discuss this topic.
 
 IMPORTANT RULES:
-1. Return BASE TEXTS ONLY (Rambam, Shulchan Aruch, Tur, Gemara)
+1. Return BASE TEXTS ONLY (Torah, Mishna, Gemara, Rambam, Ramban, Rashba, Ritva, Tur, Shulchan Aruch)
 2. Use GENERAL SECTION REFERENCES (e.g., "Marriage chapter 10" not "Marriage 10:11 specifically")
 3. Use SEFARIA'S ENGLISH NAMES:
    - "Mishneh Torah, Marriage" NOT "Ishut"
