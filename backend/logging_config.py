@@ -9,24 +9,16 @@ from datetime import datetime
 
 
 def setup_logging(log_level=logging.DEBUG):
-    """
-    Set up logging with both file and console handlers.
-    """
-    # Create logs directory if it doesn't exist
+    """Set up logging with both file and console handlers."""
     log_dir = os.path.join(os.path.dirname(__file__), 'logs')
     os.makedirs(log_dir, exist_ok=True)
 
-    # Create a unique log file name with timestamp
     log_filename = os.path.join(log_dir, f'marei_mekomos_{datetime.now().strftime("%Y%m%d")}.log')
 
-    # Create root logger
     logger = logging.getLogger()
     logger.setLevel(log_level)
-
-    # Clear any existing handlers
     logger.handlers.clear()
 
-    # Create formatters
     detailed_formatter = logging.Formatter(
         fmt='%(asctime)s | %(levelname)-8s | %(name)s:%(funcName)s:%(lineno)d | %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S'
@@ -37,10 +29,9 @@ def setup_logging(log_level=logging.DEBUG):
         datefmt='%H:%M:%S'
     )
 
-    # File handler with rotation (10MB max, keep 5 old files)
     file_handler = RotatingFileHandler(
         log_filename,
-        maxBytes=10*1024*1024,  # 10MB
+        maxBytes=10*1024*1024,
         backupCount=5,
         encoding='utf-8'
     )
@@ -48,15 +39,13 @@ def setup_logging(log_level=logging.DEBUG):
     file_handler.setFormatter(detailed_formatter)
     logger.addHandler(file_handler)
 
-    # Console handler (less verbose for console)
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.INFO)
     console_handler.setFormatter(simple_formatter)
     logger.addHandler(console_handler)
 
-    # Log startup message
     logger.info("=" * 80)
-    logger.info("Marei Mekomos V6 - Living Knowledge - Logging initialized")
+    logger.info("Marei Mekomos V5 - Flexible Thinking - Logging initialized")
     logger.info(f"Log file: {log_filename}")
     logger.info("=" * 80)
 
