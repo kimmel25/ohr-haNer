@@ -8,8 +8,7 @@ function App() {
   const [clarification, setClarification] = useState(null)
   const [userClarification, setUserClarification] = useState('')
   const [error, setError] = useState('')
-  const [searchScope, setSearchScope] = useState('standard')
-  const [showMethodology, setShowMethodology] = useState(false)
+  const [resolvedTerms, setResolvedTerms] = useState([])  // NEW: Track resolved Hebrew terms
 
   const handleSearch = async (e, withClarification = '') => {
     e.preventDefault()
@@ -19,12 +18,10 @@ function App() {
     setError('')
     setResults(null)
     setClarification(null)
+    setResolvedTerms([])  // Clear previous resolutions
 
     try {
-      const body = { 
-        topic,
-        scope: searchScope
-      }
+      const body = { topic }
       if (withClarification) {
         body.clarification = withClarification
       }
@@ -43,13 +40,20 @@ function App() {
 
       const data = await response.json()
       
-      if (data.needs_clarification && data.clarifying_questions?.length > 0) {
+      // NEW: Extract resolved terms if present
+      if (data.resolved_terms && data.resolved_terms.length > 0) {
+        setResolvedTerms(data.resolved_terms)
+      }
+      
+      // Check if we need clarification
+      if (data.needs_clarification && data.clarifying_questions && data.clarifying_questions.length > 0) {
         setClarification({
           interpreted_as: data.interpreted_query,
           questions: data.clarifying_questions
         })
         setUserClarification('')
       } else {
+        // We have results
         setResults(data)
       }
     } catch (err) {
@@ -66,52 +70,30 @@ function App() {
     handleSearch(e, userClarification)
   }
 
-  const handleFeedback = async (isGood) => {
-    if (!results) return
-    
-    try {
-      await fetch('http://localhost:8000/feedback', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: results.topic,
-          good_sources: isGood ? results.sources.map(s => s.ref) : [],
-          bad_sources: !isGood ? results.sources.map(s => s.ref) : [],
-          notes: ""
-        })
-      })
-      alert(isGood ? 'Thanks! These sources will help future searches.' : 'Thanks for the feedback!')
-    } catch (err) {
-      console.error('Feedback error:', err)
+  // Group sources by category
+  const groupedSources = results?.sources?.reduce((acc, source) => {
+    const category = source.category || 'Other'
+    if (!acc[category]) {
+      acc[category] = []
     }
-  }
-
-  // Group sources by layer
-  const sourcesByLayer = results?.sources?.reduce((acc, source) => {
-    const layer = source.layer || source.category || 'Other'
-    if (!acc[layer]) {
-      acc[layer] = []
-    }
-    acc[layer].push(source)
+    acc[category].push(source)
     return acc
   }, {})
 
-  // Define layer order (Chumash to Acharonim)
-  const layerOrder = [
-    'Chumash', 'Nach', 'Mishna', 'Gemara', 
-    'Rishonim', 'Shulchan Aruch', 'Acharonim', 'Other'
+  // Define category order
+  const categoryOrder = [
+    'Chumash', 'Nach', 'Mishna', 'Gemara', 'Rishonim', 
+    'Shulchan Aruch', 'Acharonim', 'Other'
   ]
 
-  // Layer colors
-  const layerColors = {
-    'Chumash': '#8B4513',
-    'Nach': '#6B8E23',
-    'Mishna': '#4169E1',
-    'Gemara': '#DC143C',
-    'Rishonim': '#9932CC',
-    'Shulchan Aruch': '#008B8B',
-    'Acharonim': '#FF8C00',
-    'Other': '#696969'
+  // NEW: Helper to get confidence badge color
+  const getConfidenceColor = (confidence) => {
+    switch (confidence) {
+      case 'high': return 'confidence-high'
+      case 'medium': return 'confidence-medium'
+      case 'low': return 'confidence-low'
+      default: return 'confidence-unknown'
+    }
   }
 
   return (
@@ -119,7 +101,8 @@ function App() {
       <header className="header">
         <h1>אור הנר</h1>
         <h2>Marei Mekomos Finder</h2>
-        <p className="subtitle">Living Knowledge - From Chumash to Acharonim</p>
+        <p>Enter any topic to find relevant מקומות</p>
+        <p className="version">V5.0 - Now with smart transliteration! 🎯</p>
       </header>
 
       <form onSubmit={handleSearch} className="search-form">
@@ -128,65 +111,52 @@ function App() {
             type="text"
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
-            placeholder="Enter a topic (e.g., chuppas niddah, bitul chametz, safek sotah)"
+            placeholder="Enter a topic (e.g, bedikas chometz, ביטול חמץ, chezkas rav huna)"
             className="topic-input"
             dir="auto"
             disabled={loading}
           />
         </div>
 
-        {/* Scope Selection */}
-        <div className="scope-selector">
-          <label>Search Depth:</label>
-          <div className="scope-options">
-            <button
-              type="button"
-              className={`scope-btn ${searchScope === 'focused' ? 'active' : ''}`}
-              onClick={() => setSearchScope('focused')}
-            >
-              Focused
-              <span className="scope-desc">Gemara + Key Rishonim</span>
-            </button>
-            <button
-              type="button"
-              className={`scope-btn ${searchScope === 'standard' ? 'active' : ''}`}
-              onClick={() => setSearchScope('standard')}
-            >
-              Standard
-              <span className="scope-desc">Gemara → Shulchan Aruch</span>
-            </button>
-            <button
-              type="button"
-              className={`scope-btn ${searchScope === 'comprehensive' ? 'active' : ''}`}
-              onClick={() => setSearchScope('comprehensive')}
-            >
-              Comprehensive
-              <span className="scope-desc">Chumash → Acharonim</span>
-            </button>
-          </div>
-        </div>
-
         <button type="submit" disabled={loading || !topic.trim()}>
-          {loading ? 'Searching All Layers...' : 'בודק'}
+          {loading ? 'Searching...' : 'בודק'}
         </button>
       </form>
 
-      {/* Quick Examples */}
-      <div className="examples">
-        <span>Try: </span>
-        <button onClick={() => setTopic('chuppas niddah')}>chuppas niddah</button>
-        <button onClick={() => setTopic('bitul chametz')}>bitul chametz</button>
-        <button onClick={() => setTopic('kim lei bgavei')}>kim lei bgavei</button>
-        <button onClick={() => setTopic('safek sotah')}>safek sotah</button>
-      </div>
+      {/* NEW: Display resolved Hebrew terms */}
+      {resolvedTerms.length > 0 && (
+        <div className="resolved-terms-box">
+          <h3>🎯 Found Hebrew Term{resolvedTerms.length > 1 ? 's' : ''}!</h3>
+          {resolvedTerms.map((term, idx) => (
+            <div key={idx} className="resolved-term">
+              <div className="term-header">
+                <span className="original-term">"{term.original}"</span>
+                <span className="arrow">→</span>
+                <span className="hebrew-term" dir="rtl">{term.hebrew}</span>
+                <span className={`confidence-badge ${getConfidenceColor(term.confidence)}`}>
+                  {term.confidence}
+                </span>
+              </div>
+              <div className="term-details">
+                <p className="source-ref">
+                  <strong>Source:</strong> {term.source_ref}
+                </p>
+                <p className="explanation">
+                  <strong>Why this match:</strong> {term.explanation}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {error && <div className="error">{error}</div>}
 
       {clarification && (
         <div className="clarification-box">
-          <h3>🤝 Chavrusa Question...</h3>
+          <h3>📋 I need a bit more info...</h3>
           <p className="interpreted-as">
-            I think you're asking about: <em>{clarification.interpreted_as}</em>
+            I understood you're asking about: <em>{clarification.interpreted_as}</em>
           </p>
           <div className="questions">
             {clarification.questions.map((q, idx) => (
@@ -199,7 +169,7 @@ function App() {
             <textarea
               value={userClarification}
               onChange={(e) => setUserClarification(e.target.value)}
-              placeholder="Tell me more about what you're looking for..."
+              placeholder="Your answer... (e.g., 'I'm looking for the foundational sugya about chuppah being koneh')"
               className="clarification-input"
               rows="3"
             />
@@ -209,10 +179,10 @@ function App() {
               </button>
               <button 
                 type="button" 
-                onClick={(e) => handleSearch(e, "Give me everything related")}
+                onClick={(e) => handleSearch(e, "Search for all related sources")}
                 className="secondary-button"
               >
-                Just show me everything
+                Just show me everything related
               </button>
             </div>
           </form>
@@ -221,67 +191,29 @@ function App() {
 
       {results && (
         <div className="results">
-          <div className="results-header">
-            <h3>Sources for: {results.topic}</h3>
-            
-            {/* Metadata badges */}
-            <div className="metadata">
-              {results.query_intent && (
-                <span className={`badge intent-${results.query_intent}`}>
-                  {results.query_intent}
-                </span>
-              )}
-              {results.search_scope && (
-                <span className="badge scope">
-                  {results.search_scope}
-                </span>
-              )}
-              {results.layers_searched?.length > 0 && (
-                <span className="badge layers">
-                  {results.layers_searched.length} layers
-                </span>
-              )}
-            </div>
-          </div>
+          <h3>Sources for: {results.topic}</h3>
+          
+          {results.interpreted_query && (
+            <p className="interpreted-query">
+              <strong>Interpreted as:</strong> {results.interpreted_query}
+            </p>
+          )}
           
           {results.summary && (
             <p className="summary">{results.summary}</p>
           )}
 
-          {/* Methodology toggle */}
-          <div className="methodology-section">
-            <button 
-              className="methodology-toggle"
-              onClick={() => setShowMethodology(!showMethodology)}
-            >
-              {showMethodology ? '▼' : '▶'} How we found these sources
-            </button>
-            {showMethodology && results.methodology_notes && (
-              <p className="methodology-notes">{results.methodology_notes}</p>
-            )}
-          </div>
-
           {results.sources.length === 0 ? (
-            <p>No sources found. Try a different topic or broader search scope.</p>
+            <p>No sources found. Try a different topic or spelling.</p>
           ) : (
             <div className="sources-container">
-              {layerOrder.map(layer => {
-                const sources = sourcesByLayer?.[layer]
+              {categoryOrder.map(category => {
+                const sources = groupedSources?.[category]
                 if (!sources || sources.length === 0) return null
 
                 return (
-                  <div key={layer} className="layer-section">
-                    <h4 
-                      className="layer-title"
-                      style={{ borderLeftColor: layerColors[layer] }}
-                    >
-                      <span 
-                        className="layer-dot"
-                        style={{ backgroundColor: layerColors[layer] }}
-                      />
-                      {layer}
-                      <span className="layer-count">({sources.length})</span>
-                    </h4>
+                  <div key={category} className="category-section">
+                    <h4 className="category-title">{category}</h4>
                     
                     {sources.map((source, idx) => (
                       <div key={idx} className="source-card">
@@ -295,26 +227,23 @@ function App() {
                             {source.he_ref || source.ref}
                           </a>
                           <span className="source-ref-en">({source.ref})</span>
-                          <span className="validated-badge" title="Validated against Sefaria">✓</span>
                         </div>
-                        
-                        {source.relevance && (
-                          <p className="relevance">{source.relevance}</p>
-                        )}
                         
                         {source.he_text && (
                           <div className="source-text he" dir="rtl">
-                            {source.he_text.length > 500 
-                              ? source.he_text.substring(0, 500) + '...' 
-                              : source.he_text}
+                            {source.he_text}
                           </div>
                         )}
                         
                         {source.en_text && (
                           <div className="source-text en">
-                            {source.en_text.length > 400 
-                              ? source.en_text.substring(0, 400) + '...' 
-                              : source.en_text}
+                            {source.en_text}
+                          </div>
+                        )}
+
+                        {source.relevance && (
+                          <div className="source-relevance">
+                            <strong>Why relevant:</strong> {source.relevance}
                           </div>
                         )}
                       </div>
@@ -325,19 +254,8 @@ function App() {
             </div>
           )}
 
-          {/* Feedback */}
-          <div className="feedback-section">
-            <p>Were these sources helpful?</p>
-            <button onClick={() => handleFeedback(true)} className="feedback-btn good">
-              👍 Yes, great sources!
-            </button>
-            <button onClick={() => handleFeedback(false)} className="feedback-btn bad">
-              👎 Not what I needed
-            </button>
-          </div>
-
           <p className="source-count">
-            Found {results.sources.length} validated sources across {results.layers_searched?.length || 0} layers
+            Found {results.sources.length} sources
           </p>
         </div>
       )}
