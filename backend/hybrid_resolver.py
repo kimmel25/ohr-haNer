@@ -24,7 +24,7 @@ from anthropic import Anthropic
 import os
 
 from logging_config import get_logger
-# from cache_manager import claude_cache
+from cache_manager import claude_cache  # ✓ FIXED: Uncommented
 from vector_search import VectorSearchEngine
 
 logger = get_logger(__name__)

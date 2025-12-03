@@ -36,7 +36,7 @@ from collections import Counter
 
 # Import our logging configuration
 from logging_config import setup_logging, get_logger
-from cache_manager import sefaria_cache
+from cache_manager import sefaria_cache, claude_cache
 
 # Import hybrid resolver for smart transliteration handling
 from hybrid_resolver import resolve_hebrew_term
@@ -316,13 +316,55 @@ def parse_claude_json(response_text: str) -> dict:
         return {}
 
 
+def normalize_sefaria_ref(ref: str) -> str:
+    """
+    Normalize a reference for Sefaria's API.
+    
+    Sefaria expects references WITHOUT category prefixes like "Gemara", "Mishna", etc.
+    
+    Examples:
+        "Gemara Pesachim 10b" → "Pesachim 10b"
+        "Mishna Berachos 1:1" → "Berachos 1:1"
+        "Mishneh Torah, Marriage 10:11" → "Mishneh Torah, Marriage 10:11" (keep Rambam format)
+        "Shulchan Arukh, Orach Chayim 1:1" → "Shulchan Arukh, Orach Chayim 1:1" (keep SA format)
+    
+    ✓ FIXED BUG #2: This solves the 404 errors from incorrect reference format
+    """
+    original_ref = ref
+    
+    # List of prefixes to strip (yeshivish and standard transliterations)
+    prefixes_to_strip = [
+        "Gemara ",
+        "Talmud Bavli ",
+        "Talmud ",
+        "Mishna ",
+        "Mishnah ",
+        "Tosefta ",
+        "Midrash ",
+        "Tanna ",
+        "Amora ",
+    ]
+    
+    for prefix in prefixes_to_strip:
+        if ref.startswith(prefix):
+            ref = ref[len(prefix):]
+            logger.debug(f"  Normalized reference: '{original_ref}' → '{ref}'")
+            break
+    
+    return ref
+
+
 async def fetch_text_from_sefaria(ref: str, max_retries: int = 2) -> dict:
     """
     Fetch text from Sefaria API for a given reference.
     
     Returns dict with: found, he_text, en_text, he_ref, sefaria_url
     """
-    # Check cache first
+    # ✓ FIXED BUG #2: Normalize reference for Sefaria's API
+    original_ref = ref
+    ref = normalize_sefaria_ref(ref)
+    
+    # Check cache first (use normalized ref for cache key)
     cached = sefaria_cache.get(ref)
     if cached:
         logger.info(f"💰 CACHE HIT: {ref}")
@@ -496,10 +538,10 @@ async def interpret_query(
     cache_key = f"interpret:{topic}:{clarification or ''}{resolution_key}"
     
     # Check cache
-    # cached = claude_cache.get(cache_key)
-    # if cached:
-    #     logger.info("  💰 CACHE HIT: Using cached interpretation")
-    #     return cached
+    cached = claude_cache.get(cache_key)
+    if cached:
+        logger.info("  💰 CACHE HIT: Using cached interpretation")
+        return cached
     
     if DEV_MODE:
         logger.warning("  🧪 DEV_MODE: Returning mock interpretation")
@@ -559,10 +601,10 @@ async def interpret_query(
         
         logger.info(f"  ✓ Interpretation: {parsed.get('interpreted_query', '')}")
         logger.info(f"  Needs clarification: {parsed.get('needs_clarification', False)}")
-        
+
         # Cache the result
-        # claude_cache.set(cache_key, parsed)
-        
+        claude_cache.set(cache_key, parsed)
+
         return parsed
         
     except Exception as e:
@@ -583,10 +625,10 @@ async def identify_base_texts(interpreted_query: str) -> List[dict]:
     
     # Check cache
     cache_key = f"base_texts:{interpreted_query}"
-    # cached = claude_cache.get(cache_key)
-    # if cached:
-    #     logger.info(f"  💰 CACHE HIT: Found {len(cached)} base texts")
-    #     return cached
+    cached = claude_cache.get(cache_key)
+    if cached:
+        logger.info(f"  💰 CACHE HIT: Found {len(cached)} base texts")
+        return cached
     
     if DEV_MODE:
         logger.warning("  🧪 DEV_MODE: Returning mock base texts")
@@ -620,10 +662,10 @@ async def identify_base_texts(interpreted_query: str) -> List[dict]:
         logger.info(f"  ✓ Identified {len(base_texts)} base text sections:")
         for bt in base_texts:
             logger.info(f"    - {bt.get('ref', '')}: {bt.get('reason', '')[:60]}")
-        
+
         # Cache the result
-        # claude_cache.set(cache_key, base_texts)
-        
+        claude_cache.set(cache_key, base_texts)
+
         return base_texts
         
     except Exception as e:
@@ -702,10 +744,10 @@ async def extract_citations_from_commentaries(
     
     # Check cache
     cache_key = f"extract:{interpreted_query}:{len(commentary_texts)}"
-    # cached = claude_cache.get(cache_key)
-    # if cached:
-    #     logger.info("  💰 CACHE HIT: Using cached extraction")
-    #     return cached
+    cached = claude_cache.get(cache_key)
+    if cached:
+        logger.info("  💰 CACHE HIT: Using cached extraction")
+        return cached
     
     if DEV_MODE:
         logger.warning("  🧪 DEV_MODE: Returning mock extraction")
@@ -750,10 +792,10 @@ async def extract_citations_from_commentaries(
         logger.info(f"  ✓ Extracted {len(sources)} sources:")
         for src in sources[:5]:
             logger.info(f"    - {src.get('ref', '')} (cited {src.get('citation_count', 0)}x)")
-        
+
         # Cache the result
-        # claude_cache.set(cache_key, parsed)
-        
+        claude_cache.set(cache_key, parsed)
+
         return parsed
         
     except Exception as e:
@@ -949,14 +991,14 @@ async def health_check():
 @app.get("/cache/stats")
 async def cache_stats():
     """Get cache statistics"""
-    # claude_stats = claude_cache.stats()
+    claude_stats = claude_cache.stats()
     sefaria_stats = sefaria_cache.stats()
-    
+
     return {
-        # "claude_cache": claude_stats,
+        "claude_cache": claude_stats,
         "sefaria_cache": sefaria_stats,
         "dev_mode": DEV_MODE,
-        # "message": f"Saved ~${claude_stats['total_entries'] * 0.025:.2f} via caching"
+        "message": f"Saved ~${claude_stats['total_entries'] * 0.025:.2f} via caching"
     }
 
 
@@ -964,7 +1006,7 @@ async def cache_stats():
 async def clear_cache():
     """Clear all caches"""
     logger.warning("Clearing all caches")
-    # claude_cache.clear()
+    claude_cache.clear()
     sefaria_cache.clear()
     return {"status": "success", "message": "All caches cleared"}
 

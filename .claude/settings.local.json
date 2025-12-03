@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(pip install:*)"
+      "Bash(pip install:*)",
+      "Bash(python hybrid_resolver.py:*)",
+      "Bash(python:*)"
     ],
     "deny": [],
     "ask": []

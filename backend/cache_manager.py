@@ -107,5 +107,6 @@ class SimpleCache:
         }
 
 
-# Global cache instance (just Sefaria - no Claude cache needed)
+# Global cache instances
+claude_cache = SimpleCache(cache_dir="cache/claude", ttl_hours=24)  # 1 day
 sefaria_cache = SimpleCache(cache_dir="cache/sefaria", ttl_hours=168)  # 1 week
