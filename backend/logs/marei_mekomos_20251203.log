@@ -1,0 +1,116 @@
+2025-12-03 00:07:36 | INFO     | root:setup_logging:47 | ================================================================================
+2025-12-03 00:07:36 | INFO     | root:setup_logging:48 | Marei Mekomos V5 - Flexible Thinking - Logging initialized
+2025-12-03 00:07:36 | INFO     | root:setup_logging:49 | Log file: c:\Projects\marei-mekomos\backend\logs\marei_mekomos_20251203.log
+2025-12-03 00:07:36 | INFO     | root:setup_logging:50 | ================================================================================
+2025-12-03 00:07:36 | DEBUG    | asyncio:__init__:623 | Using proactor: IocpProactor
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:44 | ====================================================================================================
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:45 | MAREI MEKOMOS V7 - NEW SEARCH
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:46 | Query: 'chezkas haguf'
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:49 | ====================================================================================================
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:55 | 
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:56 | STEP 1: DECIPHER
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:57 | >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+2025-12-03 00:07:36 | INFO     | step_one_decipher:decipher:58 | ================================================================================
+2025-12-03 00:07:36 | INFO     | step_one_decipher:decipher:59 | STEP 1: DECIPHER
+2025-12-03 00:07:36 | INFO     | step_one_decipher:decipher:60 | ================================================================================
+2025-12-03 00:07:36 | INFO     | step_one_decipher:decipher:61 | Query: 'chezkas haguf'
+2025-12-03 00:07:36 | INFO     | step_one_decipher:decipher:65 | Normalized: 'chezkas haguf'
+2025-12-03 00:07:36 | INFO     | step_one_decipher:decipher:71 | 
+[TOOL 1] Word Dictionary - Checking cache...
+2025-12-03 00:07:36 | INFO     | step_one_decipher:decipher:77 | ✓ DICTIONARY HIT! חזקת הגוף
+2025-12-03 00:07:36 | INFO     | step_one_decipher:decipher:78 |   Confidence: high
+2025-12-03 00:07:36 | INFO     | step_one_decipher:decipher:79 |   Usage: 2 times
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:72 | 
+✓ Step 1 Complete
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:73 |   Hebrew term: חזקת הגוף
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:74 |   Method: dictionary
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:75 |   Confidence: high
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:81 | 
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:82 | STEP 2: UNDERSTAND - [NOT YET IMPLEMENTED]
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:83 | >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:84 |   → Will determine query intent and search strategy
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:98 | 
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:99 | STEP 3: SEARCH - [NOT YET IMPLEMENTED]
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:100 | >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:101 |   → Will execute search based on strategy from Step 2
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:113 | 
+====================================================================================================
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:114 | PIPELINE COMPLETE (Step 1 only for now)
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:115 | ====================================================================================================
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:44 | ====================================================================================================
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:45 | MAREI MEKOMOS V7 - NEW SEARCH
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:46 | Query: 'bari vishma'
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:49 | ====================================================================================================
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:55 | 
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:56 | STEP 1: DECIPHER
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:57 | >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+2025-12-03 00:07:36 | INFO     | step_one_decipher:decipher:58 | ================================================================================
+2025-12-03 00:07:36 | INFO     | step_one_decipher:decipher:59 | STEP 1: DECIPHER
+2025-12-03 00:07:36 | INFO     | step_one_decipher:decipher:60 | ================================================================================
+2025-12-03 00:07:36 | INFO     | step_one_decipher:decipher:61 | Query: 'bari vishma'
+2025-12-03 00:07:36 | INFO     | step_one_decipher:decipher:65 | Normalized: 'bari vishma'
+2025-12-03 00:07:36 | INFO     | step_one_decipher:decipher:71 | 
+[TOOL 1] Word Dictionary - Checking cache...
+2025-12-03 00:07:36 | INFO     | step_one_decipher:decipher:77 | ✓ DICTIONARY HIT! ברי ושמא
+2025-12-03 00:07:36 | INFO     | step_one_decipher:decipher:78 |   Confidence: high
+2025-12-03 00:07:36 | INFO     | step_one_decipher:decipher:79 |   Usage: 2 times
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:72 | 
+✓ Step 1 Complete
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:73 |   Hebrew term: ברי ושמא
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:74 |   Method: dictionary
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:75 |   Confidence: high
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:81 | 
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:82 | STEP 2: UNDERSTAND - [NOT YET IMPLEMENTED]
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:83 | >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:84 |   → Will determine query intent and search strategy
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:98 | 
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:99 | STEP 3: SEARCH - [NOT YET IMPLEMENTED]
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:100 | >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:101 |   → Will execute search based on strategy from Step 2
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:113 | 
+====================================================================================================
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:114 | PIPELINE COMPLETE (Step 1 only for now)
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:115 | ====================================================================================================
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:44 | ====================================================================================================
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:45 | MAREI MEKOMOS V7 - NEW SEARCH
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:46 | Query: 'shaviya anafshe'
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:49 | ====================================================================================================
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:55 | 
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:56 | STEP 1: DECIPHER
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:57 | >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+2025-12-03 00:07:36 | INFO     | step_one_decipher:decipher:58 | ================================================================================
+2025-12-03 00:07:36 | INFO     | step_one_decipher:decipher:59 | STEP 1: DECIPHER
+2025-12-03 00:07:36 | INFO     | step_one_decipher:decipher:60 | ================================================================================
+2025-12-03 00:07:36 | INFO     | step_one_decipher:decipher:61 | Query: 'shaviya anafshe'
+2025-12-03 00:07:36 | INFO     | step_one_decipher:decipher:65 | Normalized: 'shaviya anafshe'
+2025-12-03 00:07:36 | INFO     | step_one_decipher:decipher:71 | 
+[TOOL 1] Word Dictionary - Checking cache...
+2025-12-03 00:07:36 | INFO     | step_one_decipher:decipher:77 | ✓ DICTIONARY HIT! שוייא אנפשיה
+2025-12-03 00:07:36 | INFO     | step_one_decipher:decipher:78 |   Confidence: high
+2025-12-03 00:07:36 | INFO     | step_one_decipher:decipher:79 |   Usage: 1 times
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:72 | 
+✓ Step 1 Complete
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:73 |   Hebrew term: שוייא אנפשיה
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:74 |   Method: dictionary
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:75 |   Confidence: high
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:81 | 
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:82 | STEP 2: UNDERSTAND - [NOT YET IMPLEMENTED]
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:83 | >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:84 |   → Will determine query intent and search strategy
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:98 | 
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:99 | STEP 3: SEARCH - [NOT YET IMPLEMENTED]
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:100 | >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:101 |   → Will execute search based on strategy from Step 2
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:113 | 
+====================================================================================================
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:114 | PIPELINE COMPLETE (Step 1 only for now)
+2025-12-03 00:07:36 | INFO     | __main__:search_sources:115 | ====================================================================================================
