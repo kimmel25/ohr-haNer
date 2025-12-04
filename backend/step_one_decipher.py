@@ -37,7 +37,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 TEST_MODE = os.environ.get("TEST_MODE", "false").lower() == "true"
 
 # Confidence threshold for auto-accepting vector matches (skip Claude)
-AUTO_ACCEPT_THRESHOLD = float(os.environ.get("AUTO_ACCEPT_THRESHOLD", "0.85"))
+AUTO_ACCEPT_THRESHOLD = float(os.environ.get("AUTO_ACCEPT_THRESHOLD", "0.99"))
 
 # Maximum variants to generate (lower = less searching = lower cost)
 MAX_VARIANTS = int(os.environ.get("MAX_VARIANTS", "5"))
@@ -311,18 +311,15 @@ async def decipher(query: str, user_context: Optional[Dict] = None) -> Dict:
             
             hebrew_term = unique_results[0]['he_text'][:50]
             
-            # Add to dictionary
-            dictionary.add_entry(
-                query_normalized,
-                hebrew_term,
-                confidence="high",
-                source="vector"
-            )
+            # NOTE: NOT adding to dictionary because he_text is DOCUMENT CONTENT, not the term!
+            # Only Claude can extract the actual term from the text.
+            # This auto-accept is kept for speed, but with low confidence.
+            logger.warning("  ⚠️  Auto-accept: Using document text as term (may be inaccurate)")
             
             return {
                 "success": True,
                 "hebrew_term": hebrew_term,
-                "confidence": "high",
+                "confidence": "medium",
                 "method": "vector",
                 "source_ref": unique_results[0].get('ref', ''),
                 "alternatives": [],
@@ -339,13 +336,16 @@ async def decipher(query: str, user_context: Optional[Dict] = None) -> Dict:
         )
         
         if claude_result["success"]:
-            # Add to dictionary
-            dictionary.add_entry(
-                query_normalized,
-                claude_result["hebrew_term"],
-                confidence=claude_result["confidence"],
-                source="claude"
-            )
+            # Add to dictionary ONLY if NOT in TEST_MODE (verified results only)
+            if not TEST_MODE:
+                dictionary.add_entry(
+                    query_normalized,
+                    claude_result["hebrew_term"],
+                    confidence=claude_result["confidence"],
+                    source="claude"
+                )
+            else:
+                logger.debug("  ⚠️  TEST_MODE: Skipping dictionary addition (result not Claude-verified)")
         
         return claude_result
         
