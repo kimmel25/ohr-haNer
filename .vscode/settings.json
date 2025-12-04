@@ -2,5 +2,8 @@
   // Use the repo's backend/.env file for Python runs and inject into terminals
   "python.envFile": "${workspaceFolder}/backend/.env",
   // Enable reading the envFile when creating terminals from VS Code
-  "python.terminal.useEnvFile": true
+  "python.terminal.useEnvFile": true,
+  "python.analysis.extraPaths": [
+    "./backend"
+  ]
 }

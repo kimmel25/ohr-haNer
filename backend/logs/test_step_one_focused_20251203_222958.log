@@ -1,0 +1,1531 @@
+22:29:58 | INFO     | step_one_decipher | ================================================================================
+22:29:58 | INFO     | step_one_decipher | STEP 1: DECIPHER
+22:29:58 | INFO     | step_one_decipher | ================================================================================
+22:29:58 | INFO     | step_one_decipher | Query: 'kesubos'
+22:29:58 | INFO     | step_one_decipher | Normalized: 'kesubos'
+22:29:58 | INFO     | step_one_decipher | 
+[TOOL 1] Word Dictionary - Checking cache...
+22:29:58 | INFO     | step_one_decipher | ✓ DICTIONARY HIT! כתובות
+22:29:58 | INFO     | step_one_decipher |   Confidence: high
+22:29:58 | INFO     | step_one_decipher |   Usage: 9 times
+22:29:58 | INFO     | step_one_decipher | ================================================================================
+22:29:58 | INFO     | step_one_decipher | STEP 1: DECIPHER
+22:29:58 | INFO     | step_one_decipher | ================================================================================
+22:29:58 | INFO     | step_one_decipher | Query: 'gittin'
+22:29:58 | INFO     | step_one_decipher | Normalized: 'gittin'
+22:29:58 | INFO     | step_one_decipher | 
+[TOOL 1] Word Dictionary - Checking cache...
+22:29:58 | INFO     | step_one_decipher | ✓ DICTIONARY HIT! גיטין
+22:29:58 | INFO     | step_one_decipher |   Confidence: high
+22:29:58 | INFO     | step_one_decipher |   Usage: 3 times
+22:29:58 | INFO     | step_one_decipher | ================================================================================
+22:29:58 | INFO     | step_one_decipher | STEP 1: DECIPHER
+22:29:58 | INFO     | step_one_decipher | ================================================================================
+22:29:58 | INFO     | step_one_decipher | Query: 'eruvin'
+22:29:58 | INFO     | step_one_decipher | Normalized: 'eruvin'
+22:29:58 | INFO     | step_one_decipher | 
+[TOOL 1] Word Dictionary - Checking cache...
+22:29:58 | INFO     | step_one_decipher | ✓ DICTIONARY HIT! עירובין
+22:29:58 | INFO     | step_one_decipher |   Confidence: high
+22:29:58 | INFO     | step_one_decipher |   Usage: 3 times
+22:29:58 | INFO     | step_one_decipher | ================================================================================
+22:29:58 | INFO     | step_one_decipher | STEP 1: DECIPHER
+22:29:58 | INFO     | step_one_decipher | ================================================================================
+22:29:58 | INFO     | step_one_decipher | Query: 'bava kama'
+22:29:58 | INFO     | step_one_decipher | Normalized: 'bava kama'
+22:29:58 | INFO     | step_one_decipher | 
+[TOOL 1] Word Dictionary - Checking cache...
+22:29:58 | INFO     | step_one_decipher | ✓ DICTIONARY HIT! בבא קמא
+22:29:58 | INFO     | step_one_decipher |   Confidence: high
+22:29:58 | INFO     | step_one_decipher |   Usage: 6 times
+22:29:58 | INFO     | step_one_decipher | ================================================================================
+22:29:58 | INFO     | step_one_decipher | STEP 1: DECIPHER
+22:29:58 | INFO     | step_one_decipher | ================================================================================
+22:29:58 | INFO     | step_one_decipher | Query: 'bereirah'
+22:29:58 | INFO     | step_one_decipher | Normalized: 'bereirah'
+22:29:58 | INFO     | step_one_decipher | 
+[TOOL 1] Word Dictionary - Checking cache...
+22:29:58 | INFO     | step_one_decipher | ✓ DICTIONARY HIT! ברירה
+22:29:58 | INFO     | step_one_decipher |   Confidence: high
+22:29:58 | INFO     | step_one_decipher |   Usage: 3 times
+22:29:58 | INFO     | step_one_decipher | ================================================================================
+22:29:58 | INFO     | step_one_decipher | STEP 1: DECIPHER
+22:29:58 | INFO     | step_one_decipher | ================================================================================
+22:29:58 | INFO     | step_one_decipher | Query: 'sfek sfeika'
+22:29:58 | INFO     | step_one_decipher | Normalized: 'sfek sfeika'
+22:29:58 | INFO     | step_one_decipher | 
+[TOOL 1] Word Dictionary - Checking cache...
+22:29:58 | INFO     | step_one_decipher | ✓ DICTIONARY HIT! ספק ספיקא
+22:29:58 | INFO     | step_one_decipher |   Confidence: high
+22:29:58 | INFO     | step_one_decipher |   Usage: 2 times
+22:29:58 | INFO     | step_one_decipher | ================================================================================
+22:29:58 | INFO     | step_one_decipher | STEP 1: DECIPHER
+22:29:58 | INFO     | step_one_decipher | ================================================================================
+22:29:58 | INFO     | step_one_decipher | Query: 'safek safeika'
+22:29:58 | INFO     | step_one_decipher | Normalized: 'safek safeika'
+22:29:58 | INFO     | step_one_decipher | 
+[TOOL 1] Word Dictionary - Checking cache...
+22:29:58 | INFO     | step_one_decipher | ✓ DICTIONARY HIT! ספק ספיקא
+22:29:58 | INFO     | step_one_decipher |   Confidence: high
+22:29:58 | INFO     | step_one_decipher |   Usage: 7 times
+22:29:58 | INFO     | step_one_decipher | ================================================================================
+22:29:58 | INFO     | step_one_decipher | STEP 1: DECIPHER
+22:29:58 | INFO     | step_one_decipher | ================================================================================
+22:29:58 | INFO     | step_one_decipher | Query: 'bitul chametz'
+22:29:58 | INFO     | step_one_decipher | Normalized: 'bitul chametz'
+22:29:58 | INFO     | step_one_decipher | 
+[TOOL 1] Word Dictionary - Checking cache...
+22:29:58 | INFO     | step_one_decipher | ✓ DICTIONARY HIT! ביטול חמץ
+22:29:58 | INFO     | step_one_decipher |   Confidence: high
+22:29:58 | INFO     | step_one_decipher |   Usage: 6 times
+22:29:58 | INFO     | step_one_decipher | ================================================================================
+22:29:58 | INFO     | step_one_decipher | STEP 1: DECIPHER
+22:29:58 | INFO     | step_one_decipher | ================================================================================
+22:29:58 | INFO     | step_one_decipher | Query: 'chezkas haguf'
+22:29:58 | INFO     | step_one_decipher | Normalized: 'chezkas haguf'
+22:29:58 | INFO     | step_one_decipher | 
+[TOOL 1] Word Dictionary - Checking cache...
+22:29:58 | INFO     | step_one_decipher | ✓ DICTIONARY HIT! חזקת הגוף
+22:29:58 | INFO     | step_one_decipher |   Confidence: high
+22:29:58 | INFO     | step_one_decipher |   Usage: 10 times
+22:29:58 | INFO     | step_one_decipher | ================================================================================
+22:29:58 | INFO     | step_one_decipher | STEP 1: DECIPHER
+22:29:58 | INFO     | step_one_decipher | ================================================================================
+22:29:58 | INFO     | step_one_decipher | Query: 'chatzi shiur'
+22:29:58 | INFO     | step_one_decipher | Normalized: 'chatzi shiur'
+22:29:58 | INFO     | step_one_decipher | 
+[TOOL 1] Word Dictionary - Checking cache...
+22:29:58 | INFO     | step_one_decipher | ✓ DICTIONARY HIT! חצי שיעור
+22:29:58 | INFO     | step_one_decipher |   Confidence: high
+22:29:58 | INFO     | step_one_decipher |   Usage: 3 times
+22:29:58 | INFO     | step_one_decipher | ================================================================================
+22:29:58 | INFO     | step_one_decipher | STEP 1: DECIPHER
+22:29:58 | INFO     | step_one_decipher | ================================================================================
+22:29:58 | INFO     | step_one_decipher | Query: 'migu'
+22:29:58 | INFO     | step_one_decipher | Normalized: 'migu'
+22:29:58 | INFO     | step_one_decipher | 
+[TOOL 1] Word Dictionary - Checking cache...
+22:29:58 | INFO     | step_one_decipher | ✓ DICTIONARY HIT! מיגו
+22:29:58 | INFO     | step_one_decipher |   Confidence: high
+22:29:58 | INFO     | step_one_decipher |   Usage: 3 times
+22:29:58 | INFO     | step_one_decipher | ================================================================================
+22:29:58 | INFO     | step_one_decipher | STEP 1: DECIPHER
+22:29:58 | INFO     | step_one_decipher | ================================================================================
+22:29:58 | INFO     | step_one_decipher | Query: 'umdena'
+22:29:58 | INFO     | step_one_decipher | Normalized: 'umdena'
+22:29:58 | INFO     | step_one_decipher | 
+[TOOL 1] Word Dictionary - Checking cache...
+22:29:58 | INFO     | step_one_decipher | ✓ DICTIONARY HIT! אומדנא
+22:29:58 | INFO     | step_one_decipher |   Confidence: high
+22:29:58 | INFO     | step_one_decipher |   Usage: 3 times
+22:29:58 | INFO     | step_one_decipher | ================================================================================
+22:29:58 | INFO     | step_one_decipher | STEP 1: DECIPHER
+22:29:58 | INFO     | step_one_decipher | ================================================================================
+22:29:58 | INFO     | step_one_decipher | Query: 'kdai shiur'
+22:29:58 | INFO     | step_one_decipher | Normalized: 'kdai shiur'
+22:29:58 | INFO     | step_one_decipher | 
+[TOOL 1] Word Dictionary - Checking cache...
+22:29:58 | INFO     | step_one_decipher | ✓ DICTIONARY HIT! כדי שיעור
+22:29:58 | INFO     | step_one_decipher |   Confidence: high
+22:29:58 | INFO     | step_one_decipher |   Usage: 3 times
+22:29:58 | INFO     | step_one_decipher | ================================================================================
+22:29:58 | INFO     | step_one_decipher | STEP 1: DECIPHER
+22:29:58 | INFO     | step_one_decipher | ================================================================================
+22:29:58 | INFO     | step_one_decipher | Query: 'trei vetrei'
+22:29:58 | INFO     | step_one_decipher | Normalized: 'trei vetrei'
+22:29:58 | INFO     | step_one_decipher | 
+[TOOL 1] Word Dictionary - Checking cache...
+22:29:58 | INFO     | step_one_decipher | ✓ DICTIONARY HIT! תרי ותרי
+22:29:58 | INFO     | step_one_decipher |   Confidence: high
+22:29:58 | INFO     | step_one_decipher |   Usage: 3 times
+22:29:58 | INFO     | step_one_decipher | ================================================================================
+22:29:58 | INFO     | step_one_decipher | STEP 1: DECIPHER
+22:29:58 | INFO     | step_one_decipher | ================================================================================
+22:29:58 | INFO     | step_one_decipher | Query: 'lo plug'
+22:29:58 | INFO     | step_one_decipher | Normalized: 'lo plug'
+22:29:58 | INFO     | step_one_decipher | 
+[TOOL 1] Word Dictionary - Checking cache...
+22:29:58 | INFO     | step_one_decipher | ✓ DICTIONARY HIT! לא פלוג
+22:29:58 | INFO     | step_one_decipher |   Confidence: high
+22:29:58 | INFO     | step_one_decipher |   Usage: 3 times
+22:29:58 | INFO     | step_one_decipher | ================================================================================
+22:29:58 | INFO     | step_one_decipher | STEP 1: DECIPHER
+22:29:58 | INFO     | step_one_decipher | ================================================================================
+22:29:58 | INFO     | step_one_decipher | Query: 'chozer vniur'
+22:29:58 | INFO     | step_one_decipher | Normalized: 'chozer vniur'
+22:29:58 | INFO     | step_one_decipher | 
+[TOOL 1] Word Dictionary - Checking cache...
+22:29:58 | INFO     | step_one_decipher | ✓ DICTIONARY HIT! חוזר ונעור
+22:29:58 | INFO     | step_one_decipher |   Confidence: high
+22:29:58 | INFO     | step_one_decipher |   Usage: 3 times
+22:29:58 | INFO     | step_one_decipher | ================================================================================
+22:29:58 | INFO     | step_one_decipher | STEP 1: DECIPHER
+22:29:58 | INFO     | step_one_decipher | ================================================================================
+22:29:58 | INFO     | step_one_decipher | Query: 'kdai achila'
+22:29:58 | INFO     | step_one_decipher | Normalized: 'kdai achila'
+22:29:58 | INFO     | step_one_decipher | 
+[TOOL 1] Word Dictionary - Checking cache...
+22:29:58 | INFO     | step_one_decipher |   → Dictionary miss or low confidence, continuing...
+22:29:58 | INFO     | step_one_decipher | 
+[TOOL 2] Transliteration Map - Generating Hebrew variants...
+22:29:58 | INFO     | step_one_decipher |   Generated 4 SMART Hebrew variants (prioritized by frequency)
+22:29:58 | INFO     | step_one_decipher |   Sample variants (first 10): ['כדי אחילא', 'כדי אכילא', 'קדי אחילא', 'קדי אכילא']
+22:29:58 | INFO     | step_one_decipher |   All variants count: 4
+22:29:58 | INFO     | step_one_decipher |   Transliteration confidence: medium
+22:29:58 | INFO     | step_one_decipher |   → Multiple variants or low confidence, escalating to vector search...
+22:29:58 | INFO     | step_one_decipher | 
+[TOOL 3] Vector Search + Claude Verification...
+22:30:04 | INFO     | vector_search | VectorSearchEngine initializing...
+22:30:04 | INFO     | vector_search |   Embeddings directory: c:\Projects\marei-mekomos\backend\embeddings
+22:30:04 | INFO     | vector_search |   ✓ BEREL dependencies available
+22:30:04 | INFO     | vector_search |   Note: Embeddings will be loaded on first search
+22:30:04 | INFO     | step_one_decipher |   Searching vector index for 4 SMART variants...
+22:30:04 | INFO     | step_one_decipher |     Searching variant 1/4: 'כדי אחילא'
+22:30:04 | DEBUG    | vector_search | Vector search for: 'כדי אחילא' (top_k=3)
+22:30:04 | INFO     | vector_search | Loading BEREL model...
+22:30:05 | DEBUG    | requests.packages.urllib3.connectionpool | Starting new HTTPS connection (1): huggingface.co
+22:30:05 | DEBUG    | requests.packages.urllib3.connectionpool | https://huggingface.co:443 "HEAD /dicta-il/BEREL/resolve/main/tokenizer_config.json HTTP/1.1" 307 0
+22:30:05 | DEBUG    | requests.packages.urllib3.connectionpool | https://huggingface.co:443 "HEAD /api/resolve-cache/models/dicta-il/BEREL/029fa610debddd0cd798f8babc33e41388fb2bac/tokenizer_config.json HTTP/1.1" 200 0
+22:30:05 | DEBUG    | requests.packages.urllib3.connectionpool | https://huggingface.co:443 "GET /api/models/dicta-il/BEREL/tree/main/additional_chat_templates?recursive=False&expand=False HTTP/1.1" 404 64
+22:30:05 | DEBUG    | requests.packages.urllib3.connectionpool | https://huggingface.co:443 "GET /api/models/dicta-il/BEREL/tree/main?recursive=True&expand=False HTTP/1.1" 200 1208
+22:30:06 | DEBUG    | requests.packages.urllib3.connectionpool | https://huggingface.co:443 "GET /api/models/dicta-il/BEREL HTTP/1.1" 200 1325
+22:30:06 | DEBUG    | requests.packages.urllib3.connectionpool | https://huggingface.co:443 "HEAD /dicta-il/BEREL/resolve/main/config.json HTTP/1.1" 307 0
+22:30:06 | DEBUG    | requests.packages.urllib3.connectionpool | https://huggingface.co:443 "HEAD /api/resolve-cache/models/dicta-il/BEREL/029fa610debddd0cd798f8babc33e41388fb2bac/config.json HTTP/1.1" 200 0
+22:30:06 | INFO     | vector_search |   ✓ BEREL model loaded successfully
+22:30:06 | INFO     | vector_search | Loading pre-computed embeddings...
+22:30:06 | INFO     | vector_search |   ✓ Loaded 5616 text embeddings
+22:30:06 | INFO     | vector_search |   ✓ Embedding dimension: 768
+22:30:06 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:06 | DEBUG    | vector_search |   Top 3 matches:
+22:30:06 | DEBUG    | vector_search |     [1] Chullin 90b (score: 0.626)
+22:30:06 | DEBUG    | vector_search |     [2] Zevachim 121b (score: 0.607)
+22:30:06 | DEBUG    | vector_search |     [3] Tosafot Chad Mikamei on Yevamot 56b (score: 0.605)
+22:30:06 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.626)
+22:30:06 | INFO     | step_one_decipher |     Searching variant 2/4: 'כדי אכילא'
+22:30:06 | DEBUG    | vector_search | Vector search for: 'כדי אכילא' (top_k=3)
+22:30:06 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:07 | DEBUG    | vector_search |   Top 3 matches:
+22:30:07 | DEBUG    | vector_search |     [1] Chullin 90b (score: 0.637)
+22:30:07 | DEBUG    | vector_search |     [2] Chullin 35b (score: 0.636)
+22:30:07 | DEBUG    | vector_search |     [3] Zevachim 62a (score: 0.630)
+22:30:07 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.637)
+22:30:07 | INFO     | step_one_decipher |     Searching variant 3/4: 'קדי אחילא'
+22:30:07 | DEBUG    | vector_search | Vector search for: 'קדי אחילא' (top_k=3)
+22:30:07 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:07 | DEBUG    | vector_search |   Top 3 matches:
+22:30:07 | DEBUG    | vector_search |     [1] Tosafot Chad Mikamei on Yevamot 35b (score: 0.587)
+22:30:07 | DEBUG    | vector_search |     [2] Tosafot Chad Mikamei on Yevamot 60b (score: 0.580)
+22:30:07 | DEBUG    | vector_search |     [3] Tosafot Chad Mikamei on Yevamot 56b (score: 0.579)
+22:30:07 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.587)
+22:30:07 | INFO     | step_one_decipher |     Searching variant 4/4: 'קדי אכילא'
+22:30:07 | DEBUG    | vector_search | Vector search for: 'קדי אכילא' (top_k=3)
+22:30:07 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:07 | DEBUG    | vector_search |   Top 3 matches:
+22:30:07 | DEBUG    | vector_search |     [1] Tosafot Chad Mikamei on Yevamot 35b (score: 0.597)
+22:30:07 | DEBUG    | vector_search |     [2] Tosafot Chad Mikamei on Yevamot 26b (score: 0.594)
+22:30:07 | DEBUG    | vector_search |     [3] Tosafot Chad Mikamei on Yevamot 107b (score: 0.581)
+22:30:07 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.597)
+22:30:07 | INFO     | step_one_decipher |   Found 12 potential matches
+22:30:07 | INFO     | step_one_decipher |   Top 5 unique matches:
+22:30:07 | INFO     | step_one_decipher |     1. Chullin 90b (score: 0.637)
+22:30:07 | INFO     | step_one_decipher |        Hebrew: שיעורא בעינן ועבודת כוכבים כתותי מכתת שיעורא הכא כ...
+22:30:07 | INFO     | step_one_decipher |     2. Chullin 35b (score: 0.636)
+22:30:07 | INFO     | step_one_decipher |        Hebrew: טומאה היא אצל הקדש אמר רבי זירא א"ר אסי א"ר יוחנן ...
+22:30:07 | INFO     | step_one_decipher |     3. Zevachim 62a (score: 0.630)
+22:30:07 | INFO     | step_one_decipher |        Hebrew: הא רבי ישמעאל הא רבנן ואיבעית אימא הא והא בקדשי קד...
+22:30:07 | INFO     | step_one_decipher |     4. Zevachim 121b (score: 0.607)
+22:30:07 | INFO     | step_one_decipher |        Hebrew: מה עופות שאין המום פוסל בהן זמן פוסל בהן קדשי במה ...
+22:30:07 | INFO     | step_one_decipher |     5. Tosafot Chad Mikamei on Yevamot 56b (score: 0.605)
+22:30:07 | INFO     | step_one_decipher |        Hebrew: אמר רבה שכבת זרע דכתב גבי שפחה חרופה למעט מינה דכל...
+22:30:07 | INFO     | step_one_decipher |   → Sending to Claude for verification...
+22:30:07 | INFO     | step_one_decipher |   [CLAUDE] Verifying candidates...
+22:30:08 | DEBUG    | anthropic._base_client | Request options: {'method': 'post', 'url': '/v1/messages', 'timeout': Timeout(connect=5.0, read=600, write=600, pool=600), 'files': None, 'idempotency_key': 'stainless-python-retry-32280b0f-23ba-4591-b933-a89b016a56d0', 'json_data': {'max_tokens': 800, 'messages': [{'role': 'user', 'content': 'User\'s transliteration: "kdai achila"\n\nHere are the top candidates from vector search:\n\n[Candidate 1]\nSource: Chullin 90b\nHebrew: שיעורא בעינן ועבודת כוכבים כתותי מכתת שיעורא הכא כל מה דמכתת מעלי לכסוי: <br><br><big><strong>הדרן עלך כסוי הדם</strong></big><br><br> מתני׳ <big><strong>גיד</strong></big> הנשה נוהג בארץ ובחוצה לארץ \nScore: 0.637\n\n[Candidate 2]\nSource: Chullin 35b\nHebrew: טומאה היא אצל הקדש אמר רבי זירא א"ר אסי א"ר יוחנן א"ר ינאי האוכל שלישי של חולין שנעשו על טהרת הקדש נעשה גופו שני לקדש איתיביה רבי זירא לרבי אסי שלישי שני לקדש ואין שני לתרומה בחולין שנעשו על טהרת תרומ\nScore: 0.636\n\n[Candidate 3]\nSource: Zevachim 62a\nHebrew: הא רבי ישמעאל הא רבנן ואיבעית אימא הא והא בקדשי קדשים ומאי בשני מקומות קודם שיעמידו לוים את המשכן\nScore: 0.630\n\n[Candidate 4]\nSource: Zevachim 121b\nHebrew: מה עופות שאין המום פוסל בהן זמן פוסל בהן קדשי במה קטנה שהמום פוסל בהן אינו דין שזמן פוסל בהן מה לעופות שכן אין הזר כשר בהן תאמר בבמה קטנה שהזר כשר בה לא יהא זמן פסול בה ת"ל (ויקרא ז, יא) וזאת תורת זבח\nScore: 0.607\n\n[Candidate 5]\nSource: Tosafot Chad Mikamei on Yevamot 56b\nHebrew: אמר רבה שכבת זרע דכתב גבי שפחה חרופה למעט מינה דכל חייבי לאוין בהעראה דא"כ לישתוק קרא מיניה דשפחה חרופה. שכבת זרע דאשת איש למ"ד משמש מת בעריות חייב פרט למשמש מתה. שכבת זרע דסוטה לאו למעקרה קינא לה שלא\nScore: 0.605\n\n[Candidate 6]\nSource: Tosafot Chad Mikamei on Yevamot 35b\nHebrew: אמר רב נחמן אמר שמואל כל שנשתהה עשר שנים אחר בעלה ונשאת שוב אין נתעברת. ולא אמרן אלא שאין דעתה להנשא אבל דעתה להנשא מתעברת:\n\nScore: 0.597\n\n[Candidate 7]\nSource: Tosafot Chad Mikamei on Yevamot 26b\nHebrew: אמר רב מנשה גזלן דדבריהם כשר לעדות הא דדברי תורה פסול לעדות אשה:\n הא דתנן החכם שאסר את האשה בנדר לא ישאנה וקי"ל ביחיד מומחה ולפום הכי אם התירה ישאנה אבל בתלתא אפילו אסרו ישאנה משום שהם ב"ד ובבכורות פר\nScore: 0.594\n\n[Candidate 8]\nSource: Tosafot Chad Mikamei on Yevamot 107b\nHebrew: אמר רבא אכלה תומא וירקה לאו כלום היא מ"ט וירקה מעצמה בעינן. פי\' לאו כלום וכאילו לא רקקה כלל וצריכה [רקיקה] פעם אחרת מעצמה. מיהו אם לא רקקה קיי"ל דרקיקה לא מעכבת:\nScore: 0.581\n\n[Candidate 9]\nSource: Tosafot Chad Mikamei on Yevamot 60b\nHebrew: אמר רב שימי בר חייא נבעלה לבהמה כשרה לכהונה ואפי\' לכ"ג דאין זנות לבהמה. וקטנה שנתפתתה תחת בעלה אסורה לבעלה כהן ומותרת לבעלה ישראל דפיתוי קטנה אונס הוא ואונס בישראל משרא שרי. הא דתניא אי אתה עושה חלל מ\nScore: 0.580\n\nWhich candidate best matches the user\'s query?'}], 'model': 'claude-sonnet-4-20250514', 'system': 'You are a Torah scholar assistant helping identify Hebrew/Aramaic terms from transliterations.\n\nReview the candidates from vector search and pick the best match for the user\'s query.\n\nIMPORTANT:\n- Match phonetically (ch=ח, sh=ש, tz=צ, s=ת in yeshivish)\n- Consider context and meaning\n- Be confident when there\'s a clear match\n- Admit uncertainty if candidates don\'t match well\n\nReturn JSON:\n{\n  "matched": true/false,\n  "hebrew_term": "The Hebrew/Aramaic term (first 50 chars)",\n  "source_ref": "Where it appears",\n  "confidence": "high/medium/low",\n  "explanation": "Why this is the best match"\n}'}}
+22:30:08 | DEBUG    | anthropic._base_client | Sending HTTP Request: POST https://api.anthropic.com/v1/messages
+22:30:08 | DEBUG    | httpcore.connection | connect_tcp.started host='api.anthropic.com' port=443 local_address=None timeout=5.0 socket_options=[(65535, 8, True), (6, 17, 60), (6, 16, 5), (6, 3, 60)]
+22:30:08 | DEBUG    | httpcore.connection | connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000028221B3B310>
+22:30:08 | DEBUG    | httpcore.connection | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000028221659840> server_hostname='api.anthropic.com' timeout=5.0
+22:30:08 | DEBUG    | httpcore.connection | start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000028221B3B0A0>
+22:30:08 | DEBUG    | httpcore.http11 | send_request_headers.started request=<Request [b'POST']>
+22:30:08 | DEBUG    | httpcore.http11 | send_request_headers.complete
+22:30:08 | DEBUG    | httpcore.http11 | send_request_body.started request=<Request [b'POST']>
+22:30:08 | DEBUG    | httpcore.http11 | send_request_body.complete
+22:30:08 | DEBUG    | httpcore.http11 | receive_response_headers.started request=<Request [b'POST']>
+22:30:17 | DEBUG    | httpcore.http11 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Thu, 04 Dec 2025 03:30:17 GMT'), (b'Content-Type', b'application/json'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Content-Encoding', b'gzip'), (b'anthropic-ratelimit-input-tokens-limit', b'30000'), (b'anthropic-ratelimit-input-tokens-remaining', b'29000'), (b'anthropic-ratelimit-input-tokens-reset', b'2025-12-04T03:30:12Z'), (b'anthropic-ratelimit-output-tokens-limit', b'8000'), (b'anthropic-ratelimit-output-tokens-remaining', b'8000'), (b'anthropic-ratelimit-output-tokens-reset', b'2025-12-04T03:30:19Z'), (b'anthropic-ratelimit-requests-limit', b'50'), (b'anthropic-ratelimit-requests-remaining', b'49'), (b'anthropic-ratelimit-requests-reset', b'2025-12-04T03:30:09Z'), (b'retry-after', b'51'), (b'anthropic-ratelimit-tokens-limit', b'38000'), (b'anthropic-ratelimit-tokens-remaining', b'37000'), (b'anthropic-ratelimit-tokens-reset', b'2025-12-04T03:30:12Z'), (b'request-id', b'req_011CVkwRwQGyUramcjfqtqiq'), (b'strict-transport-security', b'max-age=31536000; includeSubDomains; preload'), (b'anthropic-organization-id', b'73a09491-cda3-40b4-8544-d00ca1bc9331'), (b'x-envoy-upstream-service-time', b'8845'), (b'cf-cache-status', b'DYNAMIC'), (b'X-Robots-Tag', b'none'), (b'Server', b'cloudflare'), (b'CF-RAY', b'9a88393359f39cb4-EWR')])
+22:30:17 | INFO     | httpx | HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+22:30:17 | DEBUG    | httpcore.http11 | receive_response_body.started request=<Request [b'POST']>
+22:30:17 | DEBUG    | httpcore.http11 | receive_response_body.complete
+22:30:17 | DEBUG    | httpcore.http11 | response_closed.started
+22:30:17 | DEBUG    | httpcore.http11 | response_closed.complete
+22:30:17 | DEBUG    | anthropic._base_client | HTTP Response: POST https://api.anthropic.com/v1/messages "200 OK" Headers({'date': 'Thu, 04 Dec 2025 03:30:17 GMT', 'content-type': 'application/json', 'transfer-encoding': 'chunked', 'connection': 'keep-alive', 'content-encoding': 'gzip', 'anthropic-ratelimit-input-tokens-limit': '30000', 'anthropic-ratelimit-input-tokens-remaining': '29000', 'anthropic-ratelimit-input-tokens-reset': '2025-12-04T03:30:12Z', 'anthropic-ratelimit-output-tokens-limit': '8000', 'anthropic-ratelimit-output-tokens-remaining': '8000', 'anthropic-ratelimit-output-tokens-reset': '2025-12-04T03:30:19Z', 'anthropic-ratelimit-requests-limit': '50', 'anthropic-ratelimit-requests-remaining': '49', 'anthropic-ratelimit-requests-reset': '2025-12-04T03:30:09Z', 'retry-after': '51', 'anthropic-ratelimit-tokens-limit': '38000', 'anthropic-ratelimit-tokens-remaining': '37000', 'anthropic-ratelimit-tokens-reset': '2025-12-04T03:30:12Z', 'request-id': 'req_011CVkwRwQGyUramcjfqtqiq', 'strict-transport-security': 'max-age=31536000; includeSubDomains; preload', 'anthropic-organization-id': '73a09491-cda3-40b4-8544-d00ca1bc9331', 'x-envoy-upstream-service-time': '8845', 'cf-cache-status': 'DYNAMIC', 'x-robots-tag': 'none', 'server': 'cloudflare', 'cf-ray': '9a88393359f39cb4-EWR'})
+22:30:17 | DEBUG    | anthropic._base_client | request_id: req_011CVkwRwQGyUramcjfqtqiq
+22:30:17 | INFO     | step_one_decipher |   [CLAUDE] Full response: Looking at the transliteration "kdai achila" and analyzing the candidates, I need to find Hebrew terms that match phonetically.
+
+The transliteration appears to be looking for:
+- "kdai" (כדי) = "in order to" or "sufficient for"
+- "achila" (אכילה) = "eating"
+
+However, examining all the candidates provided, none of them contain clear instances of these specific terms together or separately. The candidates discuss various halachic topics including tumah/taharah, korbanos, and other matters, but I don't see the Hebrew words כדי אכילה or related eating-measurement terminology that would match "kdai achila."
+
+The search results appear to be discussing different halachic concepts entirely, and none contain the phonetic equivalents I would expect for this transliteration.
+
+```json
+{
+  "matched": false,
+  "hebrew_term": "",
+  "source_ref": "",
+  "confidence": "low",
+  "explanation": "None of the candidates contain Hebrew terms that phonetically match 'kdai achila' (כדי אכילה). The candidates discuss various halachic topics but don't include the expected terms for eating measurements or 'sufficient for eating' that this transliteration suggests."
+}
+```
+22:30:17 | INFO     | step_one_decipher |   ✗ Claude could not find good match
+22:30:17 | INFO     | step_one_decipher | ================================================================================
+22:30:17 | INFO     | step_one_decipher | STEP 1: DECIPHER
+22:30:17 | INFO     | step_one_decipher | ================================================================================
+22:30:17 | INFO     | step_one_decipher | Query: 'ribui umiut'
+22:30:17 | INFO     | step_one_decipher | Normalized: 'ribui umiut'
+22:30:17 | INFO     | step_one_decipher | 
+[TOOL 1] Word Dictionary - Checking cache...
+22:30:17 | INFO     | step_one_decipher |   → Dictionary miss or low confidence, continuing...
+22:30:17 | INFO     | step_one_decipher | 
+[TOOL 2] Transliteration Map - Generating Hebrew variants...
+22:30:17 | INFO     | step_one_decipher |   Generated 2 SMART Hebrew variants (prioritized by frequency)
+22:30:17 | INFO     | step_one_decipher |   → Smart generation produced only 2 variants, trying full generation...
+22:30:17 | INFO     | step_one_decipher |   Generated 8 variants using full algorithm
+22:30:17 | INFO     | step_one_decipher |   Sample variants (first 10): ['ריבוי ומות', 'ריבוי ומוט', 'ריבוי ומיות', 'רבוי ומוט', 'רבוי ומיוט', 'רבוי ומיות', 'ריבוי ומיוט', 'רבוי ומות']
+22:30:17 | INFO     | step_one_decipher |   All variants count: 8
+22:30:17 | INFO     | step_one_decipher |   Transliteration confidence: medium
+22:30:17 | INFO     | step_one_decipher |   → Multiple variants or low confidence, escalating to vector search...
+22:30:17 | INFO     | step_one_decipher | 
+[TOOL 3] Vector Search + Claude Verification...
+22:30:17 | INFO     | step_one_decipher |   Searching vector index for 8 SMART variants...
+22:30:17 | INFO     | step_one_decipher |     Searching variant 1/8: 'ריבוי ומות'
+22:30:17 | DEBUG    | vector_search | Vector search for: 'ריבוי ומות' (top_k=3)
+22:30:17 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:17 | DEBUG    | vector_search |   Top 3 matches:
+22:30:17 | DEBUG    | vector_search |     [1] Tosafot Chad Mikamei on Yevamot 18a (score: 0.662)
+22:30:17 | DEBUG    | vector_search |     [2] Tosafot Chad Mikamei on Yevamot 112a (score: 0.651)
+22:30:17 | DEBUG    | vector_search |     [3] Tosafot Chad Mikamei on Yevamot 56b (score: 0.649)
+22:30:17 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.662)
+22:30:17 | INFO     | step_one_decipher |     Searching variant 2/8: 'ריבוי ומוט'
+22:30:17 | DEBUG    | vector_search | Vector search for: 'ריבוי ומוט' (top_k=3)
+22:30:17 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:17 | DEBUG    | vector_search |   Top 3 matches:
+22:30:17 | DEBUG    | vector_search |     [1] Tosafot Chad Mikamei on Yevamot 44b (score: 0.675)
+22:30:17 | DEBUG    | vector_search |     [2] Menachot 59b (score: 0.658)
+22:30:17 | DEBUG    | vector_search |     [3] Tosafot Chad Mikamei on Yevamot 12b (score: 0.657)
+22:30:17 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.675)
+22:30:17 | INFO     | step_one_decipher |     Searching variant 3/8: 'ריבוי ומיות'
+22:30:17 | DEBUG    | vector_search | Vector search for: 'ריבוי ומיות' (top_k=3)
+22:30:17 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:17 | DEBUG    | vector_search |   Top 3 matches:
+22:30:17 | DEBUG    | vector_search |     [1] Chiddushei HaRambam on Rosh Hashanah 17a (score: 0.542)
+22:30:17 | DEBUG    | vector_search |     [2] Avot DeRabbi Natan 21a (score: 0.538)
+22:30:17 | DEBUG    | vector_search |     [3] Tosafot Chad Mikamei on Yevamot 79b (score: 0.535)
+22:30:17 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.542)
+22:30:17 | INFO     | step_one_decipher |     Searching variant 4/8: 'רבוי ומוט'
+22:30:17 | DEBUG    | vector_search | Vector search for: 'רבוי ומוט' (top_k=3)
+22:30:17 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:17 | DEBUG    | vector_search |   Top 3 matches:
+22:30:17 | DEBUG    | vector_search |     [1] Tosafot Chad Mikamei on Yevamot 44b (score: 0.646)
+22:30:17 | DEBUG    | vector_search |     [2] Tosafot Chad Mikamei on Yevamot 35b (score: 0.643)
+22:30:17 | DEBUG    | vector_search |     [3] Menachot 59b (score: 0.622)
+22:30:17 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.646)
+22:30:17 | INFO     | step_one_decipher |     Searching variant 5/8: 'רבוי ומיוט'
+22:30:17 | DEBUG    | vector_search | Vector search for: 'רבוי ומיוט' (top_k=3)
+22:30:17 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:17 | DEBUG    | vector_search |   Top 3 matches:
+22:30:17 | DEBUG    | vector_search |     [1] Chullin 90b (score: 0.580)
+22:30:17 | DEBUG    | vector_search |     [2] Chiddushei HaRambam on Rosh Hashanah 17a (score: 0.574)
+22:30:17 | DEBUG    | vector_search |     [3] Zevachim 46b (score: 0.572)
+22:30:17 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.580)
+22:30:17 | INFO     | step_one_decipher |     Searching variant 6/8: 'רבוי ומיות'
+22:30:17 | DEBUG    | vector_search | Vector search for: 'רבוי ומיות' (top_k=3)
+22:30:18 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:18 | DEBUG    | vector_search |   Top 3 matches:
+22:30:18 | DEBUG    | vector_search |     [1] Avot DeRabbi Natan 21a (score: 0.599)
+22:30:18 | DEBUG    | vector_search |     [2] Nazir 62a (score: 0.595)
+22:30:18 | DEBUG    | vector_search |     [3] Avot DeRabbi Natan 18a (score: 0.594)
+22:30:18 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.599)
+22:30:18 | INFO     | step_one_decipher |     Searching variant 7/8: 'ריבוי ומיוט'
+22:30:18 | DEBUG    | vector_search | Vector search for: 'ריבוי ומיוט' (top_k=3)
+22:30:18 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:18 | DEBUG    | vector_search |   Top 3 matches:
+22:30:18 | DEBUG    | vector_search |     [1] Chullin 90b (score: 0.557)
+22:30:18 | DEBUG    | vector_search |     [2] Tosafot Chad Mikamei on Yevamot 79b (score: 0.557)
+22:30:18 | DEBUG    | vector_search |     [3] Tosafot Chad Mikamei on Yevamot 56b (score: 0.550)
+22:30:18 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.557)
+22:30:18 | INFO     | step_one_decipher |     Searching variant 8/8: 'רבוי ומות'
+22:30:18 | DEBUG    | vector_search | Vector search for: 'רבוי ומות' (top_k=3)
+22:30:18 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:18 | DEBUG    | vector_search |   Top 3 matches:
+22:30:18 | DEBUG    | vector_search |     [1] Tosafot Chad Mikamei on Yevamot 115a (score: 0.636)
+22:30:18 | DEBUG    | vector_search |     [2] Tosafot Chad Mikamei on Yevamot 79b (score: 0.630)
+22:30:18 | DEBUG    | vector_search |     [3] Tosafot Chad Mikamei on Yevamot 118b (score: 0.624)
+22:30:18 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.636)
+22:30:18 | INFO     | step_one_decipher |   Found 24 potential matches
+22:30:18 | INFO     | step_one_decipher |   Top 5 unique matches:
+22:30:18 | INFO     | step_one_decipher |     1. Tosafot Chad Mikamei on Yevamot 44b (score: 0.675)
+22:30:18 | INFO     | step_one_decipher |        Hebrew: גריס הרב אלפס אמר רב נחמן ק"ו ומה במקום שאסור לספר...
+22:30:18 | INFO     | step_one_decipher |     2. Tosafot Chad Mikamei on Yevamot 18a (score: 0.662)
+22:30:18 | INFO     | step_one_decipher |        Hebrew: הא דתנן עשה בה מאמר ומת חולצת ולא מתיבמת ה"ה אע"ג ...
+22:30:18 | INFO     | step_one_decipher |     3. Menachot 59b (score: 0.658)
+22:30:18 | INFO     | step_one_decipher |        Hebrew: ויש הקטרה פחותה מכזית ורבא אמר אין קומץ פחות משני ...
+22:30:18 | INFO     | step_one_decipher |     4. Tosafot Chad Mikamei on Yevamot 12b (score: 0.657)
+22:30:18 | INFO     | step_one_decipher |        Hebrew: תנן שתי יבמות הבאות מבית אחד היתה אחת כשרה וא' פסו...
+22:30:18 | INFO     | step_one_decipher |     5. Tosafot Chad Mikamei on Yevamot 112a (score: 0.651)
+22:30:18 | INFO     | step_one_decipher |        Hebrew: מסקנא דשמעת' חרשת קנויה ומשויירת קטנה קנויה ואינה ...
+22:30:18 | INFO     | step_one_decipher |   → Sending to Claude for verification...
+22:30:18 | INFO     | step_one_decipher |   [CLAUDE] Verifying candidates...
+22:30:18 | DEBUG    | anthropic._base_client | Request options: {'method': 'post', 'url': '/v1/messages', 'timeout': Timeout(connect=5.0, read=600, write=600, pool=600), 'files': None, 'idempotency_key': 'stainless-python-retry-02e375c8-4888-422e-96a9-bffa295b30ec', 'json_data': {'max_tokens': 800, 'messages': [{'role': 'user', 'content': 'User\'s transliteration: "ribui umiut"\n\nHere are the top candidates from vector search:\n\n[Candidate 1]\nSource: Tosafot Chad Mikamei on Yevamot 44b\nHebrew: גריס הרב אלפס אמר רב נחמן ק"ו ומה במקום שאסור לספר ולכבס מותר לארס מקום שמותר לספר ולכבס אינו דין שמותר לארס ומוכח מהכא שהאשה מותרת לספר בשבעת האיבול והכי איתא באבל רבתי ורש"י ז"ל גריס ומה במקום שאסור\nScore: 0.675\n\n[Candidate 2]\nSource: Tosafot Chad Mikamei on Yevamot 18a\nHebrew: הא דתנן עשה בה מאמר ומת חולצת ולא מתיבמת ה"ה אע"ג דלא עבד בה מאמר שניה מחלץ חלצה יבומי לא מיבמה דקי"ל כשמואל דאמר יש זיקה אפי\' בתרי אחי וה"ל צרת א)אחות אשה בזיקה. והא דקתני עשה בה מאמר לאפוקי מב"ש דאמ\nScore: 0.662\n\n[Candidate 3]\nSource: Menachot 59b\nHebrew: ויש הקטרה פחותה מכזית ורבא אמר אין קומץ פחות משני זיתים ואין הקטרה פחותה מכזית איתמר המעלה משאור ומדבש על גבי המזבח אמר רבא לוקה משום שאור ולוקה משום דבש לוקה משום עירובי שאור ומשום עירובי דבש אביי אמ\nScore: 0.658\n\n[Candidate 4]\nSource: Tosafot Chad Mikamei on Yevamot 12b\nHebrew: תנן שתי יבמות הבאות מבית אחד היתה אחת כשרה וא\' פסולה אם היה חולץ חולץ לפסולה ואם היה מיבם מיבם לכשרה לא מבעיא אם פסולה לו וכשרה לעלמא כגון מחזיר גרושתו משנשא\' שמיבם לכשירה שהיא כשרה לו וחולץ לפסולה שה\nScore: 0.657\n\n[Candidate 5]\nSource: Tosafot Chad Mikamei on Yevamot 112a\nHebrew: מסקנא דשמעת\' חרשת קנויה ומשויירת קטנה קנויה ואינה קנויה והא דתנן חרשת וקטנה בא יבם על הקטנה וחזר ובא על החרשת או שבא אחיו על החרשת פוסל את הקטנה בדין הוא דלא פסל הקטנה ממ"נ אי קטנה קנויה היא אין ביאת \nScore: 0.651\n\n[Candidate 6]\nSource: Tosafot Chad Mikamei on Yevamot 56b\nHebrew: אמר רבה שכבת זרע דכתב גבי שפחה חרופה למעט מינה דכל חייבי לאוין בהעראה דא"כ לישתוק קרא מיניה דשפחה חרופה. שכבת זרע דאשת איש למ"ד משמש מת בעריות חייב פרט למשמש מתה. שכבת זרע דסוטה לאו למעקרה קינא לה שלא\nScore: 0.649\n\n[Candidate 7]\nSource: Tosafot Chad Mikamei on Yevamot 35b\nHebrew: אמר רב נחמן אמר שמואל כל שנשתהה עשר שנים אחר בעלה ונשאת שוב אין נתעברת. ולא אמרן אלא שאין דעתה להנשא אבל דעתה להנשא מתעברת:\n\nScore: 0.643\n\n[Candidate 8]\nSource: Tosafot Chad Mikamei on Yevamot 115a\nHebrew: מסקנא דשמעת\' דבקטן אוכל נבלות דבאסורא דרבנן פשיטא דאין ב"ד מצווין עליו להפרישו ובאיסורא דרבנן נמי פשיטא דאין אומרי\' לתינוק עשה דבר זה. וכי פליג באיסורא דאוריית\' ומסתברא דאין ב"ד מצווין עליו להפרישו דמ\nScore: 0.636\n\n[Candidate 9]\nSource: Tosafot Chad Mikamei on Yevamot 79b\nHebrew: אר"ל אר"ל ממזרת לאחר עשרה דורות מותרת יליף עשירי עשירי מעמוני מה להלן נקבות מותרות אף כאן נקבות מותרות. אי מה להלן מיד אף כאן מיד כי גמירי [ג"ש] מעשירי ואילך ולית הלכתא כר"ל דס"ל דון מינה ואוקי באתרא \nScore: 0.630\n\n[Candidate 10]\nSource: Tosafot Chad Mikamei on Yevamot 118b\nHebrew: מתני\' אחת אומרת מת ואחת אומרת לא מת זו שאומרת מת תנשא ותטול כתובתה. אחת אומרת מת ואחת אומרת נהרג אר"מ הואיל ומכחישות זו את זו הרי אלו לא ינשאו ר\' יהודה ור\' שמעון אומרים הואיל וזו וזו מודות שאינו קיים \nScore: 0.624\n\nWhich candidate best matches the user\'s query?'}], 'model': 'claude-sonnet-4-20250514', 'system': 'You are a Torah scholar assistant helping identify Hebrew/Aramaic terms from transliterations.\n\nReview the candidates from vector search and pick the best match for the user\'s query.\n\nIMPORTANT:\n- Match phonetically (ch=ח, sh=ש, tz=צ, s=ת in yeshivish)\n- Consider context and meaning\n- Be confident when there\'s a clear match\n- Admit uncertainty if candidates don\'t match well\n\nReturn JSON:\n{\n  "matched": true/false,\n  "hebrew_term": "The Hebrew/Aramaic term (first 50 chars)",\n  "source_ref": "Where it appears",\n  "confidence": "high/medium/low",\n  "explanation": "Why this is the best match"\n}'}}
+22:30:18 | DEBUG    | anthropic._base_client | Sending HTTP Request: POST https://api.anthropic.com/v1/messages
+22:30:18 | DEBUG    | httpcore.connection | connect_tcp.started host='api.anthropic.com' port=443 local_address=None timeout=5.0 socket_options=[(65535, 8, True), (6, 17, 60), (6, 16, 5), (6, 3, 60)]
+22:30:18 | DEBUG    | httpcore.connection | connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000028221B3B220>
+22:30:18 | DEBUG    | httpcore.connection | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000028221B832C0> server_hostname='api.anthropic.com' timeout=5.0
+22:30:18 | DEBUG    | httpcore.connection | start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000028221B3B1F0>
+22:30:18 | DEBUG    | httpcore.http11 | send_request_headers.started request=<Request [b'POST']>
+22:30:18 | DEBUG    | httpcore.http11 | send_request_headers.complete
+22:30:18 | DEBUG    | httpcore.http11 | send_request_body.started request=<Request [b'POST']>
+22:30:18 | DEBUG    | httpcore.http11 | send_request_body.complete
+22:30:18 | DEBUG    | httpcore.http11 | receive_response_headers.started request=<Request [b'POST']>
+22:30:26 | DEBUG    | httpcore.http11 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Thu, 04 Dec 2025 03:30:26 GMT'), (b'Content-Type', b'application/json'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Content-Encoding', b'gzip'), (b'anthropic-ratelimit-input-tokens-limit', b'30000'), (b'anthropic-ratelimit-input-tokens-remaining', b'29000'), (b'anthropic-ratelimit-input-tokens-reset', b'2025-12-04T03:30:22Z'), (b'anthropic-ratelimit-output-tokens-limit', b'8000'), (b'anthropic-ratelimit-output-tokens-remaining', b'8000'), (b'anthropic-ratelimit-output-tokens-reset', b'2025-12-04T03:30:28Z'), (b'anthropic-ratelimit-requests-limit', b'50'), (b'anthropic-ratelimit-requests-remaining', b'49'), (b'anthropic-ratelimit-requests-reset', b'2025-12-04T03:30:19Z'), (b'retry-after', b'42'), (b'anthropic-ratelimit-tokens-limit', b'38000'), (b'anthropic-ratelimit-tokens-remaining', b'37000'), (b'anthropic-ratelimit-tokens-reset', b'2025-12-04T03:30:22Z'), (b'request-id', b'req_011CVkwSffzn51ZLuMpFYgow'), (b'strict-transport-security', b'max-age=31536000; includeSubDomains; preload'), (b'anthropic-organization-id', b'73a09491-cda3-40b4-8544-d00ca1bc9331'), (b'x-envoy-upstream-service-time', b'8021'), (b'cf-cache-status', b'DYNAMIC'), (b'X-Robots-Tag', b'none'), (b'Server', b'cloudflare'), (b'CF-RAY', b'9a88397129970f41-EWR')])
+22:30:26 | INFO     | httpx | HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+22:30:26 | DEBUG    | httpcore.http11 | receive_response_body.started request=<Request [b'POST']>
+22:30:26 | DEBUG    | httpcore.http11 | receive_response_body.complete
+22:30:26 | DEBUG    | httpcore.http11 | response_closed.started
+22:30:26 | DEBUG    | httpcore.http11 | response_closed.complete
+22:30:26 | DEBUG    | anthropic._base_client | HTTP Response: POST https://api.anthropic.com/v1/messages "200 OK" Headers({'date': 'Thu, 04 Dec 2025 03:30:26 GMT', 'content-type': 'application/json', 'transfer-encoding': 'chunked', 'connection': 'keep-alive', 'content-encoding': 'gzip', 'anthropic-ratelimit-input-tokens-limit': '30000', 'anthropic-ratelimit-input-tokens-remaining': '29000', 'anthropic-ratelimit-input-tokens-reset': '2025-12-04T03:30:22Z', 'anthropic-ratelimit-output-tokens-limit': '8000', 'anthropic-ratelimit-output-tokens-remaining': '8000', 'anthropic-ratelimit-output-tokens-reset': '2025-12-04T03:30:28Z', 'anthropic-ratelimit-requests-limit': '50', 'anthropic-ratelimit-requests-remaining': '49', 'anthropic-ratelimit-requests-reset': '2025-12-04T03:30:19Z', 'retry-after': '42', 'anthropic-ratelimit-tokens-limit': '38000', 'anthropic-ratelimit-tokens-remaining': '37000', 'anthropic-ratelimit-tokens-reset': '2025-12-04T03:30:22Z', 'request-id': 'req_011CVkwSffzn51ZLuMpFYgow', 'strict-transport-security': 'max-age=31536000; includeSubDomains; preload', 'anthropic-organization-id': '73a09491-cda3-40b4-8544-d00ca1bc9331', 'x-envoy-upstream-service-time': '8021', 'cf-cache-status': 'DYNAMIC', 'x-robots-tag': 'none', 'server': 'cloudflare', 'cf-ray': '9a88397129970f41-EWR'})
+22:30:26 | DEBUG    | anthropic._base_client | request_id: req_011CVkwSffzn51ZLuMpFYgow
+22:30:26 | INFO     | step_one_decipher |   [CLAUDE] Full response: Looking at the transliteration "ribui umiut" and the candidates provided, I need to find Hebrew/Aramaic terms that would sound like this phonetically.
+
+The transliteration "ribui umiut" appears to be looking for the terms "ריבוי ומיעוט" (ribui u-miut), which are fundamental hermeneutical principles in Talmudic interpretation meaning "inclusion and exclusion."
+
+However, examining all the candidates carefully, none of them contain the specific Hebrew terms "ריבוי ומיעוט" or variations that would match this transliteration. The candidates are all from Tosafot Chad Mikamei on various tractates of Yevamot and one from Menachot, but they discuss different topics like levirate marriage (yibbum), mourning laws, sacrificial procedures, etc.
+
+```json
+{
+  "matched": false,
+  "hebrew_term": "",
+  "source_ref": "",
+  "confidence": "high",
+  "explanation": "The transliteration 'ribui umiut' clearly refers to the hermeneutical principles ריבוי ומיעוט (inclusion and exclusion), but none of the provided candidates contain these terms or phonetically similar expressions. All candidates discuss different Talmudic topics without reference to these interpretive methods."
+}
+```
+22:30:26 | INFO     | step_one_decipher |   ✗ Claude could not find good match
+22:30:26 | INFO     | step_one_decipher | ================================================================================
+22:30:26 | INFO     | step_one_decipher | STEP 1: DECIPHER
+22:30:26 | INFO     | step_one_decipher | ================================================================================
+22:30:26 | INFO     | step_one_decipher | Query: 'klal uprat'
+22:30:26 | INFO     | step_one_decipher | Normalized: 'klal uprat'
+22:30:26 | INFO     | step_one_decipher | 
+[TOOL 1] Word Dictionary - Checking cache...
+22:30:26 | INFO     | step_one_decipher |   → Dictionary miss or low confidence, continuing...
+22:30:26 | INFO     | step_one_decipher | 
+[TOOL 2] Transliteration Map - Generating Hebrew variants...
+22:30:26 | INFO     | step_one_decipher |   Generated 4 SMART Hebrew variants (prioritized by frequency)
+22:30:26 | INFO     | step_one_decipher |   Sample variants (first 10): ['כלל אופרת', 'כלל אופרט', 'קלל אופרת', 'קלל אופרט']
+22:30:26 | INFO     | step_one_decipher |   All variants count: 4
+22:30:26 | INFO     | step_one_decipher |   Transliteration confidence: high
+22:30:26 | INFO     | step_one_decipher |   → Multiple variants or low confidence, escalating to vector search...
+22:30:26 | INFO     | step_one_decipher | 
+[TOOL 3] Vector Search + Claude Verification...
+22:30:26 | INFO     | step_one_decipher |   Searching vector index for 4 SMART variants...
+22:30:26 | INFO     | step_one_decipher |     Searching variant 1/4: 'כלל אופרת'
+22:30:26 | DEBUG    | vector_search | Vector search for: 'כלל אופרת' (top_k=3)
+22:30:26 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:26 | DEBUG    | httpcore.connection | close.started
+22:30:26 | DEBUG    | httpcore.connection | close.complete
+22:30:26 | DEBUG    | vector_search |   Top 3 matches:
+22:30:26 | DEBUG    | vector_search |     [1] Tosafot Chad Mikamei on Yevamot 106b (score: 0.625)
+22:30:26 | DEBUG    | vector_search |     [2] Arakhin 23a (score: 0.615)
+22:30:26 | DEBUG    | vector_search |     [3] Shabbat 112b (score: 0.605)
+22:30:26 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.625)
+22:30:26 | INFO     | step_one_decipher |     Searching variant 2/4: 'כלל אופרט'
+22:30:26 | DEBUG    | vector_search | Vector search for: 'כלל אופרט' (top_k=3)
+22:30:26 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:26 | DEBUG    | vector_search |   Top 3 matches:
+22:30:26 | DEBUG    | vector_search |     [1] Zevachim 72a (score: 0.629)
+22:30:26 | DEBUG    | vector_search |     [2] Tosafot Chad Mikamei on Yevamot 106b (score: 0.618)
+22:30:26 | DEBUG    | vector_search |     [3] Chullin 67a (score: 0.613)
+22:30:26 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.629)
+22:30:26 | INFO     | step_one_decipher |     Searching variant 3/4: 'קלל אופרת'
+22:30:26 | DEBUG    | vector_search | Vector search for: 'קלל אופרת' (top_k=3)
+22:30:26 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:26 | DEBUG    | vector_search |   Top 3 matches:
+22:30:26 | DEBUG    | vector_search |     [1] Zevachim 72a (score: 0.629)
+22:30:26 | DEBUG    | vector_search |     [2] Shabbat 21b (score: 0.566)
+22:30:26 | DEBUG    | vector_search |     [3] Shabbat 97a (score: 0.556)
+22:30:26 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.629)
+22:30:26 | INFO     | step_one_decipher |     Searching variant 4/4: 'קלל אופרט'
+22:30:26 | DEBUG    | vector_search | Vector search for: 'קלל אופרט' (top_k=3)
+22:30:26 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:26 | DEBUG    | vector_search |   Top 3 matches:
+22:30:26 | DEBUG    | vector_search |     [1] Zevachim 72a (score: 0.664)
+22:30:26 | DEBUG    | vector_search |     [2] Zevachim 69a (score: 0.603)
+22:30:26 | DEBUG    | vector_search |     [3] Bava Metzia 45a (score: 0.596)
+22:30:26 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.664)
+22:30:26 | INFO     | step_one_decipher |   Found 12 potential matches
+22:30:26 | INFO     | step_one_decipher |   Top 5 unique matches:
+22:30:26 | INFO     | step_one_decipher |     1. Zevachim 72a (score: 0.664)
+22:30:26 | INFO     | step_one_decipher |        Hebrew: שהמית את האדם ע"פ עד א' או ע"פ הבעלי' ברובע ונרבע ...
+22:30:26 | INFO     | step_one_decipher |     2. Tosafot Chad Mikamei on Yevamot 106b (score: 0.625)
+22:30:26 | INFO     | step_one_decipher |        Hebrew: א"ר ישמעאל בר"י המתפלל צריך שיתן עיניו למטה ולבו ל...
+22:30:26 | INFO     | step_one_decipher |     3. Arakhin 23a (score: 0.615)
+22:30:26 | INFO     | step_one_decipher |        Hebrew: תָּנוּ רַבָּנַן: שׁוּם הַיְּתוֹמִים שְׁלֹשִׁים יוֹ...
+22:30:26 | INFO     | step_one_decipher |     4. Chullin 67a (score: 0.613)
+22:30:26 | INFO     | step_one_decipher |        Hebrew: במאי קמיפלגי תנא דבי רב ותנא דבי רבי ישמעאל בראשו ...
+22:30:26 | INFO     | step_one_decipher |     5. Shabbat 112b (score: 0.605)
+22:30:26 | INFO     | step_one_decipher |        Hebrew: אֲסִיר לְהַדּוֹקֵיהּ בְּיוֹמָא טָבָא! בְּהָהִיא אֲ...
+22:30:26 | INFO     | step_one_decipher |   → Sending to Claude for verification...
+22:30:26 | INFO     | step_one_decipher |   [CLAUDE] Verifying candidates...
+22:30:26 | DEBUG    | anthropic._base_client | Request options: {'method': 'post', 'url': '/v1/messages', 'timeout': Timeout(connect=5.0, read=600, write=600, pool=600), 'files': None, 'idempotency_key': 'stainless-python-retry-591a6914-cab2-485a-a741-8d93a0fc31cc', 'json_data': {'max_tokens': 800, 'messages': [{'role': 'user', 'content': 'User\'s transliteration: "klal uprat"\n\nHere are the top candidates from vector search:\n\n[Candidate 1]\nSource: Zevachim 72a\nHebrew: שהמית את האדם ע"פ עד א\' או ע"פ הבעלי\' ברובע ונרבע במוקצה ונעבד באתנן ומחיר\nScore: 0.664\n\n[Candidate 2]\nSource: Tosafot Chad Mikamei on Yevamot 106b\nHebrew: א"ר ישמעאל בר"י המתפלל צריך שיתן עיניו למטה ולבו למעלה כדי לקיים ב\' מקראות הללו והיו עיני ולבי שם כל הימים וכתיב נשא לבבנו אל כפים אל אל בשמים. הא דפסקי הלכתא עד שתביא ב\' שערות ה"מ לכתחלה דלא חלצה עד \nScore: 0.625\n\n[Candidate 3]\nSource: Arakhin 23a\nHebrew: תָּנוּ רַבָּנַן: שׁוּם הַיְּתוֹמִים שְׁלֹשִׁים יוֹם, וְשׁוּם הַהֶקְדֵּשׁ שִׁשִּׁים יוֹם, דִּבְרֵי רַבִּי מֵאִיר. רַבִּי יְהוּדָה אוֹמֵר: שׁוּם הַיְּתוֹמִים שִׁשִּׁים יוֹם, וְשׁוּם הַהֶקְדֵּשׁ תִּשְׁעִ\nScore: 0.615\n\n[Candidate 4]\nSource: Chullin 67a\nHebrew: במאי קמיפלגי תנא דבי רב ותנא דבי רבי ישמעאל בראשו ארוך קמיפלגי תנא דבי רב סבר אשר לו כרעים כלל ארבה סלעם חרגול חגב למינהו פרט כלל ופרט אין בכלל אלא מה שבפרט דמיניה אין דלאו דמיניה לא ומרבי דדמי ליה מש\nScore: 0.613\n\n[Candidate 5]\nSource: Shabbat 112b\nHebrew: אֲסִיר לְהַדּוֹקֵיהּ בְּיוֹמָא טָבָא! בְּהָהִיא אֲפִילּוּ רַבִּי שִׁמְעוֹן מוֹדֶה. דְּאַבָּיֵי וְרָבָא דְּאָמְרִי תַּרְוַויְיהוּ: מוֹדֶה רַבִּי שִׁמְעוֹן בִּ״פְסִיק רֵישֵׁיהּ וְלָא יְמוּת״. וְהָאָמַר \nScore: 0.605\n\n[Candidate 6]\nSource: Zevachim 69a\nHebrew: צריכה שתביא עוד חמש פרידין למעלה ממין אחד ומב\' מינין תביא שש נתנתן לכהן ואינה יודעת מה נתנה הלך הכהן ועשה ואינו יודע מה עשה צריכה ד\' פרידין לנדרה ושתים לחובתה וחטאת אחת בן עזאי אומר ב\' חטאות א"ר יהושע\nScore: 0.603\n\n[Candidate 7]\nSource: Bava Metzia 45a\nHebrew: <strong><big>גמ׳</big></strong> מְנָהָנֵי מִילֵּי? דְּתָנוּ רַבָּנַן: ״עַל כׇּל דְּבַר פֶּשַׁע״, בֵּית שַׁמַּאי אוֹמְרִים: מְלַמֵּד שֶׁחַיָּיב עַל הַמַּחְשָׁבָה כְּמַעֲשֶׂה. וּבֵית הִלֵּל אוֹמְרִים: א\nScore: 0.596\n\n[Candidate 8]\nSource: Shabbat 21b\nHebrew: אָמַר רַב כָּהֲנָא: קָנִים שֶׁאֲגָדָן — צְרִיכִין רוֹב, לֹא אֲגָדָן — אֵין צְרִיכִין רוֹב. גַּרְעִינִין — צְרִיכִין רוֹב, נְתָנָן בְּחוֹתָלוֹת — אֵין צְרִיכִין רוֹב. תָּנֵי רַב יוֹסֵף: אַרְבַּע מְדוּר\nScore: 0.566\n\n[Candidate 9]\nSource: Shabbat 97a\nHebrew: הָא בְּרַבְרְבֵי, וְהָא בְּזוּטְרֵי. אָמַר רַב אַסִּי, שׁוֹנִין: כְּלֵי חֶרֶס שִׁיעוּרוֹ בְּכוֹנֵס מַשְׁקֶה. וְלֹא אָמְרוּ מוֹצִיא מַשְׁקֶה אֶלָּא לְעִנְיַן גִּיסְטְרָא בִּלְבַד. מַאי טַעְמָא? אָמַר מ\nScore: 0.556\n\nWhich candidate best matches the user\'s query?'}], 'model': 'claude-sonnet-4-20250514', 'system': 'You are a Torah scholar assistant helping identify Hebrew/Aramaic terms from transliterations.\n\nReview the candidates from vector search and pick the best match for the user\'s query.\n\nIMPORTANT:\n- Match phonetically (ch=ח, sh=ש, tz=צ, s=ת in yeshivish)\n- Consider context and meaning\n- Be confident when there\'s a clear match\n- Admit uncertainty if candidates don\'t match well\n\nReturn JSON:\n{\n  "matched": true/false,\n  "hebrew_term": "The Hebrew/Aramaic term (first 50 chars)",\n  "source_ref": "Where it appears",\n  "confidence": "high/medium/low",\n  "explanation": "Why this is the best match"\n}'}}
+22:30:26 | DEBUG    | anthropic._base_client | Sending HTTP Request: POST https://api.anthropic.com/v1/messages
+22:30:26 | DEBUG    | httpcore.connection | connect_tcp.started host='api.anthropic.com' port=443 local_address=None timeout=5.0 socket_options=[(65535, 8, True), (6, 17, 60), (6, 16, 5), (6, 3, 60)]
+22:30:26 | DEBUG    | httpcore.connection | connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000028221B5AEE0>
+22:30:26 | DEBUG    | httpcore.connection | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000028273282640> server_hostname='api.anthropic.com' timeout=5.0
+22:30:27 | DEBUG    | httpcore.connection | start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000028221B24A90>
+22:30:27 | DEBUG    | httpcore.http11 | send_request_headers.started request=<Request [b'POST']>
+22:30:27 | DEBUG    | httpcore.http11 | send_request_headers.complete
+22:30:27 | DEBUG    | httpcore.http11 | send_request_body.started request=<Request [b'POST']>
+22:30:27 | DEBUG    | httpcore.http11 | send_request_body.complete
+22:30:27 | DEBUG    | httpcore.http11 | receive_response_headers.started request=<Request [b'POST']>
+22:30:32 | DEBUG    | httpcore.http11 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Thu, 04 Dec 2025 03:30:32 GMT'), (b'Content-Type', b'application/json'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Content-Encoding', b'gzip'), (b'anthropic-ratelimit-input-tokens-limit', b'30000'), (b'anthropic-ratelimit-input-tokens-remaining', b'29000'), (b'anthropic-ratelimit-input-tokens-reset', b'2025-12-04T03:30:31Z'), (b'anthropic-ratelimit-output-tokens-limit', b'8000'), (b'anthropic-ratelimit-output-tokens-remaining', b'8000'), (b'anthropic-ratelimit-output-tokens-reset', b'2025-12-04T03:30:33Z'), (b'anthropic-ratelimit-requests-limit', b'50'), (b'anthropic-ratelimit-requests-remaining', b'49'), (b'anthropic-ratelimit-requests-reset', b'2025-12-04T03:30:28Z'), (b'retry-after', b'33'), (b'anthropic-ratelimit-tokens-limit', b'38000'), (b'anthropic-ratelimit-tokens-remaining', b'37000'), (b'anthropic-ratelimit-tokens-reset', b'2025-12-04T03:30:31Z'), (b'request-id', b'req_011CVkwTJsP5YLwUNAYRypzz'), (b'strict-transport-security', b'max-age=31536000; includeSubDomains; preload'), (b'anthropic-organization-id', b'73a09491-cda3-40b4-8544-d00ca1bc9331'), (b'x-envoy-upstream-service-time', b'5095'), (b'cf-cache-status', b'DYNAMIC'), (b'X-Robots-Tag', b'none'), (b'Server', b'cloudflare'), (b'CF-RAY', b'9a8839a7896543b0-EWR')])
+22:30:32 | INFO     | httpx | HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+22:30:32 | DEBUG    | httpcore.http11 | receive_response_body.started request=<Request [b'POST']>
+22:30:32 | DEBUG    | httpcore.http11 | receive_response_body.complete
+22:30:32 | DEBUG    | httpcore.http11 | response_closed.started
+22:30:32 | DEBUG    | httpcore.http11 | response_closed.complete
+22:30:32 | DEBUG    | anthropic._base_client | HTTP Response: POST https://api.anthropic.com/v1/messages "200 OK" Headers({'date': 'Thu, 04 Dec 2025 03:30:32 GMT', 'content-type': 'application/json', 'transfer-encoding': 'chunked', 'connection': 'keep-alive', 'content-encoding': 'gzip', 'anthropic-ratelimit-input-tokens-limit': '30000', 'anthropic-ratelimit-input-tokens-remaining': '29000', 'anthropic-ratelimit-input-tokens-reset': '2025-12-04T03:30:31Z', 'anthropic-ratelimit-output-tokens-limit': '8000', 'anthropic-ratelimit-output-tokens-remaining': '8000', 'anthropic-ratelimit-output-tokens-reset': '2025-12-04T03:30:33Z', 'anthropic-ratelimit-requests-limit': '50', 'anthropic-ratelimit-requests-remaining': '49', 'anthropic-ratelimit-requests-reset': '2025-12-04T03:30:28Z', 'retry-after': '33', 'anthropic-ratelimit-tokens-limit': '38000', 'anthropic-ratelimit-tokens-remaining': '37000', 'anthropic-ratelimit-tokens-reset': '2025-12-04T03:30:31Z', 'request-id': 'req_011CVkwTJsP5YLwUNAYRypzz', 'strict-transport-security': 'max-age=31536000; includeSubDomains; preload', 'anthropic-organization-id': '73a09491-cda3-40b4-8544-d00ca1bc9331', 'x-envoy-upstream-service-time': '5095', 'cf-cache-status': 'DYNAMIC', 'x-robots-tag': 'none', 'server': 'cloudflare', 'cf-ray': '9a8839a7896543b0-EWR'})
+22:30:32 | DEBUG    | anthropic._base_client | request_id: req_011CVkwTJsP5YLwUNAYRypzz
+22:30:32 | INFO     | step_one_decipher |   [CLAUDE] Full response: Looking at the user's transliteration "klal uprat" and examining the candidates, I can identify a clear match:
+
+```json
+{
+  "matched": true,
+  "hebrew_term": "כלל ופרט",
+  "source_ref": "Chullin 67a",
+  "confidence": "high",
+  "explanation": "Candidate 4 contains the exact phrase 'כלל ופרט' (klal uprat), which is a fundamental hermeneutical principle in Talmudic interpretation meaning 'general and particular.' The text discusses this principle in the context of interpreting which types of locusts are kosher, using the methodology of klal uprat to derive specific inclusions and exclusions from biblical verses."
+}
+```
+22:30:32 | INFO     | step_one_decipher |   ✓ CLAUDE MATCHED: כלל ופרט
+22:30:32 | INFO     | step_one_decipher | ================================================================================
+22:30:32 | INFO     | step_one_decipher | STEP 1: DECIPHER
+22:30:32 | INFO     | step_one_decipher | ================================================================================
+22:30:32 | INFO     | step_one_decipher | Query: 'kal vchomer'
+22:30:32 | INFO     | step_one_decipher | Normalized: 'kal vchomer'
+22:30:32 | INFO     | step_one_decipher | 
+[TOOL 1] Word Dictionary - Checking cache...
+22:30:32 | INFO     | step_one_decipher |   → Dictionary miss or low confidence, continuing...
+22:30:32 | INFO     | step_one_decipher | 
+[TOOL 2] Transliteration Map - Generating Hebrew variants...
+22:30:32 | INFO     | step_one_decipher |   Generated 4 SMART Hebrew variants (prioritized by frequency)
+22:30:32 | INFO     | step_one_decipher |   Sample variants (first 10): ['כל וחומר', 'כל וכומר', 'קל וחומר', 'קל וכומר']
+22:30:32 | INFO     | step_one_decipher |   All variants count: 4
+22:30:32 | INFO     | step_one_decipher |   Transliteration confidence: high
+22:30:32 | INFO     | step_one_decipher |   → Multiple variants or low confidence, escalating to vector search...
+22:30:32 | INFO     | step_one_decipher | 
+[TOOL 3] Vector Search + Claude Verification...
+22:30:32 | INFO     | step_one_decipher |   Searching vector index for 4 SMART variants...
+22:30:32 | INFO     | step_one_decipher |     Searching variant 1/4: 'כל וחומר'
+22:30:32 | DEBUG    | vector_search | Vector search for: 'כל וחומר' (top_k=3)
+22:30:32 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:32 | DEBUG    | httpcore.connection | close.started
+22:30:32 | DEBUG    | httpcore.connection | close.complete
+22:30:32 | DEBUG    | vector_search |   Top 3 matches:
+22:30:32 | DEBUG    | vector_search |     [1] Tosafot Chad Mikamei on Yevamot 106b (score: 0.584)
+22:30:32 | DEBUG    | vector_search |     [2] Tosafot Chad Mikamei on Yevamot 115a (score: 0.580)
+22:30:32 | DEBUG    | vector_search |     [3] Chiddushei HaRambam on Rosh Hashanah 17a (score: 0.561)
+22:30:32 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.584)
+22:30:32 | INFO     | step_one_decipher |     Searching variant 2/4: 'כל וכומר'
+22:30:32 | DEBUG    | vector_search | Vector search for: 'כל וכומר' (top_k=3)
+22:30:32 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:32 | DEBUG    | vector_search |   Top 3 matches:
+22:30:32 | DEBUG    | vector_search |     [1] Sotah 34b (score: 0.747)
+22:30:32 | DEBUG    | vector_search |     [2] Horayot 6a (score: 0.739)
+22:30:32 | DEBUG    | vector_search |     [3] Shevuot 8b (score: 0.735)
+22:30:32 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.747)
+22:30:32 | INFO     | step_one_decipher |     Searching variant 3/4: 'קל וחומר'
+22:30:32 | DEBUG    | vector_search | Vector search for: 'קל וחומר' (top_k=3)
+22:30:32 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:32 | DEBUG    | vector_search |   Top 3 matches:
+22:30:32 | DEBUG    | vector_search |     [1] Tosafot Chad Mikamei on Yevamot 12b (score: 0.662)
+22:30:32 | DEBUG    | vector_search |     [2] Tosafot Chad Mikamei on Yevamot 28a (score: 0.660)
+22:30:32 | DEBUG    | vector_search |     [3] Tosafot Chad Mikamei on Yevamot 16a (score: 0.659)
+22:30:32 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.662)
+22:30:32 | INFO     | step_one_decipher |     Searching variant 4/4: 'קל וכומר'
+22:30:32 | DEBUG    | vector_search | Vector search for: 'קל וכומר' (top_k=3)
+22:30:32 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:32 | DEBUG    | vector_search |   Top 3 matches:
+22:30:32 | DEBUG    | vector_search |     [1] Bava Batra 78b (score: 0.711)
+22:30:32 | DEBUG    | vector_search |     [2] Shabbat 52b (score: 0.710)
+22:30:32 | DEBUG    | vector_search |     [3] Sanhedrin 68a (score: 0.709)
+22:30:32 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.711)
+22:30:32 | INFO     | step_one_decipher |   Found 12 potential matches
+22:30:32 | INFO     | step_one_decipher |   Top 5 unique matches:
+22:30:32 | INFO     | step_one_decipher |     1. Sotah 34b (score: 0.747)
+22:30:32 | INFO     | step_one_decipher |        Hebrew: וְרַבִּי יְהוּדָה, הַאי ״וְעָנְתָה וְאָמְרָה״, מַא...
+22:30:32 | INFO     | step_one_decipher |     2. Horayot 6a (score: 0.739)
+22:30:32 | INFO     | step_one_decipher |        Hebrew: רַבִּי שִׁמְעוֹן אוֹמֵר: שְׁלֹשָׁה עָשָׂר פָּרִים,...
+22:30:32 | INFO     | step_one_decipher |     3. Shevuot 8b (score: 0.735)
+22:30:32 | INFO     | step_one_decipher |        Hebrew: וּכְתִיב הָתָם: ״טָמֵא יִהְיֶה עוֹד טֻמְאָתוֹ בּוֹ...
+22:30:32 | INFO     | step_one_decipher |     4. Bava Batra 78b (score: 0.711)
+22:30:32 | INFO     | step_one_decipher |        Hebrew: כְּאוֹתָהּ שֶׁשָּׁנִינוּ: כּוֹתְבִין שְׁטָר לַמּוֹ...
+22:30:32 | INFO     | step_one_decipher |     5. Shabbat 52b (score: 0.710)
+22:30:32 | INFO     | step_one_decipher |        Hebrew: אֵינוֹ נוֹטֵל וּמַחֲזִיר. רַבִּי יְהוּדָה אוֹמֵר: ...
+22:30:32 | INFO     | step_one_decipher |   → Sending to Claude for verification...
+22:30:32 | INFO     | step_one_decipher |   [CLAUDE] Verifying candidates...
+22:30:32 | DEBUG    | anthropic._base_client | Request options: {'method': 'post', 'url': '/v1/messages', 'timeout': Timeout(connect=5.0, read=600, write=600, pool=600), 'files': None, 'idempotency_key': 'stainless-python-retry-71bc7dd5-6de4-4a29-869c-d822597fb341', 'json_data': {'max_tokens': 800, 'messages': [{'role': 'user', 'content': 'User\'s transliteration: "kal vchomer"\n\nHere are the top candidates from vector search:\n\n[Candidate 1]\nSource: Sotah 34b\nHebrew: וְרַבִּי יְהוּדָה, הַאי ״וְעָנְתָה וְאָמְרָה״, מַאי עָבֵיד לֵיהּ? מִיבְּעֵי לֵיהּ לְאַגְמוֹרֵי לִלְוִיִּם, דְּבִלְשׁוֹן הַקּוֹדֶשׁ. וְלֵילַף ״קוֹל״ מִמֹּשֶׁה? ״עֲנִיָּיה״ ״עֲנִיָּיה״ גְּמִיר, ״קוֹל״ ״\nScore: 0.747\n\n[Candidate 2]\nSource: Horayot 6a\nHebrew: רַבִּי שִׁמְעוֹן אוֹמֵר: שְׁלֹשָׁה עָשָׂר פָּרִים, וּבַעֲבוֹדָה זָרָה – שְׁלֹשָׁה עָשָׂר פָּרִים וּשְׁלֹשָׁה עָשָׂר שְׂעִירִים, פַּר וְשָׂעִיר לְכׇל שֵׁבֶט וְשֵׁבֶט, פַּר וְשָׂעִיר לְבֵית דִּין. הוֹרו\nScore: 0.739\n\n[Candidate 3]\nSource: Shevuot 8b\nHebrew: וּכְתִיב הָתָם: ״טָמֵא יִהְיֶה עוֹד טֻמְאָתוֹ בּוֹ״; מָה לְהַלָּן טוּמְאַת מִקְדָּשׁ, אַף כָּאן טוּמְאַת מִקְדָּשׁ. וְאֶלָּא ״בָּהּ״ לְמָה לִי? לְרַבּוֹת נִבְלַת עוֹף טָהוֹר. הָא אָמְרַתְּ: ״בָּהּ״ מִ\nScore: 0.735\n\n[Candidate 4]\nSource: Bava Batra 78b\nHebrew: כְּאוֹתָהּ שֶׁשָּׁנִינוּ: כּוֹתְבִין שְׁטָר לַמּוֹכֵר אַף עַל פִּי שֶׁאֵין לוֹקֵחַ עִמּוֹ. כֵּיוָן שֶׁהֶחְזִיק זֶה בַּקַּרְקַע – נִקְנָה שְׁטָר בְּכׇל מָקוֹם שֶׁהוּא; וְזוֹ הִיא שֶׁשָּׁנִינוּ: נְכָסִי\nScore: 0.711\n\n[Candidate 5]\nSource: Shabbat 52b\nHebrew: אֵינוֹ נוֹטֵל וּמַחֲזִיר. רַבִּי יְהוּדָה אוֹמֵר: נְעוֹרֶת שֶׁל פִּשְׁתָּן דַּקָּה הֲרֵי הִיא כְּזֶבֶל. מַנִּיחִין מֵיחַם עַל גַּבֵּי מֵיחַם וּקְדֵרָה עַל גַּבֵּי קְדֵרָה, אֲבָל לֹא קְדֵרָה עַל גַּבֵּ\nScore: 0.710\n\n[Candidate 6]\nSource: Sanhedrin 68a\nHebrew: סִימָנָא בְּעָלְמָא. <strong><big>מַתְנִי׳</big></strong> הַמֵּסִית – זֶה הֶדְיוֹט, וְהַמֵּסִית אֶת הַהֶדְיוֹט. אָמַר: יֵשׁ יִרְאָה בְּמָקוֹם פְּלוֹנִי, כָּךְ אוֹכֶלֶת, כָּךְ שׁוֹתֶה, כָּךְ מְטִיבָה, \nScore: 0.709\n\n[Candidate 7]\nSource: Tosafot Chad Mikamei on Yevamot 12b\nHebrew: תנן שתי יבמות הבאות מבית אחד היתה אחת כשרה וא\' פסולה אם היה חולץ חולץ לפסולה ואם היה מיבם מיבם לכשרה לא מבעיא אם פסולה לו וכשרה לעלמא כגון מחזיר גרושתו משנשא\' שמיבם לכשירה שהיא כשרה לו וחולץ לפסולה שה\nScore: 0.662\n\n[Candidate 8]\nSource: Tosafot Chad Mikamei on Yevamot 28a\nHebrew: איבעיא להו בעלת הגט ובעלת מאמר איזה מהן קודמת לחליצה ואסיקנא דכי הדדי נינהו נינהו:\n\nScore: 0.660\n\n[Candidate 9]\nSource: Tosafot Chad Mikamei on Yevamot 16a\nHebrew: תנן התם במסכת מקואות פ"ד השוקת שבסלע אין ממלאין בה ואין מקדשים בה ואין מזין הימנה ואינה צריכה צמיד פתיל ואינה פוסלת את המקוה היתה כלי וחברתה בסיד ממלאין בה ומקדשין בה ומזין הימנה וצריכה צמיד פתיל ופוס\nScore: 0.659\n\n[Candidate 10]\nSource: Tosafot Chad Mikamei on Yevamot 106b\nHebrew: א"ר ישמעאל בר"י המתפלל צריך שיתן עיניו למטה ולבו למעלה כדי לקיים ב\' מקראות הללו והיו עיני ולבי שם כל הימים וכתיב נשא לבבנו אל כפים אל אל בשמים. הא דפסקי הלכתא עד שתביא ב\' שערות ה"מ לכתחלה דלא חלצה עד \nScore: 0.584\n\nWhich candidate best matches the user\'s query?'}], 'model': 'claude-sonnet-4-20250514', 'system': 'You are a Torah scholar assistant helping identify Hebrew/Aramaic terms from transliterations.\n\nReview the candidates from vector search and pick the best match for the user\'s query.\n\nIMPORTANT:\n- Match phonetically (ch=ח, sh=ש, tz=צ, s=ת in yeshivish)\n- Consider context and meaning\n- Be confident when there\'s a clear match\n- Admit uncertainty if candidates don\'t match well\n\nReturn JSON:\n{\n  "matched": true/false,\n  "hebrew_term": "The Hebrew/Aramaic term (first 50 chars)",\n  "source_ref": "Where it appears",\n  "confidence": "high/medium/low",\n  "explanation": "Why this is the best match"\n}'}}
+22:30:32 | DEBUG    | anthropic._base_client | Sending HTTP Request: POST https://api.anthropic.com/v1/messages
+22:30:32 | DEBUG    | httpcore.connection | connect_tcp.started host='api.anthropic.com' port=443 local_address=None timeout=5.0 socket_options=[(65535, 8, True), (6, 17, 60), (6, 16, 5), (6, 3, 60)]
+22:30:32 | DEBUG    | httpcore.connection | connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000028221B3BF10>
+22:30:32 | DEBUG    | httpcore.connection | start_tls.started ssl_context=<ssl.SSLContext object at 0x00000282732825C0> server_hostname='api.anthropic.com' timeout=5.0
+22:30:32 | DEBUG    | httpcore.connection | start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x000002822167FFA0>
+22:30:32 | DEBUG    | httpcore.http11 | send_request_headers.started request=<Request [b'POST']>
+22:30:32 | DEBUG    | httpcore.http11 | send_request_headers.complete
+22:30:32 | DEBUG    | httpcore.http11 | send_request_body.started request=<Request [b'POST']>
+22:30:32 | DEBUG    | httpcore.http11 | send_request_body.complete
+22:30:32 | DEBUG    | httpcore.http11 | receive_response_headers.started request=<Request [b'POST']>
+22:30:40 | DEBUG    | httpcore.http11 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Thu, 04 Dec 2025 03:30:40 GMT'), (b'Content-Type', b'application/json'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Content-Encoding', b'gzip'), (b'anthropic-ratelimit-input-tokens-limit', b'30000'), (b'anthropic-ratelimit-input-tokens-remaining', b'29000'), (b'anthropic-ratelimit-input-tokens-reset', b'2025-12-04T03:30:38Z'), (b'anthropic-ratelimit-output-tokens-limit', b'8000'), (b'anthropic-ratelimit-output-tokens-remaining', b'8000'), (b'anthropic-ratelimit-output-tokens-reset', b'2025-12-04T03:30:42Z'), (b'anthropic-ratelimit-requests-limit', b'50'), (b'anthropic-ratelimit-requests-remaining', b'49'), (b'anthropic-ratelimit-requests-reset', b'2025-12-04T03:30:34Z'), (b'retry-after', b'27'), (b'anthropic-ratelimit-tokens-limit', b'38000'), (b'anthropic-ratelimit-tokens-remaining', b'37000'), (b'anthropic-ratelimit-tokens-reset', b'2025-12-04T03:30:38Z'), (b'request-id', b'req_011CVkwTjUUrQcZZam9pQy7N'), (b'strict-transport-security', b'max-age=31536000; includeSubDomains; preload'), (b'anthropic-organization-id', b'73a09491-cda3-40b4-8544-d00ca1bc9331'), (b'x-envoy-upstream-service-time', b'7686'), (b'cf-cache-status', b'DYNAMIC'), (b'X-Robots-Tag', b'none'), (b'Server', b'cloudflare'), (b'CF-RAY', b'9a8839cb8e23ace5-EWR')])
+22:30:40 | INFO     | httpx | HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+22:30:40 | DEBUG    | httpcore.http11 | receive_response_body.started request=<Request [b'POST']>
+22:30:40 | DEBUG    | httpcore.http11 | receive_response_body.complete
+22:30:40 | DEBUG    | httpcore.http11 | response_closed.started
+22:30:40 | DEBUG    | httpcore.http11 | response_closed.complete
+22:30:40 | DEBUG    | anthropic._base_client | HTTP Response: POST https://api.anthropic.com/v1/messages "200 OK" Headers({'date': 'Thu, 04 Dec 2025 03:30:40 GMT', 'content-type': 'application/json', 'transfer-encoding': 'chunked', 'connection': 'keep-alive', 'content-encoding': 'gzip', 'anthropic-ratelimit-input-tokens-limit': '30000', 'anthropic-ratelimit-input-tokens-remaining': '29000', 'anthropic-ratelimit-input-tokens-reset': '2025-12-04T03:30:38Z', 'anthropic-ratelimit-output-tokens-limit': '8000', 'anthropic-ratelimit-output-tokens-remaining': '8000', 'anthropic-ratelimit-output-tokens-reset': '2025-12-04T03:30:42Z', 'anthropic-ratelimit-requests-limit': '50', 'anthropic-ratelimit-requests-remaining': '49', 'anthropic-ratelimit-requests-reset': '2025-12-04T03:30:34Z', 'retry-after': '27', 'anthropic-ratelimit-tokens-limit': '38000', 'anthropic-ratelimit-tokens-remaining': '37000', 'anthropic-ratelimit-tokens-reset': '2025-12-04T03:30:38Z', 'request-id': 'req_011CVkwTjUUrQcZZam9pQy7N', 'strict-transport-security': 'max-age=31536000; includeSubDomains; preload', 'anthropic-organization-id': '73a09491-cda3-40b4-8544-d00ca1bc9331', 'x-envoy-upstream-service-time': '7686', 'cf-cache-status': 'DYNAMIC', 'x-robots-tag': 'none', 'server': 'cloudflare', 'cf-ray': '9a8839cb8e23ace5-EWR'})
+22:30:40 | DEBUG    | anthropic._base_client | request_id: req_011CVkwTjUUrQcZZam9pQy7N
+22:30:40 | INFO     | step_one_decipher |   [CLAUDE] Full response: Looking at the user's query "kal vchomer" - this is a fundamental logical inference principle in Talmudic reasoning, literally meaning "light and heavy" (from the lighter case to the heavier case).
+
+After reviewing all the candidates, I don't see any that contain the specific Hebrew term קל וחומר (kal vchomer). The candidates mostly contain various Talmudic discussions about different topics like ritual impurity, legal procedures, and marriage laws, but none appear to contain this specific logical principle.
+
+The vector search seems to have returned results based on general Talmudic content similarity rather than finding the actual term "kal vchomer."
+
+```json
+{
+  "matched": false,
+  "hebrew_term": "",
+  "source_ref": "",
+  "confidence": "high",
+  "explanation": "None of the candidates contain the Hebrew term קל וחומר (kal vchomer), which is a fundamental logical inference principle meaning 'from light to heavy' or 'a fortiori argument' in Talmudic reasoning. The search results appear to be general Talmudic content but don't contain this specific term."
+}
+```
+22:30:40 | INFO     | step_one_decipher |   ✗ Claude could not find good match
+22:30:40 | INFO     | step_one_decipher | ================================================================================
+22:30:40 | INFO     | step_one_decipher | STEP 1: DECIPHER
+22:30:40 | INFO     | step_one_decipher | ================================================================================
+22:30:40 | INFO     | step_one_decipher | Query: 'gezeira shava'
+22:30:40 | INFO     | step_one_decipher | Normalized: 'gezeira shava'
+22:30:40 | INFO     | step_one_decipher | 
+[TOOL 1] Word Dictionary - Checking cache...
+22:30:40 | INFO     | step_one_decipher |   → Dictionary miss or low confidence, continuing...
+22:30:40 | INFO     | step_one_decipher | 
+[TOOL 2] Transliteration Map - Generating Hebrew variants...
+22:30:40 | INFO     | step_one_decipher |   Generated 1 SMART Hebrew variants (prioritized by frequency)
+22:30:40 | INFO     | step_one_decipher |   → Smart generation produced only 1 variants, trying full generation...
+22:30:40 | INFO     | step_one_decipher |   Generated 3 variants using full algorithm
+22:30:40 | INFO     | step_one_decipher |   Sample variants (first 10): ['גזיר שו', 'גזעיר שו', 'גזאיר שו']
+22:30:40 | INFO     | step_one_decipher |   All variants count: 3
+22:30:40 | INFO     | step_one_decipher |   Transliteration confidence: medium
+22:30:40 | INFO     | step_one_decipher |   → Multiple variants or low confidence, escalating to vector search...
+22:30:40 | INFO     | step_one_decipher | 
+[TOOL 3] Vector Search + Claude Verification...
+22:30:40 | INFO     | step_one_decipher |   Searching vector index for 3 SMART variants...
+22:30:40 | INFO     | step_one_decipher |     Searching variant 1/3: 'גזיר שו'
+22:30:40 | DEBUG    | vector_search | Vector search for: 'גזיר שו' (top_k=3)
+22:30:40 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:40 | DEBUG    | httpcore.connection | close.started
+22:30:40 | DEBUG    | httpcore.connection | close.complete
+22:30:40 | DEBUG    | vector_search |   Top 3 matches:
+22:30:40 | DEBUG    | vector_search |     [1] Tosafot Chad Mikamei on Yevamot 45b (score: 0.623)
+22:30:40 | DEBUG    | vector_search |     [2] Tosafot Chad Mikamei on Yevamot 80b (score: 0.623)
+22:30:40 | DEBUG    | vector_search |     [3] Tosafot Chad Mikamei on Yevamot 18a (score: 0.620)
+22:30:40 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.623)
+22:30:40 | INFO     | step_one_decipher |     Searching variant 2/3: 'גזעיר שו'
+22:30:40 | DEBUG    | vector_search | Vector search for: 'גזעיר שו' (top_k=3)
+22:30:40 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:40 | DEBUG    | vector_search |   Top 3 matches:
+22:30:40 | DEBUG    | vector_search |     [1] Chullin 90b (score: 0.606)
+22:30:40 | DEBUG    | vector_search |     [2] Zevachim 121b (score: 0.586)
+22:30:40 | DEBUG    | vector_search |     [3] Menachot 68b (score: 0.586)
+22:30:40 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.606)
+22:30:40 | INFO     | step_one_decipher |     Searching variant 3/3: 'גזאיר שו'
+22:30:40 | DEBUG    | vector_search | Vector search for: 'גזאיר שו' (top_k=3)
+22:30:40 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:41 | DEBUG    | vector_search |   Top 3 matches:
+22:30:41 | DEBUG    | vector_search |     [1] Chullin 90b (score: 0.604)
+22:30:41 | DEBUG    | vector_search |     [2] Tosafot Chad Mikamei on Yevamot 56b (score: 0.604)
+22:30:41 | DEBUG    | vector_search |     [3] Tosafot Chad Mikamei on Yevamot 79b (score: 0.589)
+22:30:41 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.604)
+22:30:41 | INFO     | step_one_decipher |   Found 9 potential matches
+22:30:41 | INFO     | step_one_decipher |   Top 5 unique matches:
+22:30:41 | INFO     | step_one_decipher |     1. Tosafot Chad Mikamei on Yevamot 45b (score: 0.623)
+22:30:41 | INFO     | step_one_decipher |        Hebrew: ואם נשא כהן בת עבד ועובד כוכבים הבא על בת ישראל מו...
+22:30:41 | INFO     | step_one_decipher |     2. Tosafot Chad Mikamei on Yevamot 80b (score: 0.623)
+22:30:41 | INFO     | step_one_decipher |        Hebrew: הא דתנן א"ר [יהושע] שמעתי שהסריס חולץ וחולצין לאשת...
+22:30:41 | INFO     | step_one_decipher |     3. Tosafot Chad Mikamei on Yevamot 18a (score: 0.620)
+22:30:41 | INFO     | step_one_decipher |        Hebrew: הא דתנן עשה בה מאמר ומת חולצת ולא מתיבמת ה"ה אע"ג ...
+22:30:41 | INFO     | step_one_decipher |     4. Chullin 90b (score: 0.606)
+22:30:41 | INFO     | step_one_decipher |        Hebrew: שיעורא בעינן ועבודת כוכבים כתותי מכתת שיעורא הכא כ...
+22:30:41 | INFO     | step_one_decipher |     5. Tosafot Chad Mikamei on Yevamot 56b (score: 0.604)
+22:30:41 | INFO     | step_one_decipher |        Hebrew: אמר רבה שכבת זרע דכתב גבי שפחה חרופה למעט מינה דכל...
+22:30:41 | INFO     | step_one_decipher |   → Sending to Claude for verification...
+22:30:41 | INFO     | step_one_decipher |   [CLAUDE] Verifying candidates...
+22:30:41 | DEBUG    | anthropic._base_client | Request options: {'method': 'post', 'url': '/v1/messages', 'timeout': Timeout(connect=5.0, read=600, write=600, pool=600), 'files': None, 'idempotency_key': 'stainless-python-retry-151e04ec-a695-4924-8d34-fd539fe3c8a9', 'json_data': {'max_tokens': 800, 'messages': [{'role': 'user', 'content': 'User\'s transliteration: "gezeira shava"\n\nHere are the top candidates from vector search:\n\n[Candidate 1]\nSource: Tosafot Chad Mikamei on Yevamot 45b\nHebrew: ואם נשא כהן בת עבד ועובד כוכבים הבא על בת ישראל מוציאין אותה מידו אבל בנו ינשא לכהונה לכתחלה שלא הוזהרו כשרות לינשא לפסולין לכהונה וחציו עבד וחציו בן חורין שבא על בת ישראל הולד פגום לכהונה שהיא עצמה מ\nScore: 0.623\n\n[Candidate 2]\nSource: Tosafot Chad Mikamei on Yevamot 80b\nHebrew: הא דתנן א"ר [יהושע] שמעתי שהסריס חולץ וחולצין לאשתו דוקא לענין חליצה ויבום דפליגי אבל לבוא בקהל דכ"ע סריס אדם אסור לבוא בקהל סריס חמה מותר לבוא בקהל וסריס אדם ופצוע דכא מותרים בגיורת דקהל גרים לא איקר\nScore: 0.623\n\n[Candidate 3]\nSource: Tosafot Chad Mikamei on Yevamot 18a\nHebrew: הא דתנן עשה בה מאמר ומת חולצת ולא מתיבמת ה"ה אע"ג דלא עבד בה מאמר שניה מחלץ חלצה יבומי לא מיבמה דקי"ל כשמואל דאמר יש זיקה אפי\' בתרי אחי וה"ל צרת א)אחות אשה בזיקה. והא דקתני עשה בה מאמר לאפוקי מב"ש דאמ\nScore: 0.620\n\n[Candidate 4]\nSource: Chullin 90b\nHebrew: שיעורא בעינן ועבודת כוכבים כתותי מכתת שיעורא הכא כל מה דמכתת מעלי לכסוי: <br><br><big><strong>הדרן עלך כסוי הדם</strong></big><br><br> מתני׳ <big><strong>גיד</strong></big> הנשה נוהג בארץ ובחוצה לארץ \nScore: 0.606\n\n[Candidate 5]\nSource: Tosafot Chad Mikamei on Yevamot 56b\nHebrew: אמר רבה שכבת זרע דכתב גבי שפחה חרופה למעט מינה דכל חייבי לאוין בהעראה דא"כ לישתוק קרא מיניה דשפחה חרופה. שכבת זרע דאשת איש למ"ד משמש מת בעריות חייב פרט למשמש מתה. שכבת זרע דסוטה לאו למעקרה קינא לה שלא\nScore: 0.604\n\n[Candidate 6]\nSource: Tosafot Chad Mikamei on Yevamot 79b\nHebrew: אר"ל אר"ל ממזרת לאחר עשרה דורות מותרת יליף עשירי עשירי מעמוני מה להלן נקבות מותרות אף כאן נקבות מותרות. אי מה להלן מיד אף כאן מיד כי גמירי [ג"ש] מעשירי ואילך ולית הלכתא כר"ל דס"ל דון מינה ואוקי באתרא \nScore: 0.589\n\n[Candidate 7]\nSource: Zevachim 121b\nHebrew: מה עופות שאין המום פוסל בהן זמן פוסל בהן קדשי במה קטנה שהמום פוסל בהן אינו דין שזמן פוסל בהן מה לעופות שכן אין הזר כשר בהן תאמר בבמה קטנה שהזר כשר בה לא יהא זמן פסול בה ת"ל (ויקרא ז, יא) וזאת תורת זבח\nScore: 0.586\n\n[Candidate 8]\nSource: Menachot 68b\nHebrew: אי הכי אפילו חלה נמי אפשר דאפי לה פחות מחמשת רבעים קמח ועוד תרומה נמי אפשר דעביד לה כדר\' אושעיא דאמר רבי אושעיא מערים אדם על תבואתו ומכניסה במוץ שלה כדי שתהא בהמתו אוכלת ופטורה מן המעשר אי נמי דעייל ל\nScore: 0.586\n\nWhich candidate best matches the user\'s query?'}], 'model': 'claude-sonnet-4-20250514', 'system': 'You are a Torah scholar assistant helping identify Hebrew/Aramaic terms from transliterations.\n\nReview the candidates from vector search and pick the best match for the user\'s query.\n\nIMPORTANT:\n- Match phonetically (ch=ח, sh=ש, tz=צ, s=ת in yeshivish)\n- Consider context and meaning\n- Be confident when there\'s a clear match\n- Admit uncertainty if candidates don\'t match well\n\nReturn JSON:\n{\n  "matched": true/false,\n  "hebrew_term": "The Hebrew/Aramaic term (first 50 chars)",\n  "source_ref": "Where it appears",\n  "confidence": "high/medium/low",\n  "explanation": "Why this is the best match"\n}'}}
+22:30:41 | DEBUG    | anthropic._base_client | Sending HTTP Request: POST https://api.anthropic.com/v1/messages
+22:30:41 | DEBUG    | httpcore.connection | connect_tcp.started host='api.anthropic.com' port=443 local_address=None timeout=5.0 socket_options=[(65535, 8, True), (6, 17, 60), (6, 16, 5), (6, 3, 60)]
+22:30:41 | DEBUG    | httpcore.connection | connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000028221B5ABB0>
+22:30:41 | DEBUG    | httpcore.connection | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000028273282840> server_hostname='api.anthropic.com' timeout=5.0
+22:30:41 | DEBUG    | httpcore.connection | start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000028221B5AB80>
+22:30:41 | DEBUG    | httpcore.http11 | send_request_headers.started request=<Request [b'POST']>
+22:30:41 | DEBUG    | httpcore.http11 | send_request_headers.complete
+22:30:41 | DEBUG    | httpcore.http11 | send_request_body.started request=<Request [b'POST']>
+22:30:41 | DEBUG    | httpcore.http11 | send_request_body.complete
+22:30:41 | DEBUG    | httpcore.http11 | receive_response_headers.started request=<Request [b'POST']>
+22:30:47 | DEBUG    | httpcore.http11 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Thu, 04 Dec 2025 03:30:47 GMT'), (b'Content-Type', b'application/json'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Content-Encoding', b'gzip'), (b'anthropic-ratelimit-input-tokens-limit', b'30000'), (b'anthropic-ratelimit-input-tokens-remaining', b'29000'), (b'anthropic-ratelimit-input-tokens-reset', b'2025-12-04T03:30:44Z'), (b'anthropic-ratelimit-output-tokens-limit', b'8000'), (b'anthropic-ratelimit-output-tokens-remaining', b'8000'), (b'anthropic-ratelimit-output-tokens-reset', b'2025-12-04T03:30:49Z'), (b'anthropic-ratelimit-requests-limit', b'50'), (b'anthropic-ratelimit-requests-remaining', b'49'), (b'anthropic-ratelimit-requests-reset', b'2025-12-04T03:30:42Z'), (b'retry-after', b'19'), (b'anthropic-ratelimit-tokens-limit', b'38000'), (b'anthropic-ratelimit-tokens-remaining', b'37000'), (b'anthropic-ratelimit-tokens-reset', b'2025-12-04T03:30:44Z'), (b'request-id', b'req_011CVkwULvBtehH6iXjm4e61'), (b'strict-transport-security', b'max-age=31536000; includeSubDomains; preload'), (b'anthropic-organization-id', b'73a09491-cda3-40b4-8544-d00ca1bc9331'), (b'x-envoy-upstream-service-time', b'6351'), (b'cf-cache-status', b'DYNAMIC'), (b'X-Robots-Tag', b'none'), (b'Server', b'cloudflare'), (b'CF-RAY', b'9a8839ff4ac14366-EWR')])
+22:30:47 | INFO     | httpx | HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+22:30:47 | DEBUG    | httpcore.http11 | receive_response_body.started request=<Request [b'POST']>
+22:30:47 | DEBUG    | httpcore.http11 | receive_response_body.complete
+22:30:47 | DEBUG    | httpcore.http11 | response_closed.started
+22:30:47 | DEBUG    | httpcore.http11 | response_closed.complete
+22:30:47 | DEBUG    | anthropic._base_client | HTTP Response: POST https://api.anthropic.com/v1/messages "200 OK" Headers({'date': 'Thu, 04 Dec 2025 03:30:47 GMT', 'content-type': 'application/json', 'transfer-encoding': 'chunked', 'connection': 'keep-alive', 'content-encoding': 'gzip', 'anthropic-ratelimit-input-tokens-limit': '30000', 'anthropic-ratelimit-input-tokens-remaining': '29000', 'anthropic-ratelimit-input-tokens-reset': '2025-12-04T03:30:44Z', 'anthropic-ratelimit-output-tokens-limit': '8000', 'anthropic-ratelimit-output-tokens-remaining': '8000', 'anthropic-ratelimit-output-tokens-reset': '2025-12-04T03:30:49Z', 'anthropic-ratelimit-requests-limit': '50', 'anthropic-ratelimit-requests-remaining': '49', 'anthropic-ratelimit-requests-reset': '2025-12-04T03:30:42Z', 'retry-after': '19', 'anthropic-ratelimit-tokens-limit': '38000', 'anthropic-ratelimit-tokens-remaining': '37000', 'anthropic-ratelimit-tokens-reset': '2025-12-04T03:30:44Z', 'request-id': 'req_011CVkwULvBtehH6iXjm4e61', 'strict-transport-security': 'max-age=31536000; includeSubDomains; preload', 'anthropic-organization-id': '73a09491-cda3-40b4-8544-d00ca1bc9331', 'x-envoy-upstream-service-time': '6351', 'cf-cache-status': 'DYNAMIC', 'x-robots-tag': 'none', 'server': 'cloudflare', 'cf-ray': '9a8839ff4ac14366-EWR'})
+22:30:47 | DEBUG    | anthropic._base_client | request_id: req_011CVkwULvBtehH6iXjm4e61
+22:30:47 | INFO     | step_one_decipher |   [CLAUDE] Full response: Looking at the user's transliteration "gezeira shava" and examining the candidates, I can identify a clear match.
+
+```json
+{
+  "matched": true,
+  "hebrew_term": "גמירי [ג\"ש]",
+  "source_ref": "Tosafot Chad Mikamei on Yevamot 79b",
+  "confidence": "high",
+  "explanation": "Candidate 6 contains 'גמירי [ג\"ש]' which is the abbreviated form of גזירה שוה (gezeira shava). The ג\"ש is the standard Talmudic abbreviation for gezeira shava, a fundamental hermeneutical principle used to derive laws by comparing similar language in different biblical verses. The context discussing דון מינה ואוקי באתרא (a principle related to gezeira shava application) confirms this identification."
+}
+```
+22:30:47 | INFO     | step_one_decipher |   ✓ CLAUDE MATCHED: גמירי [ג"ש]
+22:30:47 | INFO     | step_one_decipher | ================================================================================
+22:30:47 | INFO     | step_one_decipher | STEP 1: DECIPHER
+22:30:47 | INFO     | step_one_decipher | ================================================================================
+22:30:47 | INFO     | step_one_decipher | Query: 'binyan av'
+22:30:47 | INFO     | step_one_decipher | Normalized: 'binyan av'
+22:30:47 | INFO     | step_one_decipher | 
+[TOOL 1] Word Dictionary - Checking cache...
+22:30:47 | INFO     | step_one_decipher |   → Dictionary miss or low confidence, continuing...
+22:30:47 | INFO     | step_one_decipher | 
+[TOOL 2] Transliteration Map - Generating Hebrew variants...
+22:30:47 | INFO     | step_one_decipher |   Generated 1 SMART Hebrew variants (prioritized by frequency)
+22:30:47 | INFO     | step_one_decipher |   → Smart generation produced only 1 variants, trying full generation...
+22:30:47 | INFO     | step_one_decipher |   Generated 4 variants using full algorithm
+22:30:47 | INFO     | step_one_decipher |   Sample variants (first 10): ['בנין ו', 'בניאן ו', 'ביניאן ו', 'בינין ו']
+22:30:47 | INFO     | step_one_decipher |   All variants count: 4
+22:30:47 | INFO     | step_one_decipher |   Transliteration confidence: high
+22:30:47 | INFO     | step_one_decipher |   → Multiple variants or low confidence, escalating to vector search...
+22:30:47 | INFO     | step_one_decipher | 
+[TOOL 3] Vector Search + Claude Verification...
+22:30:47 | INFO     | step_one_decipher |   Searching vector index for 4 SMART variants...
+22:30:47 | INFO     | step_one_decipher |     Searching variant 1/4: 'בנין ו'
+22:30:47 | DEBUG    | vector_search | Vector search for: 'בנין ו' (top_k=3)
+22:30:47 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:47 | DEBUG    | httpcore.connection | close.started
+22:30:47 | DEBUG    | httpcore.connection | close.complete
+22:30:47 | DEBUG    | vector_search |   Top 3 matches:
+22:30:47 | DEBUG    | vector_search |     [1] Tosafot Chad Mikamei on Yevamot 80b (score: 0.723)
+22:30:47 | DEBUG    | vector_search |     [2] Tosafot Chad Mikamei on Yevamot 55a (score: 0.718)
+22:30:47 | DEBUG    | vector_search |     [3] Menachot 59b (score: 0.715)
+22:30:47 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.723)
+22:30:47 | INFO     | step_one_decipher |     Searching variant 2/4: 'בניאן ו'
+22:30:47 | DEBUG    | vector_search | Vector search for: 'בניאן ו' (top_k=3)
+22:30:47 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:47 | DEBUG    | vector_search |   Top 3 matches:
+22:30:47 | DEBUG    | vector_search |     [1] Tosafot Chad Mikamei on Yevamot 26b (score: 0.653)
+22:30:47 | DEBUG    | vector_search |     [2] Tosafot Chad Mikamei on Yevamot 35b (score: 0.650)
+22:30:47 | DEBUG    | vector_search |     [3] Zevachim 121b (score: 0.631)
+22:30:47 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.653)
+22:30:47 | INFO     | step_one_decipher |     Searching variant 3/4: 'ביניאן ו'
+22:30:47 | DEBUG    | vector_search | Vector search for: 'ביניאן ו' (top_k=3)
+22:30:47 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:47 | DEBUG    | vector_search |   Top 3 matches:
+22:30:47 | DEBUG    | vector_search |     [1] Menachot 77b (score: 0.630)
+22:30:47 | DEBUG    | vector_search |     [2] Zevachim 46b (score: 0.628)
+22:30:47 | DEBUG    | vector_search |     [3] Chullin 90b (score: 0.627)
+22:30:47 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.630)
+22:30:47 | INFO     | step_one_decipher |     Searching variant 4/4: 'בינין ו'
+22:30:47 | DEBUG    | vector_search | Vector search for: 'בינין ו' (top_k=3)
+22:30:47 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:48 | DEBUG    | vector_search |   Top 3 matches:
+22:30:48 | DEBUG    | vector_search |     [1] Chullin 90b (score: 0.640)
+22:30:48 | DEBUG    | vector_search |     [2] Tosafot Chad Mikamei on Yevamot 79b (score: 0.631)
+22:30:48 | DEBUG    | vector_search |     [3] Zevachim 121b (score: 0.627)
+22:30:48 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.640)
+22:30:48 | INFO     | step_one_decipher |   Found 12 potential matches
+22:30:48 | INFO     | step_one_decipher |   Top 5 unique matches:
+22:30:48 | INFO     | step_one_decipher |     1. Tosafot Chad Mikamei on Yevamot 80b (score: 0.723)
+22:30:48 | INFO     | step_one_decipher |        Hebrew: הא דתנן א"ר [יהושע] שמעתי שהסריס חולץ וחולצין לאשת...
+22:30:48 | INFO     | step_one_decipher |     2. Tosafot Chad Mikamei on Yevamot 55a (score: 0.718)
+22:30:48 | INFO     | step_one_decipher |        Hebrew: אמר רבה נתכוון להטיח (באשתו) [בכותל] והטיח ביבמתו ...
+22:30:48 | INFO     | step_one_decipher |     3. Menachot 59b (score: 0.715)
+22:30:48 | INFO     | step_one_decipher |        Hebrew: ויש הקטרה פחותה מכזית ורבא אמר אין קומץ פחות משני ...
+22:30:48 | INFO     | step_one_decipher |     4. Tosafot Chad Mikamei on Yevamot 26b (score: 0.653)
+22:30:48 | INFO     | step_one_decipher |        Hebrew: אמר רב מנשה גזלן דדבריהם כשר לעדות הא דדברי תורה פ...
+22:30:48 | INFO     | step_one_decipher |     5. Tosafot Chad Mikamei on Yevamot 35b (score: 0.650)
+22:30:48 | INFO     | step_one_decipher |        Hebrew: אמר רב נחמן אמר שמואל כל שנשתהה עשר שנים אחר בעלה ...
+22:30:48 | INFO     | step_one_decipher |   → Sending to Claude for verification...
+22:30:48 | INFO     | step_one_decipher |   [CLAUDE] Verifying candidates...
+22:30:48 | DEBUG    | anthropic._base_client | Request options: {'method': 'post', 'url': '/v1/messages', 'timeout': Timeout(connect=5.0, read=600, write=600, pool=600), 'files': None, 'idempotency_key': 'stainless-python-retry-604fb8fd-e4a1-4ad5-9446-c05d320ceedb', 'json_data': {'max_tokens': 800, 'messages': [{'role': 'user', 'content': 'User\'s transliteration: "binyan av"\n\nHere are the top candidates from vector search:\n\n[Candidate 1]\nSource: Tosafot Chad Mikamei on Yevamot 80b\nHebrew: הא דתנן א"ר [יהושע] שמעתי שהסריס חולץ וחולצין לאשתו דוקא לענין חליצה ויבום דפליגי אבל לבוא בקהל דכ"ע סריס אדם אסור לבוא בקהל סריס חמה מותר לבוא בקהל וסריס אדם ופצוע דכא מותרים בגיורת דקהל גרים לא איקר\nScore: 0.723\n\n[Candidate 2]\nSource: Tosafot Chad Mikamei on Yevamot 55a\nHebrew: אמר רבה נתכוון להטיח (באשתו) [בכותל] והטיח ביבמתו לא קנה להטיח בבהמה והטיח ביבמתו קנה דהא קא מכוין לשום ביאה בעלמא בעלמא:\n\nScore: 0.718\n\n[Candidate 3]\nSource: Menachot 59b\nHebrew: ויש הקטרה פחותה מכזית ורבא אמר אין קומץ פחות משני זיתים ואין הקטרה פחותה מכזית איתמר המעלה משאור ומדבש על גבי המזבח אמר רבא לוקה משום שאור ולוקה משום דבש לוקה משום עירובי שאור ומשום עירובי דבש אביי אמ\nScore: 0.715\n\n[Candidate 4]\nSource: Tosafot Chad Mikamei on Yevamot 26b\nHebrew: אמר רב מנשה גזלן דדבריהם כשר לעדות הא דדברי תורה פסול לעדות אשה:\n הא דתנן החכם שאסר את האשה בנדר לא ישאנה וקי"ל ביחיד מומחה ולפום הכי אם התירה ישאנה אבל בתלתא אפילו אסרו ישאנה משום שהם ב"ד ובבכורות פר\nScore: 0.653\n\n[Candidate 5]\nSource: Tosafot Chad Mikamei on Yevamot 35b\nHebrew: אמר רב נחמן אמר שמואל כל שנשתהה עשר שנים אחר בעלה ונשאת שוב אין נתעברת. ולא אמרן אלא שאין דעתה להנשא אבל דעתה להנשא מתעברת:\n\nScore: 0.650\n\n[Candidate 6]\nSource: Chullin 90b\nHebrew: שיעורא בעינן ועבודת כוכבים כתותי מכתת שיעורא הכא כל מה דמכתת מעלי לכסוי: <br><br><big><strong>הדרן עלך כסוי הדם</strong></big><br><br> מתני׳ <big><strong>גיד</strong></big> הנשה נוהג בארץ ובחוצה לארץ \nScore: 0.640\n\n[Candidate 7]\nSource: Zevachim 121b\nHebrew: מה עופות שאין המום פוסל בהן זמן פוסל בהן קדשי במה קטנה שהמום פוסל בהן אינו דין שזמן פוסל בהן מה לעופות שכן אין הזר כשר בהן תאמר בבמה קטנה שהזר כשר בה לא יהא זמן פסול בה ת"ל (ויקרא ז, יא) וזאת תורת זבח\nScore: 0.631\n\n[Candidate 8]\nSource: Tosafot Chad Mikamei on Yevamot 79b\nHebrew: אר"ל אר"ל ממזרת לאחר עשרה דורות מותרת יליף עשירי עשירי מעמוני מה להלן נקבות מותרות אף כאן נקבות מותרות. אי מה להלן מיד אף כאן מיד כי גמירי [ג"ש] מעשירי ואילך ולית הלכתא כר"ל דס"ל דון מינה ואוקי באתרא \nScore: 0.631\n\n[Candidate 9]\nSource: Menachot 77b\nHebrew: דאמר כי האי תנא דתניא כל המנחות שריבה במדת חלתן או שמיעט במדת חלתן כשרות חוץ מלחם הפנים וחביתי כהן גדול ויש אומרים אף לחמי תודה ונזירות אמר רב הונא מנחת מאפה שאפה חלה אחת יצא מאי טעמא (מצות) מצת כתיב \nScore: 0.630\n\n[Candidate 10]\nSource: Zevachim 46b\nHebrew: במזיד לא הורצה בד"א ביחיד אבל בציבור בין בשוגג בין במזיד הורצה ובעובדי כוכבי\' בין בשוגג ובין במזיד לא הורצה אמרוה רבנן קמיה דרב פפא כמאן דלא כרבי יוסי דאי רבי יוסי האמר בכולן אני רואה להחמיר אמר להו ר\nScore: 0.628\n\nWhich candidate best matches the user\'s query?'}], 'model': 'claude-sonnet-4-20250514', 'system': 'You are a Torah scholar assistant helping identify Hebrew/Aramaic terms from transliterations.\n\nReview the candidates from vector search and pick the best match for the user\'s query.\n\nIMPORTANT:\n- Match phonetically (ch=ח, sh=ש, tz=צ, s=ת in yeshivish)\n- Consider context and meaning\n- Be confident when there\'s a clear match\n- Admit uncertainty if candidates don\'t match well\n\nReturn JSON:\n{\n  "matched": true/false,\n  "hebrew_term": "The Hebrew/Aramaic term (first 50 chars)",\n  "source_ref": "Where it appears",\n  "confidence": "high/medium/low",\n  "explanation": "Why this is the best match"\n}'}}
+22:30:48 | DEBUG    | anthropic._base_client | Sending HTTP Request: POST https://api.anthropic.com/v1/messages
+22:30:48 | DEBUG    | httpcore.connection | connect_tcp.started host='api.anthropic.com' port=443 local_address=None timeout=5.0 socket_options=[(65535, 8, True), (6, 17, 60), (6, 16, 5), (6, 3, 60)]
+22:30:48 | DEBUG    | httpcore.connection | connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000028221B3BB20>
+22:30:48 | DEBUG    | httpcore.connection | start_tls.started ssl_context=<ssl.SSLContext object at 0x00000282732825C0> server_hostname='api.anthropic.com' timeout=5.0
+22:30:48 | DEBUG    | httpcore.connection | start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000028221B3B2B0>
+22:30:48 | DEBUG    | httpcore.http11 | send_request_headers.started request=<Request [b'POST']>
+22:30:48 | DEBUG    | httpcore.http11 | send_request_headers.complete
+22:30:48 | DEBUG    | httpcore.http11 | send_request_body.started request=<Request [b'POST']>
+22:30:48 | DEBUG    | httpcore.http11 | send_request_body.complete
+22:30:48 | DEBUG    | httpcore.http11 | receive_response_headers.started request=<Request [b'POST']>
+22:30:55 | DEBUG    | httpcore.http11 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Thu, 04 Dec 2025 03:30:55 GMT'), (b'Content-Type', b'application/json'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Content-Encoding', b'gzip'), (b'anthropic-ratelimit-input-tokens-limit', b'30000'), (b'anthropic-ratelimit-input-tokens-remaining', b'29000'), (b'anthropic-ratelimit-input-tokens-reset', b'2025-12-04T03:30:52Z'), (b'anthropic-ratelimit-output-tokens-limit', b'8000'), (b'anthropic-ratelimit-output-tokens-remaining', b'8000'), (b'anthropic-ratelimit-output-tokens-reset', b'2025-12-04T03:30:57Z'), (b'anthropic-ratelimit-requests-limit', b'50'), (b'anthropic-ratelimit-requests-remaining', b'49'), (b'anthropic-ratelimit-requests-reset', b'2025-12-04T03:30:49Z'), (b'retry-after', b'11'), (b'anthropic-ratelimit-tokens-limit', b'38000'), (b'anthropic-ratelimit-tokens-remaining', b'37000'), (b'anthropic-ratelimit-tokens-reset', b'2025-12-04T03:30:52Z'), (b'request-id', b'req_011CVkwUs5uQgVnN6uGmJDwt'), (b'strict-transport-security', b'max-age=31536000; includeSubDomains; preload'), (b'anthropic-organization-id', b'73a09491-cda3-40b4-8544-d00ca1bc9331'), (b'x-envoy-upstream-service-time', b'6787'), (b'cf-cache-status', b'DYNAMIC'), (b'X-Robots-Tag', b'none'), (b'Server', b'cloudflare'), (b'CF-RAY', b'9a883a2b6e680caa-EWR')])
+22:30:55 | INFO     | httpx | HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+22:30:55 | DEBUG    | httpcore.http11 | receive_response_body.started request=<Request [b'POST']>
+22:30:55 | DEBUG    | httpcore.http11 | receive_response_body.complete
+22:30:55 | DEBUG    | httpcore.http11 | response_closed.started
+22:30:55 | DEBUG    | httpcore.http11 | response_closed.complete
+22:30:55 | DEBUG    | anthropic._base_client | HTTP Response: POST https://api.anthropic.com/v1/messages "200 OK" Headers({'date': 'Thu, 04 Dec 2025 03:30:55 GMT', 'content-type': 'application/json', 'transfer-encoding': 'chunked', 'connection': 'keep-alive', 'content-encoding': 'gzip', 'anthropic-ratelimit-input-tokens-limit': '30000', 'anthropic-ratelimit-input-tokens-remaining': '29000', 'anthropic-ratelimit-input-tokens-reset': '2025-12-04T03:30:52Z', 'anthropic-ratelimit-output-tokens-limit': '8000', 'anthropic-ratelimit-output-tokens-remaining': '8000', 'anthropic-ratelimit-output-tokens-reset': '2025-12-04T03:30:57Z', 'anthropic-ratelimit-requests-limit': '50', 'anthropic-ratelimit-requests-remaining': '49', 'anthropic-ratelimit-requests-reset': '2025-12-04T03:30:49Z', 'retry-after': '11', 'anthropic-ratelimit-tokens-limit': '38000', 'anthropic-ratelimit-tokens-remaining': '37000', 'anthropic-ratelimit-tokens-reset': '2025-12-04T03:30:52Z', 'request-id': 'req_011CVkwUs5uQgVnN6uGmJDwt', 'strict-transport-security': 'max-age=31536000; includeSubDomains; preload', 'anthropic-organization-id': '73a09491-cda3-40b4-8544-d00ca1bc9331', 'x-envoy-upstream-service-time': '6787', 'cf-cache-status': 'DYNAMIC', 'x-robots-tag': 'none', 'server': 'cloudflare', 'cf-ray': '9a883a2b6e680caa-EWR'})
+22:30:55 | DEBUG    | anthropic._base_client | request_id: req_011CVkwUs5uQgVnN6uGmJDwt
+22:30:55 | INFO     | step_one_decipher |   [CLAUDE] Full response: Looking at the user's transliteration "binyan av" and examining the candidates, I need to find a Hebrew/Aramaic term that sounds like "binyan av."
+
+"Binyan av" (בנין אב) is a well-known hermeneutical principle in Jewish law meaning "constructing a paradigm" or "building a prototype" - it's one of the 13 principles of Rabbi Ishmael for interpreting Torah.
+
+However, examining all the provided candidates carefully, none of them contain the specific Hebrew term "בנין אב" (binyan av). The candidates are various Talmudic passages discussing different topics like chalitzah, yibbum, sacrifices, and other halakhic matters, but they don't contain this specific hermeneutical term.
+
+```json
+{
+  "matched": false,
+  "hebrew_term": "",
+  "source_ref": "",
+  "confidence": "high",
+  "explanation": "None of the candidates contain the Hebrew term 'בנין אב' (binyan av), which is a hermeneutical principle meaning 'constructing a paradigm.' The vector search results appear to be unrelated Talmudic passages that don't match the user's query."
+}
+```
+22:30:55 | INFO     | step_one_decipher |   ✗ Claude could not find good match
+22:30:55 | INFO     | step_one_decipher | ================================================================================
+22:30:55 | INFO     | step_one_decipher | STEP 1: DECIPHER
+22:30:55 | INFO     | step_one_decipher | ================================================================================
+22:30:55 | INFO     | step_one_decipher | Query: 'davar halamd meinyano'
+22:30:55 | INFO     | step_one_decipher | Normalized: 'davar halamd meinyano'
+22:30:55 | INFO     | step_one_decipher | 
+[TOOL 1] Word Dictionary - Checking cache...
+22:30:55 | INFO     | step_one_decipher |   → Dictionary miss or low confidence, continuing...
+22:30:55 | INFO     | step_one_decipher | 
+[TOOL 2] Transliteration Map - Generating Hebrew variants...
+22:30:55 | INFO     | step_one_decipher |   Generated 2 SMART Hebrew variants (prioritized by frequency)
+22:30:55 | INFO     | step_one_decipher |   → Smart generation produced only 2 variants, trying full generation...
+22:30:55 | INFO     | step_one_decipher |   Generated 12 variants using full algorithm
+22:30:55 | INFO     | step_one_decipher |   Sample variants (first 10): ['דור הלמד מינינ', 'דור הלמד מעינינ', 'דור הלמד מינינו', 'דהור הלמד מאינינו', 'דור הלמד מאינינו', 'דור הלמד מאינינ', 'דהור הלמד מינינו', 'דהור הלמד מאינינ', 'דהור הלמד מינינ', 'דור הלמד מעינינו']
+22:30:55 | INFO     | step_one_decipher |   All variants count: 12
+22:30:55 | INFO     | step_one_decipher |   Transliteration confidence: medium
+22:30:55 | INFO     | step_one_decipher |   → Multiple variants or low confidence, escalating to vector search...
+22:30:55 | INFO     | step_one_decipher | 
+[TOOL 3] Vector Search + Claude Verification...
+22:30:55 | INFO     | step_one_decipher |   Searching vector index for 12 SMART variants...
+22:30:55 | INFO     | step_one_decipher |     Searching variant 1/12: 'דור הלמד מינינ'
+22:30:55 | DEBUG    | vector_search | Vector search for: 'דור הלמד מינינ' (top_k=3)
+22:30:55 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:55 | DEBUG    | httpcore.connection | close.started
+22:30:55 | DEBUG    | httpcore.connection | close.complete
+22:30:55 | DEBUG    | vector_search |   Top 3 matches:
+22:30:55 | DEBUG    | vector_search |     [1] Tosafot Chad Mikamei on Yevamot 12b (score: 0.607)
+22:30:55 | DEBUG    | vector_search |     [2] Menachot 59b (score: 0.607)
+22:30:55 | DEBUG    | vector_search |     [3] Tosafot Chad Mikamei on Yevamot 26b (score: 0.601)
+22:30:55 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.607)
+22:30:55 | INFO     | step_one_decipher |     Searching variant 2/12: 'דור הלמד מעינינ'
+22:30:55 | DEBUG    | vector_search | Vector search for: 'דור הלמד מעינינ' (top_k=3)
+22:30:55 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:55 | DEBUG    | vector_search |   Top 3 matches:
+22:30:55 | DEBUG    | vector_search |     [1] Zevachim 62a (score: 0.643)
+22:30:55 | DEBUG    | vector_search |     [2] Menachot 26a (score: 0.640)
+22:30:55 | DEBUG    | vector_search |     [3] Chullin 90b (score: 0.637)
+22:30:55 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.643)
+22:30:55 | INFO     | step_one_decipher |     Searching variant 3/12: 'דור הלמד מינינו'
+22:30:55 | DEBUG    | vector_search | Vector search for: 'דור הלמד מינינו' (top_k=3)
+22:30:55 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:55 | DEBUG    | vector_search |   Top 3 matches:
+22:30:55 | DEBUG    | vector_search |     [1] Tosafot Chad Mikamei on Yevamot 80b (score: 0.636)
+22:30:55 | DEBUG    | vector_search |     [2] Menachot 59b (score: 0.634)
+22:30:55 | DEBUG    | vector_search |     [3] Tosafot Chad Mikamei on Yevamot 44b (score: 0.631)
+22:30:55 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.636)
+22:30:55 | INFO     | step_one_decipher |     Searching variant 4/12: 'דהור הלמד מאינינו'
+22:30:55 | DEBUG    | vector_search | Vector search for: 'דהור הלמד מאינינו' (top_k=3)
+22:30:55 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:55 | DEBUG    | vector_search |   Top 3 matches:
+22:30:55 | DEBUG    | vector_search |     [1] Zevachim 62a (score: 0.618)
+22:30:55 | DEBUG    | vector_search |     [2] Chullin 90b (score: 0.611)
+22:30:55 | DEBUG    | vector_search |     [3] Chullin 38a (score: 0.610)
+22:30:55 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.618)
+22:30:55 | INFO     | step_one_decipher |     Searching variant 5/12: 'דור הלמד מאינינו'
+22:30:55 | DEBUG    | vector_search | Vector search for: 'דור הלמד מאינינו' (top_k=3)
+22:30:55 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:55 | DEBUG    | vector_search |   Top 3 matches:
+22:30:55 | DEBUG    | vector_search |     [1] Zevachim 62a (score: 0.645)
+22:30:55 | DEBUG    | vector_search |     [2] Arakhin 23a (score: 0.606)
+22:30:55 | DEBUG    | vector_search |     [3] Menachot 26a (score: 0.603)
+22:30:55 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.645)
+22:30:55 | INFO     | step_one_decipher |     Searching variant 6/12: 'דור הלמד מאינינ'
+22:30:55 | DEBUG    | vector_search | Vector search for: 'דור הלמד מאינינ' (top_k=3)
+22:30:55 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:55 | DEBUG    | vector_search |   Top 3 matches:
+22:30:55 | DEBUG    | vector_search |     [1] Tosafot Chad Mikamei on Yevamot 79b (score: 0.591)
+22:30:55 | DEBUG    | vector_search |     [2] Tosafot Chad Mikamei on Yevamot 56b (score: 0.574)
+22:30:55 | DEBUG    | vector_search |     [3] Chullin 90b (score: 0.568)
+22:30:55 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.591)
+22:30:55 | INFO     | step_one_decipher |     Searching variant 7/12: 'דהור הלמד מינינו'
+22:30:55 | DEBUG    | vector_search | Vector search for: 'דהור הלמד מינינו' (top_k=3)
+22:30:55 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:55 | DEBUG    | vector_search |   Top 3 matches:
+22:30:55 | DEBUG    | vector_search |     [1] Tosafot Chad Mikamei on Yevamot 80b (score: 0.673)
+22:30:55 | DEBUG    | vector_search |     [2] Menachot 59b (score: 0.667)
+22:30:55 | DEBUG    | vector_search |     [3] Tosafot Chad Mikamei on Yevamot 12b (score: 0.667)
+22:30:55 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.673)
+22:30:55 | INFO     | step_one_decipher |     Searching variant 8/12: 'דהור הלמד מאינינ'
+22:30:55 | DEBUG    | vector_search | Vector search for: 'דהור הלמד מאינינ' (top_k=3)
+22:30:55 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:55 | DEBUG    | vector_search |   Top 3 matches:
+22:30:55 | DEBUG    | vector_search |     [1] Chullin 90b (score: 0.619)
+22:30:55 | DEBUG    | vector_search |     [2] Tosafot Chad Mikamei on Yevamot 79b (score: 0.613)
+22:30:55 | DEBUG    | vector_search |     [3] Chullin 35b (score: 0.593)
+22:30:55 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.619)
+22:30:55 | INFO     | step_one_decipher |     Searching variant 9/12: 'דהור הלמד מינינ'
+22:30:55 | DEBUG    | vector_search | Vector search for: 'דהור הלמד מינינ' (top_k=3)
+22:30:56 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:56 | DEBUG    | vector_search |   Top 3 matches:
+22:30:56 | DEBUG    | vector_search |     [1] Tosafot Chad Mikamei on Yevamot 12b (score: 0.667)
+22:30:56 | DEBUG    | vector_search |     [2] Menachot 59b (score: 0.661)
+22:30:56 | DEBUG    | vector_search |     [3] Tosafot Chad Mikamei on Yevamot 80b (score: 0.653)
+22:30:56 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.667)
+22:30:56 | INFO     | step_one_decipher |     Searching variant 10/12: 'דור הלמד מעינינו'
+22:30:56 | DEBUG    | vector_search | Vector search for: 'דור הלמד מעינינו' (top_k=3)
+22:30:56 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:56 | DEBUG    | vector_search |   Top 3 matches:
+22:30:56 | DEBUG    | vector_search |     [1] Chiddushei HaRambam on Rosh Hashanah 17a (score: 0.607)
+22:30:56 | DEBUG    | vector_search |     [2] Avot DeRabbi Natan 6b (score: 0.592)
+22:30:56 | DEBUG    | vector_search |     [3] Avot DeRabbi Natan 18a (score: 0.590)
+22:30:56 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.607)
+22:30:56 | INFO     | step_one_decipher |     Searching variant 11/12: 'דהור הלמד מעינינו'
+22:30:56 | DEBUG    | vector_search | Vector search for: 'דהור הלמד מעינינו' (top_k=3)
+22:30:56 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:56 | DEBUG    | vector_search |   Top 3 matches:
+22:30:56 | DEBUG    | vector_search |     [1] Chiddushei HaRambam on Rosh Hashanah 17a (score: 0.619)
+22:30:56 | DEBUG    | vector_search |     [2] Avot DeRabbi Natan 18a (score: 0.592)
+22:30:56 | DEBUG    | vector_search |     [3] Chiddushei HaRambam on Rosh Hashanah 7a (score: 0.590)
+22:30:56 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.619)
+22:30:56 | INFO     | step_one_decipher |     Searching variant 12/12: 'דהור הלמד מעינינ'
+22:30:56 | DEBUG    | vector_search | Vector search for: 'דהור הלמד מעינינ' (top_k=3)
+22:30:56 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:30:56 | DEBUG    | vector_search |   Top 3 matches:
+22:30:56 | DEBUG    | vector_search |     [1] Tosafot Chad Mikamei on Yevamot 79b (score: 0.620)
+22:30:56 | DEBUG    | vector_search |     [2] Tosafot Chad Mikamei on Yevamot 56b (score: 0.619)
+22:30:56 | DEBUG    | vector_search |     [3] Chullin 90b (score: 0.617)
+22:30:56 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.620)
+22:30:56 | INFO     | step_one_decipher |   Found 36 potential matches
+22:30:56 | INFO     | step_one_decipher |   Top 5 unique matches:
+22:30:56 | INFO     | step_one_decipher |     1. Tosafot Chad Mikamei on Yevamot 80b (score: 0.673)
+22:30:56 | INFO     | step_one_decipher |        Hebrew: הא דתנן א"ר [יהושע] שמעתי שהסריס חולץ וחולצין לאשת...
+22:30:56 | INFO     | step_one_decipher |     2. Menachot 59b (score: 0.667)
+22:30:56 | INFO     | step_one_decipher |        Hebrew: ויש הקטרה פחותה מכזית ורבא אמר אין קומץ פחות משני ...
+22:30:56 | INFO     | step_one_decipher |     3. Tosafot Chad Mikamei on Yevamot 12b (score: 0.667)
+22:30:56 | INFO     | step_one_decipher |        Hebrew: תנן שתי יבמות הבאות מבית אחד היתה אחת כשרה וא' פסו...
+22:30:56 | INFO     | step_one_decipher |     4. Zevachim 62a (score: 0.645)
+22:30:56 | INFO     | step_one_decipher |        Hebrew: הא רבי ישמעאל הא רבנן ואיבעית אימא הא והא בקדשי קד...
+22:30:56 | INFO     | step_one_decipher |     5. Menachot 26a (score: 0.640)
+22:30:56 | INFO     | step_one_decipher |        Hebrew: <big><strong>מתני׳</strong></big> נטמא הקומץ והקרי...
+22:30:56 | INFO     | step_one_decipher |   → Sending to Claude for verification...
+22:30:56 | INFO     | step_one_decipher |   [CLAUDE] Verifying candidates...
+22:30:56 | DEBUG    | anthropic._base_client | Request options: {'method': 'post', 'url': '/v1/messages', 'timeout': Timeout(connect=5.0, read=600, write=600, pool=600), 'files': None, 'idempotency_key': 'stainless-python-retry-9fe5f0aa-9ad9-4b20-9be2-b7e8dc9dfd79', 'json_data': {'max_tokens': 800, 'messages': [{'role': 'user', 'content': 'User\'s transliteration: "davar halamd meinyano"\n\nHere are the top candidates from vector search:\n\n[Candidate 1]\nSource: Tosafot Chad Mikamei on Yevamot 80b\nHebrew: הא דתנן א"ר [יהושע] שמעתי שהסריס חולץ וחולצין לאשתו דוקא לענין חליצה ויבום דפליגי אבל לבוא בקהל דכ"ע סריס אדם אסור לבוא בקהל סריס חמה מותר לבוא בקהל וסריס אדם ופצוע דכא מותרים בגיורת דקהל גרים לא איקר\nScore: 0.673\n\n[Candidate 2]\nSource: Menachot 59b\nHebrew: ויש הקטרה פחותה מכזית ורבא אמר אין קומץ פחות משני זיתים ואין הקטרה פחותה מכזית איתמר המעלה משאור ומדבש על גבי המזבח אמר רבא לוקה משום שאור ולוקה משום דבש לוקה משום עירובי שאור ומשום עירובי דבש אביי אמ\nScore: 0.667\n\n[Candidate 3]\nSource: Tosafot Chad Mikamei on Yevamot 12b\nHebrew: תנן שתי יבמות הבאות מבית אחד היתה אחת כשרה וא\' פסולה אם היה חולץ חולץ לפסולה ואם היה מיבם מיבם לכשרה לא מבעיא אם פסולה לו וכשרה לעלמא כגון מחזיר גרושתו משנשא\' שמיבם לכשירה שהיא כשרה לו וחולץ לפסולה שה\nScore: 0.667\n\n[Candidate 4]\nSource: Zevachim 62a\nHebrew: הא רבי ישמעאל הא רבנן ואיבעית אימא הא והא בקדשי קדשים ומאי בשני מקומות קודם שיעמידו לוים את המשכן\nScore: 0.645\n\n[Candidate 5]\nSource: Menachot 26a\nHebrew: <big><strong>מתני׳</strong></big> נטמא הקומץ והקריבו הציץ מרצה יצא והקריבו אין הציץ מרצה שהציץ מרצה על הטמא ואינו מרצה על היוצא: <big><strong>גמ׳</strong></big> תנו רבנן (שמות כח, לח) ונשא אהרן את עון\nScore: 0.640\n\n[Candidate 6]\nSource: Chullin 90b\nHebrew: שיעורא בעינן ועבודת כוכבים כתותי מכתת שיעורא הכא כל מה דמכתת מעלי לכסוי: <br><br><big><strong>הדרן עלך כסוי הדם</strong></big><br><br> מתני׳ <big><strong>גיד</strong></big> הנשה נוהג בארץ ובחוצה לארץ \nScore: 0.637\n\n[Candidate 7]\nSource: Tosafot Chad Mikamei on Yevamot 44b\nHebrew: גריס הרב אלפס אמר רב נחמן ק"ו ומה במקום שאסור לספר ולכבס מותר לארס מקום שמותר לספר ולכבס אינו דין שמותר לארס ומוכח מהכא שהאשה מותרת לספר בשבעת האיבול והכי איתא באבל רבתי ורש"י ז"ל גריס ומה במקום שאסור\nScore: 0.631\n\n[Candidate 8]\nSource: Tosafot Chad Mikamei on Yevamot 79b\nHebrew: אר"ל אר"ל ממזרת לאחר עשרה דורות מותרת יליף עשירי עשירי מעמוני מה להלן נקבות מותרות אף כאן נקבות מותרות. אי מה להלן מיד אף כאן מיד כי גמירי [ג"ש] מעשירי ואילך ולית הלכתא כר"ל דס"ל דון מינה ואוקי באתרא \nScore: 0.620\n\n[Candidate 9]\nSource: Tosafot Chad Mikamei on Yevamot 56b\nHebrew: אמר רבה שכבת זרע דכתב גבי שפחה חרופה למעט מינה דכל חייבי לאוין בהעראה דא"כ לישתוק קרא מיניה דשפחה חרופה. שכבת זרע דאשת איש למ"ד משמש מת בעריות חייב פרט למשמש מתה. שכבת זרע דסוטה לאו למעקרה קינא לה שלא\nScore: 0.619\n\n[Candidate 10]\nSource: Chiddushei HaRambam on Rosh Hashanah 17a\nHebrew: <b>שתי הלחם בעצרת מפני שעצרת זמן פירות האילן.</b> ואם תשאל ומה ענין פירות האילן לשתי הלחם יש לומר שהשם דומה לפירות האילן שפירות האילן נקראו בכורים כדכתיב "מראשית כל פרי האדמה" (דברים כו:ב) ושתי הלחם נ\nScore: 0.619\n\nWhich candidate best matches the user\'s query?'}], 'model': 'claude-sonnet-4-20250514', 'system': 'You are a Torah scholar assistant helping identify Hebrew/Aramaic terms from transliterations.\n\nReview the candidates from vector search and pick the best match for the user\'s query.\n\nIMPORTANT:\n- Match phonetically (ch=ח, sh=ש, tz=צ, s=ת in yeshivish)\n- Consider context and meaning\n- Be confident when there\'s a clear match\n- Admit uncertainty if candidates don\'t match well\n\nReturn JSON:\n{\n  "matched": true/false,\n  "hebrew_term": "The Hebrew/Aramaic term (first 50 chars)",\n  "source_ref": "Where it appears",\n  "confidence": "high/medium/low",\n  "explanation": "Why this is the best match"\n}'}}
+22:30:56 | DEBUG    | anthropic._base_client | Sending HTTP Request: POST https://api.anthropic.com/v1/messages
+22:30:56 | DEBUG    | httpcore.connection | connect_tcp.started host='api.anthropic.com' port=443 local_address=None timeout=5.0 socket_options=[(65535, 8, True), (6, 17, 60), (6, 16, 5), (6, 3, 60)]
+22:30:56 | DEBUG    | httpcore.connection | connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000028221B5ABE0>
+22:30:56 | DEBUG    | httpcore.connection | start_tls.started ssl_context=<ssl.SSLContext object at 0x00000282732825C0> server_hostname='api.anthropic.com' timeout=5.0
+22:30:56 | DEBUG    | httpcore.connection | start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000028221B5AFD0>
+22:30:56 | DEBUG    | httpcore.http11 | send_request_headers.started request=<Request [b'POST']>
+22:30:56 | DEBUG    | httpcore.http11 | send_request_headers.complete
+22:30:56 | DEBUG    | httpcore.http11 | send_request_body.started request=<Request [b'POST']>
+22:30:56 | DEBUG    | httpcore.http11 | send_request_body.complete
+22:30:56 | DEBUG    | httpcore.http11 | receive_response_headers.started request=<Request [b'POST']>
+22:31:04 | DEBUG    | httpcore.http11 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Thu, 04 Dec 2025 03:31:04 GMT'), (b'Content-Type', b'application/json'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Content-Encoding', b'gzip'), (b'anthropic-ratelimit-input-tokens-limit', b'30000'), (b'anthropic-ratelimit-input-tokens-remaining', b'29000'), (b'anthropic-ratelimit-input-tokens-reset', b'2025-12-04T03:31:00Z'), (b'anthropic-ratelimit-output-tokens-limit', b'8000'), (b'anthropic-ratelimit-output-tokens-remaining', b'8000'), (b'anthropic-ratelimit-output-tokens-reset', b'2025-12-04T03:31:07Z'), (b'anthropic-ratelimit-requests-limit', b'50'), (b'anthropic-ratelimit-requests-remaining', b'49'), (b'anthropic-ratelimit-requests-reset', b'2025-12-04T03:30:57Z'), (b'retry-after', b'2'), (b'anthropic-ratelimit-tokens-limit', b'38000'), (b'anthropic-ratelimit-tokens-remaining', b'37000'), (b'anthropic-ratelimit-tokens-reset', b'2025-12-04T03:31:00Z'), (b'request-id', b'req_011CVkwVUUe5CU6UBn8164fg'), (b'strict-transport-security', b'max-age=31536000; includeSubDomains; preload'), (b'anthropic-organization-id', b'73a09491-cda3-40b4-8544-d00ca1bc9331'), (b'x-envoy-upstream-service-time', b'8278'), (b'cf-cache-status', b'DYNAMIC'), (b'X-Robots-Tag', b'none'), (b'Server', b'cloudflare'), (b'CF-RAY', b'9a883a5f2c971512-EWR')])
+22:31:04 | INFO     | httpx | HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+22:31:04 | DEBUG    | httpcore.http11 | receive_response_body.started request=<Request [b'POST']>
+22:31:04 | DEBUG    | httpcore.http11 | receive_response_body.complete
+22:31:04 | DEBUG    | httpcore.http11 | response_closed.started
+22:31:04 | DEBUG    | httpcore.http11 | response_closed.complete
+22:31:04 | DEBUG    | anthropic._base_client | HTTP Response: POST https://api.anthropic.com/v1/messages "200 OK" Headers({'date': 'Thu, 04 Dec 2025 03:31:04 GMT', 'content-type': 'application/json', 'transfer-encoding': 'chunked', 'connection': 'keep-alive', 'content-encoding': 'gzip', 'anthropic-ratelimit-input-tokens-limit': '30000', 'anthropic-ratelimit-input-tokens-remaining': '29000', 'anthropic-ratelimit-input-tokens-reset': '2025-12-04T03:31:00Z', 'anthropic-ratelimit-output-tokens-limit': '8000', 'anthropic-ratelimit-output-tokens-remaining': '8000', 'anthropic-ratelimit-output-tokens-reset': '2025-12-04T03:31:07Z', 'anthropic-ratelimit-requests-limit': '50', 'anthropic-ratelimit-requests-remaining': '49', 'anthropic-ratelimit-requests-reset': '2025-12-04T03:30:57Z', 'retry-after': '2', 'anthropic-ratelimit-tokens-limit': '38000', 'anthropic-ratelimit-tokens-remaining': '37000', 'anthropic-ratelimit-tokens-reset': '2025-12-04T03:31:00Z', 'request-id': 'req_011CVkwVUUe5CU6UBn8164fg', 'strict-transport-security': 'max-age=31536000; includeSubDomains; preload', 'anthropic-organization-id': '73a09491-cda3-40b4-8544-d00ca1bc9331', 'x-envoy-upstream-service-time': '8278', 'cf-cache-status': 'DYNAMIC', 'x-robots-tag': 'none', 'server': 'cloudflare', 'cf-ray': '9a883a5f2c971512-EWR'})
+22:31:04 | DEBUG    | anthropic._base_client | request_id: req_011CVkwVUUe5CU6UBn8164fg
+22:31:04 | INFO     | step_one_decipher |   [CLAUDE] Full response: Looking at the user's transliteration "davar halamd meinyano" and examining the candidates, I need to find Hebrew/Aramaic terms that phonetically match this phrase.
+
+Breaking down the transliteration:
+- "davar" = דבר (a thing/matter)
+- "halamd" = הלמד (that which is learned/taught)
+- "meinyano" = מעניינו (from its matter/subject)
+
+This appears to be the Talmudic principle "דבר הלמד מעניינו" (davar halamed me-inyano) - "something learned from its context."
+
+However, looking through all the candidates provided, none of them contain this specific phrase or principle. The Hebrew texts in the candidates deal with various other Talmudic topics (yibum/chalitzah, sacrificial offerings, ritual purity, etc.) but don't contain the phrase "דבר הלמד מעניינו" or similar contextual learning principles.
+
+```json
+{
+  "matched": false,
+  "hebrew_term": "",
+  "source_ref": "",
+  "confidence": "low",
+  "explanation": "While I can identify that the user is likely looking for the principle 'דבר הלמד מעניינו' (davar halamed me-inyano - something learned from its context), none of the provided candidates contain this phrase or discuss this hermeneutical principle. The candidates focus on other Talmudic topics entirely."
+}
+```
+22:31:04 | INFO     | step_one_decipher |   ✗ Claude could not find good match
+22:31:04 | INFO     | step_one_decipher | ================================================================================
+22:31:04 | INFO     | step_one_decipher | STEP 1: DECIPHER
+22:31:04 | INFO     | step_one_decipher | ================================================================================
+22:31:04 | INFO     | step_one_decipher | Query: 'tzad hashaveh'
+22:31:04 | INFO     | step_one_decipher | Normalized: 'tzad hashaveh'
+22:31:04 | INFO     | step_one_decipher | 
+[TOOL 1] Word Dictionary - Checking cache...
+22:31:04 | INFO     | step_one_decipher |   → Dictionary miss or low confidence, continuing...
+22:31:04 | INFO     | step_one_decipher | 
+[TOOL 2] Transliteration Map - Generating Hebrew variants...
+22:31:04 | INFO     | step_one_decipher |   Generated 2 SMART Hebrew variants (prioritized by frequency)
+22:31:04 | INFO     | step_one_decipher |   → Smart generation produced only 2 variants, trying full generation...
+22:31:04 | INFO     | step_one_decipher |   Generated 2 variants using full algorithm
+22:31:04 | INFO     | step_one_decipher |   Sample variants (first 10): ['צד השוה', 'צד השוח']
+22:31:04 | INFO     | step_one_decipher |   All variants count: 2
+22:31:04 | INFO     | step_one_decipher |   Transliteration confidence: medium
+22:31:04 | INFO     | step_one_decipher |   → Multiple variants or low confidence, escalating to vector search...
+22:31:04 | INFO     | step_one_decipher | 
+[TOOL 3] Vector Search + Claude Verification...
+22:31:04 | INFO     | step_one_decipher |   Searching vector index for 2 SMART variants...
+22:31:04 | INFO     | step_one_decipher |     Searching variant 1/2: 'צד השוה'
+22:31:04 | DEBUG    | vector_search | Vector search for: 'צד השוה' (top_k=3)
+22:31:04 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:31:04 | DEBUG    | httpcore.connection | close.started
+22:31:04 | DEBUG    | httpcore.connection | close.complete
+22:31:04 | DEBUG    | vector_search |   Top 3 matches:
+22:31:04 | DEBUG    | vector_search |     [1] Chiddushei HaRambam on Rosh Hashanah 24b (score: 0.512)
+22:31:04 | DEBUG    | vector_search |     [2] Sanhedrin 88b (score: 0.512)
+22:31:04 | DEBUG    | vector_search |     [3] Chullin 22b (score: 0.511)
+22:31:04 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.512)
+22:31:04 | INFO     | step_one_decipher |     Searching variant 2/2: 'צד השוח'
+22:31:04 | DEBUG    | vector_search | Vector search for: 'צד השוח' (top_k=3)
+22:31:05 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:31:05 | DEBUG    | vector_search |   Top 3 matches:
+22:31:05 | DEBUG    | vector_search |     [1] Tosafot Chad Mikamei on Yevamot 18a (score: 0.614)
+22:31:05 | DEBUG    | vector_search |     [2] Tosafot Chad Mikamei on Yevamot 56b (score: 0.609)
+22:31:05 | DEBUG    | vector_search |     [3] Tosafot Chad Mikamei on Yevamot 35b (score: 0.604)
+22:31:05 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.614)
+22:31:05 | INFO     | step_one_decipher |   Found 6 potential matches
+22:31:05 | INFO     | step_one_decipher |   Top 5 unique matches:
+22:31:05 | INFO     | step_one_decipher |     1. Tosafot Chad Mikamei on Yevamot 18a (score: 0.614)
+22:31:05 | INFO     | step_one_decipher |        Hebrew: הא דתנן עשה בה מאמר ומת חולצת ולא מתיבמת ה"ה אע"ג ...
+22:31:05 | INFO     | step_one_decipher |     2. Tosafot Chad Mikamei on Yevamot 56b (score: 0.609)
+22:31:05 | INFO     | step_one_decipher |        Hebrew: אמר רבה שכבת זרע דכתב גבי שפחה חרופה למעט מינה דכל...
+22:31:05 | INFO     | step_one_decipher |     3. Tosafot Chad Mikamei on Yevamot 35b (score: 0.604)
+22:31:05 | INFO     | step_one_decipher |        Hebrew: אמר רב נחמן אמר שמואל כל שנשתהה עשר שנים אחר בעלה ...
+22:31:05 | INFO     | step_one_decipher |     4. Chiddushei HaRambam on Rosh Hashanah 24b (score: 0.512)
+22:31:05 | INFO     | step_one_decipher |        Hebrew: <b>היינו לפני החמה היינו לצפונה היינו לאחר החמה הי...
+22:31:05 | INFO     | step_one_decipher |     5. Sanhedrin 88b (score: 0.512)
+22:31:05 | INFO     | step_one_decipher |        Hebrew: דִּין בִּתּוֹ מֵאֲנוּסָתוֹ דְּאָמַר רָבָא אֲמַר לִ...
+22:31:05 | INFO     | step_one_decipher |   → Sending to Claude for verification...
+22:31:05 | INFO     | step_one_decipher |   [CLAUDE] Verifying candidates...
+22:31:05 | DEBUG    | anthropic._base_client | Request options: {'method': 'post', 'url': '/v1/messages', 'timeout': Timeout(connect=5.0, read=600, write=600, pool=600), 'files': None, 'idempotency_key': 'stainless-python-retry-b22ea82c-fcb5-4dad-b1b0-364eaf900f9e', 'json_data': {'max_tokens': 800, 'messages': [{'role': 'user', 'content': 'User\'s transliteration: "tzad hashaveh"\n\nHere are the top candidates from vector search:\n\n[Candidate 1]\nSource: Tosafot Chad Mikamei on Yevamot 18a\nHebrew: הא דתנן עשה בה מאמר ומת חולצת ולא מתיבמת ה"ה אע"ג דלא עבד בה מאמר שניה מחלץ חלצה יבומי לא מיבמה דקי"ל כשמואל דאמר יש זיקה אפי\' בתרי אחי וה"ל צרת א)אחות אשה בזיקה. והא דקתני עשה בה מאמר לאפוקי מב"ש דאמ\nScore: 0.614\n\n[Candidate 2]\nSource: Tosafot Chad Mikamei on Yevamot 56b\nHebrew: אמר רבה שכבת זרע דכתב גבי שפחה חרופה למעט מינה דכל חייבי לאוין בהעראה דא"כ לישתוק קרא מיניה דשפחה חרופה. שכבת זרע דאשת איש למ"ד משמש מת בעריות חייב פרט למשמש מתה. שכבת זרע דסוטה לאו למעקרה קינא לה שלא\nScore: 0.609\n\n[Candidate 3]\nSource: Tosafot Chad Mikamei on Yevamot 35b\nHebrew: אמר רב נחמן אמר שמואל כל שנשתהה עשר שנים אחר בעלה ונשאת שוב אין נתעברת. ולא אמרן אלא שאין דעתה להנשא אבל דעתה להנשא מתעברת:\n\nScore: 0.604\n\n[Candidate 4]\nSource: Chiddushei HaRambam on Rosh Hashanah 24b\nHebrew: <b>היינו לפני החמה היינו לצפונה היינו לאחר החמה היינו לדרומה.</b> פירוש כבר פירשנו למעלה שהירח קודם המולד הוא אחר השמש שעדיין לא נקבץ עמה ואחר המולד הוא לפני השמש שכבר נקבץ עמה והלך לפניה. ועל זה הקשי\nScore: 0.512\n\n[Candidate 5]\nSource: Sanhedrin 88b\nHebrew: דִּין בִּתּוֹ מֵאֲנוּסָתוֹ דְּאָמַר רָבָא אֲמַר לִי רַב יִצְחָק בַּר אֲבוּדִימִי אָתְיָא הֵנָּה הֵנָּה אָתְיָא זִמָּה זִמָּה בֵּין דָּם לְדָם  בֵּין דַּם נִדָּה דַּם לֵידָה דַּם זִיבָה דַּם נִדָּה בִּ\nScore: 0.512\n\n[Candidate 6]\nSource: Chullin 22b\nHebrew: אלא מן החולין וביום ובידו הימנית אף עולת העוף אינה באה אלא מן החולין וביום ובידו הימנית אי מה להלן ברוב שנים אף כאן ברוב שנים ת"ל (ויקרא א, טו) ומלק והקטיר מה הקטרה הראש בעצמו והגוף בעצמו אף מליקה הרא\nScore: 0.511\n\nWhich candidate best matches the user\'s query?'}], 'model': 'claude-sonnet-4-20250514', 'system': 'You are a Torah scholar assistant helping identify Hebrew/Aramaic terms from transliterations.\n\nReview the candidates from vector search and pick the best match for the user\'s query.\n\nIMPORTANT:\n- Match phonetically (ch=ח, sh=ש, tz=צ, s=ת in yeshivish)\n- Consider context and meaning\n- Be confident when there\'s a clear match\n- Admit uncertainty if candidates don\'t match well\n\nReturn JSON:\n{\n  "matched": true/false,\n  "hebrew_term": "The Hebrew/Aramaic term (first 50 chars)",\n  "source_ref": "Where it appears",\n  "confidence": "high/medium/low",\n  "explanation": "Why this is the best match"\n}'}}
+22:31:05 | DEBUG    | anthropic._base_client | Sending HTTP Request: POST https://api.anthropic.com/v1/messages
+22:31:05 | DEBUG    | httpcore.connection | connect_tcp.started host='api.anthropic.com' port=443 local_address=None timeout=5.0 socket_options=[(65535, 8, True), (6, 17, 60), (6, 16, 5), (6, 3, 60)]
+22:31:05 | DEBUG    | httpcore.connection | connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000028221B3BA30>
+22:31:05 | DEBUG    | httpcore.connection | start_tls.started ssl_context=<ssl.SSLContext object at 0x00000282732825C0> server_hostname='api.anthropic.com' timeout=5.0
+22:31:05 | DEBUG    | httpcore.connection | start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000028221B3BF10>
+22:31:05 | DEBUG    | httpcore.http11 | send_request_headers.started request=<Request [b'POST']>
+22:31:05 | DEBUG    | httpcore.http11 | send_request_headers.complete
+22:31:05 | DEBUG    | httpcore.http11 | send_request_body.started request=<Request [b'POST']>
+22:31:05 | DEBUG    | httpcore.http11 | send_request_body.complete
+22:31:05 | DEBUG    | httpcore.http11 | receive_response_headers.started request=<Request [b'POST']>
+22:31:13 | DEBUG    | httpcore.http11 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Thu, 04 Dec 2025 03:31:13 GMT'), (b'Content-Type', b'application/json'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Content-Encoding', b'gzip'), (b'anthropic-ratelimit-input-tokens-limit', b'30000'), (b'anthropic-ratelimit-input-tokens-remaining', b'29000'), (b'anthropic-ratelimit-input-tokens-reset', b'2025-12-04T03:31:09Z'), (b'anthropic-ratelimit-output-tokens-limit', b'8000'), (b'anthropic-ratelimit-output-tokens-remaining', b'8000'), (b'anthropic-ratelimit-output-tokens-reset', b'2025-12-04T03:31:15Z'), (b'anthropic-ratelimit-requests-limit', b'50'), (b'anthropic-ratelimit-requests-remaining', b'49'), (b'anthropic-ratelimit-requests-reset', b'2025-12-04T03:31:06Z'), (b'retry-after', b'55'), (b'anthropic-ratelimit-tokens-limit', b'38000'), (b'anthropic-ratelimit-tokens-remaining', b'37000'), (b'anthropic-ratelimit-tokens-reset', b'2025-12-04T03:31:09Z'), (b'request-id', b'req_011CVkwW7svZ7J3StrhjGb7Y'), (b'strict-transport-security', b'max-age=31536000; includeSubDomains; preload'), (b'anthropic-organization-id', b'73a09491-cda3-40b4-8544-d00ca1bc9331'), (b'x-envoy-upstream-service-time', b'8276'), (b'cf-cache-status', b'DYNAMIC'), (b'X-Robots-Tag', b'none'), (b'Server', b'cloudflare'), (b'CF-RAY', b'9a883a95dc6acb4e-EWR')])
+22:31:13 | INFO     | httpx | HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+22:31:13 | DEBUG    | httpcore.http11 | receive_response_body.started request=<Request [b'POST']>
+22:31:13 | DEBUG    | httpcore.http11 | receive_response_body.complete
+22:31:13 | DEBUG    | httpcore.http11 | response_closed.started
+22:31:13 | DEBUG    | httpcore.http11 | response_closed.complete
+22:31:13 | DEBUG    | anthropic._base_client | HTTP Response: POST https://api.anthropic.com/v1/messages "200 OK" Headers({'date': 'Thu, 04 Dec 2025 03:31:13 GMT', 'content-type': 'application/json', 'transfer-encoding': 'chunked', 'connection': 'keep-alive', 'content-encoding': 'gzip', 'anthropic-ratelimit-input-tokens-limit': '30000', 'anthropic-ratelimit-input-tokens-remaining': '29000', 'anthropic-ratelimit-input-tokens-reset': '2025-12-04T03:31:09Z', 'anthropic-ratelimit-output-tokens-limit': '8000', 'anthropic-ratelimit-output-tokens-remaining': '8000', 'anthropic-ratelimit-output-tokens-reset': '2025-12-04T03:31:15Z', 'anthropic-ratelimit-requests-limit': '50', 'anthropic-ratelimit-requests-remaining': '49', 'anthropic-ratelimit-requests-reset': '2025-12-04T03:31:06Z', 'retry-after': '55', 'anthropic-ratelimit-tokens-limit': '38000', 'anthropic-ratelimit-tokens-remaining': '37000', 'anthropic-ratelimit-tokens-reset': '2025-12-04T03:31:09Z', 'request-id': 'req_011CVkwW7svZ7J3StrhjGb7Y', 'strict-transport-security': 'max-age=31536000; includeSubDomains; preload', 'anthropic-organization-id': '73a09491-cda3-40b4-8544-d00ca1bc9331', 'x-envoy-upstream-service-time': '8276', 'cf-cache-status': 'DYNAMIC', 'x-robots-tag': 'none', 'server': 'cloudflare', 'cf-ray': '9a883a95dc6acb4e-EWR'})
+22:31:13 | DEBUG    | anthropic._base_client | request_id: req_011CVkwW7svZ7J3StrhjGb7Y
+22:31:13 | INFO     | step_one_decipher |   [CLAUDE] Full response: Looking at the user's transliteration "tzad hashaveh" and the provided candidates, I need to search for Hebrew terms that would phonetically match this query.
+
+"Tzad hashaveh" would transliterate to Hebrew as צד השווה, meaning "the equal side" or "aspect of equality" - a common term in Talmudic discourse referring to finding common elements or establishing equivalences between different cases.
+
+However, examining all the provided candidates carefully, I cannot find any text that contains צד השווה or similar phonetic matches. The candidates contain various Talmudic discussions but none appear to include this specific term or its phonetic equivalent.
+
+```json
+{
+  "matched": false,
+  "hebrew_term": "",
+  "source_ref": "",
+  "confidence": "high",
+  "explanation": "None of the candidates contain 'צד השווה' (tzad hashaveh) or phonetically similar terms. The search results appear to be from various Talmudic sources but don't include this common halachic/logical term meaning 'the equal side' or 'aspect of equality.'"
+}
+```
+22:31:13 | INFO     | step_one_decipher |   ✗ Claude could not find good match
+22:31:13 | INFO     | step_one_decipher | ================================================================================
+22:31:13 | INFO     | step_one_decipher | STEP 1: DECIPHER
+22:31:13 | INFO     | step_one_decipher | ================================================================================
+22:31:13 | INFO     | step_one_decipher | Query: 'shnei kesuvim'
+22:31:13 | INFO     | step_one_decipher | Normalized: 'shnei kesuvim'
+22:31:13 | INFO     | step_one_decipher | 
+[TOOL 1] Word Dictionary - Checking cache...
+22:31:13 | INFO     | step_one_decipher |   → Dictionary miss or low confidence, continuing...
+22:31:13 | INFO     | step_one_decipher | 
+[TOOL 2] Transliteration Map - Generating Hebrew variants...
+22:31:13 | INFO     | step_one_decipher |   Generated 3 SMART Hebrew variants (prioritized by frequency)
+22:31:13 | INFO     | step_one_decipher |   Sample variants (first 10): ['שנאי כסווימ', 'שנאי קסווימ', 'שנאי כשווימ']
+22:31:13 | INFO     | step_one_decipher |   All variants count: 3
+22:31:13 | INFO     | step_one_decipher |   Transliteration confidence: medium
+22:31:13 | INFO     | step_one_decipher |   → Multiple variants or low confidence, escalating to vector search...
+22:31:13 | INFO     | step_one_decipher | 
+[TOOL 3] Vector Search + Claude Verification...
+22:31:13 | INFO     | step_one_decipher |   Searching vector index for 3 SMART variants...
+22:31:13 | INFO     | step_one_decipher |     Searching variant 1/3: 'שנאי כסווימ'
+22:31:13 | DEBUG    | vector_search | Vector search for: 'שנאי כסווימ' (top_k=3)
+22:31:13 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:31:13 | DEBUG    | httpcore.connection | close.started
+22:31:13 | DEBUG    | httpcore.connection | close.complete
+22:31:13 | DEBUG    | vector_search |   Top 3 matches:
+22:31:13 | DEBUG    | vector_search |     [1] Zevachim 46b (score: 0.666)
+22:31:13 | DEBUG    | vector_search |     [2] Chiddushei HaRambam on Rosh Hashanah 7a (score: 0.644)
+22:31:13 | DEBUG    | vector_search |     [3] Chullin 90b (score: 0.644)
+22:31:13 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.666)
+22:31:13 | INFO     | step_one_decipher |     Searching variant 2/3: 'שנאי קסווימ'
+22:31:13 | DEBUG    | vector_search | Vector search for: 'שנאי קסווימ' (top_k=3)
+22:31:13 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:31:13 | DEBUG    | vector_search |   Top 3 matches:
+22:31:13 | DEBUG    | vector_search |     [1] Chullin 90b (score: 0.611)
+22:31:13 | DEBUG    | vector_search |     [2] Zevachim 121b (score: 0.598)
+22:31:13 | DEBUG    | vector_search |     [3] Tosafot Chad Mikamei on Yevamot 106b (score: 0.591)
+22:31:13 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.611)
+22:31:13 | INFO     | step_one_decipher |     Searching variant 3/3: 'שנאי כשווימ'
+22:31:13 | DEBUG    | vector_search | Vector search for: 'שנאי כשווימ' (top_k=3)
+22:31:13 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:31:13 | DEBUG    | vector_search |   Top 3 matches:
+22:31:13 | DEBUG    | vector_search |     [1] Sanhedrin 73a (score: 0.624)
+22:31:13 | DEBUG    | vector_search |     [2] Nazir 62a (score: 0.623)
+22:31:13 | DEBUG    | vector_search |     [3] Pesachim 64a (score: 0.621)
+22:31:13 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.624)
+22:31:13 | INFO     | step_one_decipher |   Found 9 potential matches
+22:31:13 | INFO     | step_one_decipher |   Top 5 unique matches:
+22:31:13 | INFO     | step_one_decipher |     1. Zevachim 46b (score: 0.666)
+22:31:13 | INFO     | step_one_decipher |        Hebrew: במזיד לא הורצה בד"א ביחיד אבל בציבור בין בשוגג בין...
+22:31:13 | INFO     | step_one_decipher |     2. Chiddushei HaRambam on Rosh Hashanah 7a (score: 0.644)
+22:31:13 | INFO     | step_one_decipher |        Hebrew: <b>אמר רבא כיוון שעבר עליו רגל אחד</b> ולא הביא (נ...
+22:31:13 | INFO     | step_one_decipher |     3. Chullin 90b (score: 0.644)
+22:31:13 | INFO     | step_one_decipher |        Hebrew: שיעורא בעינן ועבודת כוכבים כתותי מכתת שיעורא הכא כ...
+22:31:13 | INFO     | step_one_decipher |     4. Sanhedrin 73a (score: 0.624)
+22:31:13 | INFO     | step_one_decipher |        Hebrew: <strong><big>גְּמָ׳</big></strong> תַּנְיָא, רַבִּ...
+22:31:13 | INFO     | step_one_decipher |     5. Nazir 62a (score: 0.623)
+22:31:13 | INFO     | step_one_decipher |        Hebrew: תָּנֵי רַבִּי חִיָּיא: זֶה לִפְנֵי בִּיאַת מַיִם (...
+22:31:13 | INFO     | step_one_decipher |   → Sending to Claude for verification...
+22:31:13 | INFO     | step_one_decipher |   [CLAUDE] Verifying candidates...
+22:31:13 | DEBUG    | anthropic._base_client | Request options: {'method': 'post', 'url': '/v1/messages', 'timeout': Timeout(connect=5.0, read=600, write=600, pool=600), 'files': None, 'idempotency_key': 'stainless-python-retry-e900455e-88ea-44f8-ba8f-9e6be00197c6', 'json_data': {'max_tokens': 800, 'messages': [{'role': 'user', 'content': 'User\'s transliteration: "shnei kesuvim"\n\nHere are the top candidates from vector search:\n\n[Candidate 1]\nSource: Zevachim 46b\nHebrew: במזיד לא הורצה בד"א ביחיד אבל בציבור בין בשוגג בין במזיד הורצה ובעובדי כוכבי\' בין בשוגג ובין במזיד לא הורצה אמרוה רבנן קמיה דרב פפא כמאן דלא כרבי יוסי דאי רבי יוסי האמר בכולן אני רואה להחמיר אמר להו ר\nScore: 0.666\n\n[Candidate 2]\nSource: Chiddushei HaRambam on Rosh Hashanah 7a\nHebrew: <b>אמר רבא כיוון שעבר עליו רגל אחד</b> ולא הביא (נדרו) <b>עובד בעשה</b> [נ״א פירוש כיון שעבר עליו רגל אחד ולא הביא נדרו עובר בעשה] דכתיב (דברים יב:ה-ו) ובאת שמה. והבאתם וגו׳ אבל בבל תאחר עד שיעברו עלי\nScore: 0.644\n\n[Candidate 3]\nSource: Chullin 90b\nHebrew: שיעורא בעינן ועבודת כוכבים כתותי מכתת שיעורא הכא כל מה דמכתת מעלי לכסוי: <br><br><big><strong>הדרן עלך כסוי הדם</strong></big><br><br> מתני׳ <big><strong>גיד</strong></big> הנשה נוהג בארץ ובחוצה לארץ \nScore: 0.644\n\n[Candidate 4]\nSource: Sanhedrin 73a\nHebrew: <strong><big>גְּמָ׳</big></strong> תַּנְיָא, רַבִּי יוֹסֵי הַגְּלִילִי אוֹמֵר: וְכִי מִפְּנֵי שֶׁאָכַל זֶה תַּרְטֵימָר בָּשָׂר וְשָׁתָה חֲצִי לוֹג יַיִן הָאִיטַלְקִי אָמְרָה תּוֹרָה יֵצֵא לְבֵית דִּין\nScore: 0.624\n\n[Candidate 5]\nSource: Nazir 62a\nHebrew: תָּנֵי רַבִּי חִיָּיא: זֶה לִפְנֵי בִּיאַת מַיִם (חַיִּים) וְזֶה לְאַחַר בִּיאַת מַיִם, זֶה לִפְנֵי זְרִיקַת דָּמִים וְזֶה לְאַחַר זְרִיקַת דָּמִים. שֶׁתִּגְלַחַת הַנֶּגַע וְכוּ׳. בָּעֵי רָמֵי בַּר חָ\nScore: 0.623\n\n[Candidate 6]\nSource: Pesachim 64a\nHebrew: לֵימָא קָסָבְרִי אֲחֵרִים אֵינָהּ לִשְׁחִיטָה אֶלָּא בַּסּוֹף, וְכִדְרָבָא. דְּאָמַר רָבָא: עֲדַיִין הִיא מַחֲלוֹקֶת. הִילְכָּךְ: הִקְדִּים מוּלִין לַעֲרֵלִים — מוּלִין חָיְילִי, עֲרֵלִים לָא חָיְילִי\nScore: 0.621\n\n[Candidate 7]\nSource: Zevachim 121b\nHebrew: מה עופות שאין המום פוסל בהן זמן פוסל בהן קדשי במה קטנה שהמום פוסל בהן אינו דין שזמן פוסל בהן מה לעופות שכן אין הזר כשר בהן תאמר בבמה קטנה שהזר כשר בה לא יהא זמן פסול בה ת"ל (ויקרא ז, יא) וזאת תורת זבח\nScore: 0.598\n\n[Candidate 8]\nSource: Tosafot Chad Mikamei on Yevamot 106b\nHebrew: א"ר ישמעאל בר"י המתפלל צריך שיתן עיניו למטה ולבו למעלה כדי לקיים ב\' מקראות הללו והיו עיני ולבי שם כל הימים וכתיב נשא לבבנו אל כפים אל אל בשמים. הא דפסקי הלכתא עד שתביא ב\' שערות ה"מ לכתחלה דלא חלצה עד \nScore: 0.591\n\nWhich candidate best matches the user\'s query?'}], 'model': 'claude-sonnet-4-20250514', 'system': 'You are a Torah scholar assistant helping identify Hebrew/Aramaic terms from transliterations.\n\nReview the candidates from vector search and pick the best match for the user\'s query.\n\nIMPORTANT:\n- Match phonetically (ch=ח, sh=ש, tz=צ, s=ת in yeshivish)\n- Consider context and meaning\n- Be confident when there\'s a clear match\n- Admit uncertainty if candidates don\'t match well\n\nReturn JSON:\n{\n  "matched": true/false,\n  "hebrew_term": "The Hebrew/Aramaic term (first 50 chars)",\n  "source_ref": "Where it appears",\n  "confidence": "high/medium/low",\n  "explanation": "Why this is the best match"\n}'}}
+22:31:13 | DEBUG    | anthropic._base_client | Sending HTTP Request: POST https://api.anthropic.com/v1/messages
+22:31:13 | DEBUG    | httpcore.connection | connect_tcp.started host='api.anthropic.com' port=443 local_address=None timeout=5.0 socket_options=[(65535, 8, True), (6, 17, 60), (6, 16, 5), (6, 3, 60)]
+22:31:13 | DEBUG    | httpcore.connection | connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000028221B24F70>
+22:31:13 | DEBUG    | httpcore.connection | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000028273282840> server_hostname='api.anthropic.com' timeout=5.0
+22:31:14 | DEBUG    | httpcore.connection | start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000028221B24970>
+22:31:14 | DEBUG    | httpcore.http11 | send_request_headers.started request=<Request [b'POST']>
+22:31:14 | DEBUG    | httpcore.http11 | send_request_headers.complete
+22:31:14 | DEBUG    | httpcore.http11 | send_request_body.started request=<Request [b'POST']>
+22:31:14 | DEBUG    | httpcore.http11 | send_request_body.complete
+22:31:14 | DEBUG    | httpcore.http11 | receive_response_headers.started request=<Request [b'POST']>
+22:31:22 | DEBUG    | httpcore.http11 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Thu, 04 Dec 2025 03:31:22 GMT'), (b'Content-Type', b'application/json'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Content-Encoding', b'gzip'), (b'anthropic-ratelimit-input-tokens-limit', b'30000'), (b'anthropic-ratelimit-input-tokens-remaining', b'29000'), (b'anthropic-ratelimit-input-tokens-reset', b'2025-12-04T03:31:18Z'), (b'anthropic-ratelimit-output-tokens-limit', b'8000'), (b'anthropic-ratelimit-output-tokens-remaining', b'8000'), (b'anthropic-ratelimit-output-tokens-reset', b'2025-12-04T03:31:24Z'), (b'anthropic-ratelimit-requests-limit', b'50'), (b'anthropic-ratelimit-requests-remaining', b'49'), (b'anthropic-ratelimit-requests-reset', b'2025-12-04T03:31:15Z'), (b'retry-after', b'47'), (b'anthropic-ratelimit-tokens-limit', b'38000'), (b'anthropic-ratelimit-tokens-remaining', b'37000'), (b'anthropic-ratelimit-tokens-reset', b'2025-12-04T03:31:18Z'), (b'request-id', b'req_011CVkwWnJxuTXfSatDbgmrg'), (b'strict-transport-security', b'max-age=31536000; includeSubDomains; preload'), (b'anthropic-organization-id', b'73a09491-cda3-40b4-8544-d00ca1bc9331'), (b'x-envoy-upstream-service-time', b'8272'), (b'cf-cache-status', b'DYNAMIC'), (b'X-Robots-Tag', b'none'), (b'Server', b'cloudflare'), (b'CF-RAY', b'9a883ace094ac3fd-EWR')])
+22:31:22 | INFO     | httpx | HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+22:31:22 | DEBUG    | httpcore.http11 | receive_response_body.started request=<Request [b'POST']>
+22:31:22 | DEBUG    | httpcore.http11 | receive_response_body.complete
+22:31:22 | DEBUG    | httpcore.http11 | response_closed.started
+22:31:22 | DEBUG    | httpcore.http11 | response_closed.complete
+22:31:22 | DEBUG    | anthropic._base_client | HTTP Response: POST https://api.anthropic.com/v1/messages "200 OK" Headers({'date': 'Thu, 04 Dec 2025 03:31:22 GMT', 'content-type': 'application/json', 'transfer-encoding': 'chunked', 'connection': 'keep-alive', 'content-encoding': 'gzip', 'anthropic-ratelimit-input-tokens-limit': '30000', 'anthropic-ratelimit-input-tokens-remaining': '29000', 'anthropic-ratelimit-input-tokens-reset': '2025-12-04T03:31:18Z', 'anthropic-ratelimit-output-tokens-limit': '8000', 'anthropic-ratelimit-output-tokens-remaining': '8000', 'anthropic-ratelimit-output-tokens-reset': '2025-12-04T03:31:24Z', 'anthropic-ratelimit-requests-limit': '50', 'anthropic-ratelimit-requests-remaining': '49', 'anthropic-ratelimit-requests-reset': '2025-12-04T03:31:15Z', 'retry-after': '47', 'anthropic-ratelimit-tokens-limit': '38000', 'anthropic-ratelimit-tokens-remaining': '37000', 'anthropic-ratelimit-tokens-reset': '2025-12-04T03:31:18Z', 'request-id': 'req_011CVkwWnJxuTXfSatDbgmrg', 'strict-transport-security': 'max-age=31536000; includeSubDomains; preload', 'anthropic-organization-id': '73a09491-cda3-40b4-8544-d00ca1bc9331', 'x-envoy-upstream-service-time': '8272', 'cf-cache-status': 'DYNAMIC', 'x-robots-tag': 'none', 'server': 'cloudflare', 'cf-ray': '9a883ace094ac3fd-EWR'})
+22:31:22 | DEBUG    | anthropic._base_client | request_id: req_011CVkwWnJxuTXfSatDbgmrg
+22:31:22 | INFO     | step_one_decipher |   [CLAUDE] Full response: Looking at the user's transliteration "shnei kesuvim" (שני כתובים), I need to find a match that contains these Hebrew words meaning "two verses" or "two written sources."
+
+Examining the candidates, I can see that Candidate 8 contains the phrase "ב' מקראות הללו" which means "these two verses" - this is exactly what "shnei kesuvim" refers to in Talmudic literature.
+
+The context in Candidate 8 discusses Rabbi Yishmael bar Yosi's teaching about prayer, where one must look down with their eyes but raise their heart upward "in order to fulfill these two verses (ב' מקראות הללו)" - referring to two biblical passages that seem contradictory but can both be fulfilled through proper prayer posture.
+
+```json
+{
+  "matched": true,
+  "hebrew_term": "ב' מקראות הללו",
+  "source_ref": "Tosafot Chad Mikamei on Yevamot 106b",
+  "confidence": "high",
+  "explanation": "The phrase 'ב' מקראות הללו' (these two verses) is the exact Hebrew equivalent of 'shnei kesuvim.' This appears in a classic Talmudic context where Rabbi Yishmael discusses fulfilling two seemingly contradictory biblical verses through proper prayer conduct."
+}
+```
+22:31:22 | INFO     | step_one_decipher |   ✓ CLAUDE MATCHED: ב' מקראות הללו
+22:31:22 | INFO     | step_one_decipher | ================================================================================
+22:31:22 | INFO     | step_one_decipher | STEP 1: DECIPHER
+22:31:22 | INFO     | step_one_decipher | ================================================================================
+22:31:22 | INFO     | step_one_decipher | Query: 'chaticha deisura'
+22:31:22 | INFO     | step_one_decipher | Normalized: 'chaticha deisura'
+22:31:22 | INFO     | step_one_decipher | 
+[TOOL 1] Word Dictionary - Checking cache...
+22:31:22 | INFO     | step_one_decipher | ✓ DICTIONARY HIT! חתיכה דאיסורא
+22:31:22 | INFO     | step_one_decipher |   Confidence: high
+22:31:22 | INFO     | step_one_decipher |   Usage: 6 times
+22:31:22 | INFO     | step_one_decipher | ================================================================================
+22:31:22 | INFO     | step_one_decipher | STEP 1: DECIPHER
+22:31:22 | INFO     | step_one_decipher | ================================================================================
+22:31:22 | INFO     | step_one_decipher | Query: 'kol davar sheyesh lo matirin'
+22:31:22 | INFO     | step_one_decipher | Normalized: 'kol davar sheyesh lo matirin'
+22:31:22 | INFO     | step_one_decipher | 
+[TOOL 1] Word Dictionary - Checking cache...
+22:31:22 | INFO     | step_one_decipher | ✓ DICTIONARY HIT! כל דבר שיש לו מתירין
+22:31:22 | INFO     | step_one_decipher |   Confidence: high
+22:31:22 | INFO     | step_one_decipher |   Usage: 3 times
+22:31:22 | INFO     | step_one_decipher | ================================================================================
+22:31:22 | INFO     | step_one_decipher | STEP 1: DECIPHER
+22:31:22 | INFO     | step_one_decipher | ================================================================================
+22:31:22 | INFO     | step_one_decipher | Query: 'zeh neheneh vzeh lo chaser'
+22:31:22 | INFO     | step_one_decipher | Normalized: 'zeh neheneh vzeh lo chaser'
+22:31:22 | INFO     | step_one_decipher | 
+[TOOL 1] Word Dictionary - Checking cache...
+22:31:22 | INFO     | step_one_decipher | ✓ DICTIONARY HIT! זה נהנה וזה לא חסר
+22:31:22 | INFO     | step_one_decipher |   Confidence: high
+22:31:22 | INFO     | step_one_decipher |   Usage: 3 times
+22:31:22 | INFO     | step_one_decipher | ================================================================================
+22:31:22 | INFO     | step_one_decipher | STEP 1: DECIPHER
+22:31:22 | INFO     | step_one_decipher | ================================================================================
+22:31:22 | INFO     | step_one_decipher | Query: 'ain shliach lidvar aveirah'
+22:31:22 | INFO     | step_one_decipher | Normalized: 'ain shliach lidvar aveirah'
+22:31:22 | INFO     | step_one_decipher | 
+[TOOL 1] Word Dictionary - Checking cache...
+22:31:22 | INFO     | step_one_decipher | ✓ DICTIONARY HIT! אין שליח לדבר עבירה
+22:31:22 | INFO     | step_one_decipher |   Confidence: high
+22:31:22 | INFO     | step_one_decipher |   Usage: 3 times
+22:31:22 | INFO     | step_one_decipher | ================================================================================
+22:31:22 | INFO     | step_one_decipher | STEP 1: DECIPHER
+22:31:22 | INFO     | step_one_decipher | ================================================================================
+22:31:22 | INFO     | step_one_decipher | Query: 'kol deparish mrubo parish'
+22:31:22 | INFO     | step_one_decipher | Normalized: 'kol deparish mrubo parish'
+22:31:22 | INFO     | step_one_decipher | 
+[TOOL 1] Word Dictionary - Checking cache...
+22:31:22 | INFO     | step_one_decipher | ✓ DICTIONARY HIT! כל דפריש מרובא פריש
+22:31:22 | INFO     | step_one_decipher |   Confidence: high
+22:31:22 | INFO     | step_one_decipher |   Usage: 3 times
+22:31:22 | INFO     | step_one_decipher | ================================================================================
+22:31:22 | INFO     | step_one_decipher | STEP 1: DECIPHER
+22:31:22 | INFO     | step_one_decipher | ================================================================================
+22:31:22 | INFO     | step_one_decipher | Query: 'rov deparish'
+22:31:22 | INFO     | step_one_decipher | Normalized: 'rov deparish'
+22:31:22 | INFO     | step_one_decipher | 
+[TOOL 1] Word Dictionary - Checking cache...
+22:31:22 | INFO     | step_one_decipher | ✓ DICTIONARY HIT! רוב דפריש
+22:31:22 | INFO     | step_one_decipher |   Confidence: high
+22:31:22 | INFO     | step_one_decipher |   Usage: 3 times
+22:31:22 | INFO     | step_one_decipher | ================================================================================
+22:31:22 | INFO     | step_one_decipher | STEP 1: DECIPHER
+22:31:22 | INFO     | step_one_decipher | ================================================================================
+22:31:22 | INFO     | step_one_decipher | Query: 'davar shelo ba lolam'
+22:31:22 | INFO     | step_one_decipher | Normalized: 'davar shelo ba lolam'
+22:31:22 | INFO     | step_one_decipher | 
+[TOOL 1] Word Dictionary - Checking cache...
+22:31:22 | INFO     | step_one_decipher | ✓ DICTIONARY HIT! דבר שלא בא לעולם
+22:31:22 | INFO     | step_one_decipher |   Confidence: high
+22:31:22 | INFO     | step_one_decipher |   Usage: 3 times
+22:31:22 | INFO     | step_one_decipher | ================================================================================
+22:31:22 | INFO     | step_one_decipher | STEP 1: DECIPHER
+22:31:22 | INFO     | step_one_decipher | ================================================================================
+22:31:22 | INFO     | step_one_decipher | Query: 'kim lei dirabanan'
+22:31:22 | INFO     | step_one_decipher | Normalized: 'kim lei dirabanan'
+22:31:22 | INFO     | step_one_decipher | 
+[TOOL 1] Word Dictionary - Checking cache...
+22:31:22 | INFO     | step_one_decipher | ✓ DICTIONARY HIT! קים ליה דרבנן
+22:31:22 | INFO     | step_one_decipher |   Confidence: high
+22:31:22 | INFO     | step_one_decipher |   Usage: 3 times
+22:31:22 | INFO     | step_one_decipher | ================================================================================
+22:31:22 | INFO     | step_one_decipher | STEP 1: DECIPHER
+22:31:22 | INFO     | step_one_decipher | ================================================================================
+22:31:22 | INFO     | step_one_decipher | Query: 'eid echad neeman bissurim'
+22:31:22 | INFO     | step_one_decipher | Normalized: 'eid echad neeman bissurim'
+22:31:22 | INFO     | step_one_decipher | 
+[TOOL 1] Word Dictionary - Checking cache...
+22:31:22 | INFO     | step_one_decipher | ✓ DICTIONARY HIT! עד אחד נאמן באיסורים
+22:31:22 | INFO     | step_one_decipher |   Confidence: high
+22:31:22 | INFO     | step_one_decipher |   Usage: 3 times
+22:31:22 | INFO     | step_one_decipher | ================================================================================
+22:31:22 | INFO     | step_one_decipher | STEP 1: DECIPHER
+22:31:22 | INFO     | step_one_decipher | ================================================================================
+22:31:22 | INFO     | step_one_decipher | Query: 'ain adam oser davar shelo ba lolam'
+22:31:22 | INFO     | step_one_decipher | Normalized: 'ain adam oser davar shelo ba lolam'
+22:31:22 | INFO     | step_one_decipher | 
+[TOOL 1] Word Dictionary - Checking cache...
+22:31:22 | INFO     | step_one_decipher |   → Dictionary miss or low confidence, continuing...
+22:31:22 | INFO     | step_one_decipher | 
+[TOOL 2] Transliteration Map - Generating Hebrew variants...
+22:31:22 | INFO     | step_one_decipher |   Generated 3 SMART Hebrew variants (prioritized by frequency)
+22:31:22 | INFO     | step_one_decipher |   Sample variants (first 10): ['אינ אדמ', 'אינ אדמ אסר', 'אינ אדמ אשר']
+22:31:22 | INFO     | step_one_decipher |   All variants count: 3
+22:31:22 | INFO     | step_one_decipher |   Transliteration confidence: medium
+22:31:22 | INFO     | step_one_decipher |   → Multiple variants or low confidence, escalating to vector search...
+22:31:22 | INFO     | step_one_decipher | 
+[TOOL 3] Vector Search + Claude Verification...
+22:31:22 | INFO     | step_one_decipher |   Searching vector index for 3 SMART variants...
+22:31:22 | INFO     | step_one_decipher |     Searching variant 1/3: 'אינ אדמ'
+22:31:22 | DEBUG    | vector_search | Vector search for: 'אינ אדמ' (top_k=3)
+22:31:22 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:31:22 | DEBUG    | httpcore.connection | close.started
+22:31:22 | DEBUG    | httpcore.connection | close.complete
+22:31:22 | DEBUG    | vector_search |   Top 3 matches:
+22:31:22 | DEBUG    | vector_search |     [1] Chullin 90b (score: 0.612)
+22:31:22 | DEBUG    | vector_search |     [2] Zevachim 46b (score: 0.598)
+22:31:22 | DEBUG    | vector_search |     [3] Menachot 68b (score: 0.591)
+22:31:22 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.612)
+22:31:22 | INFO     | step_one_decipher |     Searching variant 2/3: 'אינ אדמ אסר'
+22:31:22 | DEBUG    | vector_search | Vector search for: 'אינ אדמ אסר' (top_k=3)
+22:31:22 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:31:22 | DEBUG    | vector_search |   Top 3 matches:
+22:31:22 | DEBUG    | vector_search |     [1] Menachot 68b (score: 0.671)
+22:31:22 | DEBUG    | vector_search |     [2] Chullin 90b (score: 0.670)
+22:31:22 | DEBUG    | vector_search |     [3] Meilah 11a (score: 0.653)
+22:31:22 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.671)
+22:31:22 | INFO     | step_one_decipher |     Searching variant 3/3: 'אינ אדמ אשר'
+22:31:22 | DEBUG    | vector_search | Vector search for: 'אינ אדמ אשר' (top_k=3)
+22:31:22 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:31:23 | DEBUG    | vector_search |   Top 3 matches:
+22:31:23 | DEBUG    | vector_search |     [1] Chullin 90b (score: 0.622)
+22:31:23 | DEBUG    | vector_search |     [2] Tosafot Chad Mikamei on Yevamot 79b (score: 0.601)
+22:31:23 | DEBUG    | vector_search |     [3] Zevachim 46b (score: 0.596)
+22:31:23 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.622)
+22:31:23 | INFO     | step_one_decipher |   Found 9 potential matches
+22:31:23 | INFO     | step_one_decipher |   Top 5 unique matches:
+22:31:23 | INFO     | step_one_decipher |     1. Menachot 68b (score: 0.671)
+22:31:23 | INFO     | step_one_decipher |        Hebrew: אי הכי אפילו חלה נמי אפשר דאפי לה פחות מחמשת רבעים...
+22:31:23 | INFO     | step_one_decipher |     2. Chullin 90b (score: 0.670)
+22:31:23 | INFO     | step_one_decipher |        Hebrew: שיעורא בעינן ועבודת כוכבים כתותי מכתת שיעורא הכא כ...
+22:31:23 | INFO     | step_one_decipher |     3. Meilah 11a (score: 0.653)
+22:31:23 | INFO     | step_one_decipher |        Hebrew: וְסֵיפָא רַבָּנַן?! אָמַר רַב גְּבִיהָא דְּבֵי כְת...
+22:31:23 | INFO     | step_one_decipher |     4. Tosafot Chad Mikamei on Yevamot 79b (score: 0.601)
+22:31:23 | INFO     | step_one_decipher |        Hebrew: אר"ל אר"ל ממזרת לאחר עשרה דורות מותרת יליף עשירי ע...
+22:31:23 | INFO     | step_one_decipher |     5. Zevachim 46b (score: 0.598)
+22:31:23 | INFO     | step_one_decipher |        Hebrew: במזיד לא הורצה בד"א ביחיד אבל בציבור בין בשוגג בין...
+22:31:23 | INFO     | step_one_decipher |   → Sending to Claude for verification...
+22:31:23 | INFO     | step_one_decipher |   [CLAUDE] Verifying candidates...
+22:31:23 | DEBUG    | anthropic._base_client | Request options: {'method': 'post', 'url': '/v1/messages', 'timeout': Timeout(connect=5.0, read=600, write=600, pool=600), 'files': None, 'idempotency_key': 'stainless-python-retry-f62f591a-9d91-4340-8e2b-91a9207f5490', 'json_data': {'max_tokens': 800, 'messages': [{'role': 'user', 'content': 'User\'s transliteration: "ain adam oser davar shelo ba lolam"\n\nHere are the top candidates from vector search:\n\n[Candidate 1]\nSource: Menachot 68b\nHebrew: אי הכי אפילו חלה נמי אפשר דאפי לה פחות מחמשת רבעים קמח ועוד תרומה נמי אפשר דעביד לה כדר\' אושעיא דאמר רבי אושעיא מערים אדם על תבואתו ומכניסה במוץ שלה כדי שתהא בהמתו אוכלת ופטורה מן המעשר אי נמי דעייל ל\nScore: 0.671\n\n[Candidate 2]\nSource: Chullin 90b\nHebrew: שיעורא בעינן ועבודת כוכבים כתותי מכתת שיעורא הכא כל מה דמכתת מעלי לכסוי: <br><br><big><strong>הדרן עלך כסוי הדם</strong></big><br><br> מתני׳ <big><strong>גיד</strong></big> הנשה נוהג בארץ ובחוצה לארץ \nScore: 0.670\n\n[Candidate 3]\nSource: Meilah 11a\nHebrew: וְסֵיפָא רַבָּנַן?! אָמַר רַב גְּבִיהָא דְּבֵי כְתִיל לְרַב אָשֵׁי, הָכִי אָמַר אַבָּיֵי: רֵישָׁא רַבִּי שִׁמְעוֹן וְסֵיפָא רַבָּנַן. אָמַר רָבָא: הַכֹּל מוֹדִים שֶׁאִם נֶהֱנָה מִבְּשַׂר קׇדְשֵׁי קָדָ\nScore: 0.653\n\n[Candidate 4]\nSource: Tosafot Chad Mikamei on Yevamot 79b\nHebrew: אר"ל אר"ל ממזרת לאחר עשרה דורות מותרת יליף עשירי עשירי מעמוני מה להלן נקבות מותרות אף כאן נקבות מותרות. אי מה להלן מיד אף כאן מיד כי גמירי [ג"ש] מעשירי ואילך ולית הלכתא כר"ל דס"ל דון מינה ואוקי באתרא \nScore: 0.601\n\n[Candidate 5]\nSource: Zevachim 46b\nHebrew: במזיד לא הורצה בד"א ביחיד אבל בציבור בין בשוגג בין במזיד הורצה ובעובדי כוכבי\' בין בשוגג ובין במזיד לא הורצה אמרוה רבנן קמיה דרב פפא כמאן דלא כרבי יוסי דאי רבי יוסי האמר בכולן אני רואה להחמיר אמר להו ר\nScore: 0.598\n\nWhich candidate best matches the user\'s query?'}], 'model': 'claude-sonnet-4-20250514', 'system': 'You are a Torah scholar assistant helping identify Hebrew/Aramaic terms from transliterations.\n\nReview the candidates from vector search and pick the best match for the user\'s query.\n\nIMPORTANT:\n- Match phonetically (ch=ח, sh=ש, tz=צ, s=ת in yeshivish)\n- Consider context and meaning\n- Be confident when there\'s a clear match\n- Admit uncertainty if candidates don\'t match well\n\nReturn JSON:\n{\n  "matched": true/false,\n  "hebrew_term": "The Hebrew/Aramaic term (first 50 chars)",\n  "source_ref": "Where it appears",\n  "confidence": "high/medium/low",\n  "explanation": "Why this is the best match"\n}'}}
+22:31:23 | DEBUG    | anthropic._base_client | Sending HTTP Request: POST https://api.anthropic.com/v1/messages
+22:31:23 | DEBUG    | httpcore.connection | connect_tcp.started host='api.anthropic.com' port=443 local_address=None timeout=5.0 socket_options=[(65535, 8, True), (6, 17, 60), (6, 16, 5), (6, 3, 60)]
+22:31:23 | DEBUG    | httpcore.connection | connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000028221B7E670>
+22:31:23 | DEBUG    | httpcore.connection | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000028273282840> server_hostname='api.anthropic.com' timeout=5.0
+22:31:23 | DEBUG    | httpcore.connection | start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000028221B7ED60>
+22:31:23 | DEBUG    | httpcore.http11 | send_request_headers.started request=<Request [b'POST']>
+22:31:23 | DEBUG    | httpcore.http11 | send_request_headers.complete
+22:31:23 | DEBUG    | httpcore.http11 | send_request_body.started request=<Request [b'POST']>
+22:31:23 | DEBUG    | httpcore.http11 | send_request_body.complete
+22:31:23 | DEBUG    | httpcore.http11 | receive_response_headers.started request=<Request [b'POST']>
+22:31:31 | DEBUG    | httpcore.http11 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Thu, 04 Dec 2025 03:31:31 GMT'), (b'Content-Type', b'application/json'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Content-Encoding', b'gzip'), (b'anthropic-ratelimit-input-tokens-limit', b'30000'), (b'anthropic-ratelimit-input-tokens-remaining', b'29000'), (b'anthropic-ratelimit-input-tokens-reset', b'2025-12-04T03:31:27Z'), (b'anthropic-ratelimit-output-tokens-limit', b'8000'), (b'anthropic-ratelimit-output-tokens-remaining', b'8000'), (b'anthropic-ratelimit-output-tokens-reset', b'2025-12-04T03:31:33Z'), (b'anthropic-ratelimit-requests-limit', b'50'), (b'anthropic-ratelimit-requests-remaining', b'49'), (b'anthropic-ratelimit-requests-reset', b'2025-12-04T03:31:24Z'), (b'retry-after', b'35'), (b'anthropic-ratelimit-tokens-limit', b'38000'), (b'anthropic-ratelimit-tokens-remaining', b'37000'), (b'anthropic-ratelimit-tokens-reset', b'2025-12-04T03:31:27Z'), (b'request-id', b'req_011CVkwXSgJ6p2uY4aaYgxaU'), (b'strict-transport-security', b'max-age=31536000; includeSubDomains; preload'), (b'anthropic-organization-id', b'73a09491-cda3-40b4-8544-d00ca1bc9331'), (b'x-envoy-upstream-service-time', b'8297'), (b'cf-cache-status', b'DYNAMIC'), (b'X-Robots-Tag', b'none'), (b'Server', b'cloudflare'), (b'CF-RAY', b'9a883b06081142e1-EWR')])
+22:31:31 | INFO     | httpx | HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+22:31:31 | DEBUG    | httpcore.http11 | receive_response_body.started request=<Request [b'POST']>
+22:31:31 | DEBUG    | httpcore.http11 | receive_response_body.complete
+22:31:31 | DEBUG    | httpcore.http11 | response_closed.started
+22:31:31 | DEBUG    | httpcore.http11 | response_closed.complete
+22:31:31 | DEBUG    | anthropic._base_client | HTTP Response: POST https://api.anthropic.com/v1/messages "200 OK" Headers({'date': 'Thu, 04 Dec 2025 03:31:31 GMT', 'content-type': 'application/json', 'transfer-encoding': 'chunked', 'connection': 'keep-alive', 'content-encoding': 'gzip', 'anthropic-ratelimit-input-tokens-limit': '30000', 'anthropic-ratelimit-input-tokens-remaining': '29000', 'anthropic-ratelimit-input-tokens-reset': '2025-12-04T03:31:27Z', 'anthropic-ratelimit-output-tokens-limit': '8000', 'anthropic-ratelimit-output-tokens-remaining': '8000', 'anthropic-ratelimit-output-tokens-reset': '2025-12-04T03:31:33Z', 'anthropic-ratelimit-requests-limit': '50', 'anthropic-ratelimit-requests-remaining': '49', 'anthropic-ratelimit-requests-reset': '2025-12-04T03:31:24Z', 'retry-after': '35', 'anthropic-ratelimit-tokens-limit': '38000', 'anthropic-ratelimit-tokens-remaining': '37000', 'anthropic-ratelimit-tokens-reset': '2025-12-04T03:31:27Z', 'request-id': 'req_011CVkwXSgJ6p2uY4aaYgxaU', 'strict-transport-security': 'max-age=31536000; includeSubDomains; preload', 'anthropic-organization-id': '73a09491-cda3-40b4-8544-d00ca1bc9331', 'x-envoy-upstream-service-time': '8297', 'cf-cache-status': 'DYNAMIC', 'x-robots-tag': 'none', 'server': 'cloudflare', 'cf-ray': '9a883b06081142e1-EWR'})
+22:31:31 | DEBUG    | anthropic._base_client | request_id: req_011CVkwXSgJ6p2uY4aaYgxaU
+22:31:31 | INFO     | step_one_decipher |   [CLAUDE] Full response: Looking at the transliteration "ain adam oser davar shelo ba lolam" and the provided candidates, I need to find a Hebrew/Aramaic phrase that matches phonetically.
+
+The transliteration appears to be referring to the principle "אין אדם אוסר דבר שלא בא לעולם" (ein adam oser davar shelo ba la'olam), which means "a person cannot prohibit something that has not yet come into the world."
+
+However, examining all the candidates provided, none of them contain this specific phrase or even closely related Hebrew text that would match this transliteration. The candidates discuss various other Talmudic topics but don't contain the Hebrew equivalent of the queried phrase.
+
+```json
+{
+  "matched": false,
+  "hebrew_term": "",
+  "source_ref": "",
+  "confidence": "low",
+  "explanation": "None of the provided candidates contain Hebrew text that matches the transliteration 'ain adam oser davar shelo ba lolam'. The query appears to refer to the principle 'אין אדם אוסר דבר שלא בא לעולם' but this phrase is not found in any of the candidate texts provided."
+}
+```
+22:31:31 | INFO     | step_one_decipher |   ✗ Claude could not find good match
+22:31:31 | INFO     | step_one_decipher | ================================================================================
+22:31:31 | INFO     | step_one_decipher | STEP 1: DECIPHER
+22:31:31 | INFO     | step_one_decipher | ================================================================================
+22:31:31 | INFO     | step_one_decipher | Query: 'mvazeh es chaveiro'
+22:31:31 | INFO     | step_one_decipher | Normalized: 'mvazeh es chaveiro'
+22:31:31 | INFO     | step_one_decipher | 
+[TOOL 1] Word Dictionary - Checking cache...
+22:31:31 | INFO     | step_one_decipher |   → Dictionary miss or low confidence, continuing...
+22:31:31 | INFO     | step_one_decipher | 
+[TOOL 2] Transliteration Map - Generating Hebrew variants...
+22:31:31 | INFO     | step_one_decipher |   Generated 4 SMART Hebrew variants (prioritized by frequency)
+22:31:31 | INFO     | step_one_decipher |   Sample variants (first 10): ['מוזה אס', 'מוזה אש', 'מוזה אס חוירו', 'מוזה אס כוירו']
+22:31:31 | INFO     | step_one_decipher |   All variants count: 4
+22:31:31 | INFO     | step_one_decipher |   Transliteration confidence: medium
+22:31:31 | INFO     | step_one_decipher |   → Multiple variants or low confidence, escalating to vector search...
+22:31:31 | INFO     | step_one_decipher | 
+[TOOL 3] Vector Search + Claude Verification...
+22:31:31 | INFO     | step_one_decipher |   Searching vector index for 4 SMART variants...
+22:31:31 | INFO     | step_one_decipher |     Searching variant 1/4: 'מוזה אס'
+22:31:31 | DEBUG    | vector_search | Vector search for: 'מוזה אס' (top_k=3)
+22:31:31 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:31:31 | DEBUG    | httpcore.connection | close.started
+22:31:31 | DEBUG    | httpcore.connection | close.complete
+22:31:31 | DEBUG    | vector_search |   Top 3 matches:
+22:31:31 | DEBUG    | vector_search |     [1] Chiddushei HaRambam on Rosh Hashanah 7a (score: 0.612)
+22:31:31 | DEBUG    | vector_search |     [2] Zevachim 46b (score: 0.602)
+22:31:31 | DEBUG    | vector_search |     [3] Tosafot Chad Mikamei on Yevamot 106b (score: 0.600)
+22:31:31 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.612)
+22:31:31 | INFO     | step_one_decipher |     Searching variant 2/4: 'מוזה אש'
+22:31:31 | DEBUG    | vector_search | Vector search for: 'מוזה אש' (top_k=3)
+22:31:31 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:31:31 | DEBUG    | vector_search |   Top 3 matches:
+22:31:31 | DEBUG    | vector_search |     [1] Tosafot Chad Mikamei on Yevamot 115a (score: 0.616)
+22:31:31 | DEBUG    | vector_search |     [2] Chullin 90b (score: 0.613)
+22:31:31 | DEBUG    | vector_search |     [3] Tosafot Chad Mikamei on Yevamot 79b (score: 0.610)
+22:31:31 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.616)
+22:31:31 | INFO     | step_one_decipher |     Searching variant 3/4: 'מוזה אס חוירו'
+22:31:31 | DEBUG    | vector_search | Vector search for: 'מוזה אס חוירו' (top_k=3)
+22:31:31 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:31:31 | DEBUG    | vector_search |   Top 3 matches:
+22:31:31 | DEBUG    | vector_search |     [1] Chullin 90b (score: 0.598)
+22:31:31 | DEBUG    | vector_search |     [2] Tosafot Chad Mikamei on Yevamot 56b (score: 0.591)
+22:31:31 | DEBUG    | vector_search |     [3] Zevachim 121b (score: 0.578)
+22:31:31 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.598)
+22:31:31 | INFO     | step_one_decipher |     Searching variant 4/4: 'מוזה אס כוירו'
+22:31:31 | DEBUG    | vector_search | Vector search for: 'מוזה אס כוירו' (top_k=3)
+22:31:31 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:31:31 | DEBUG    | vector_search |   Top 3 matches:
+22:31:31 | DEBUG    | vector_search |     [1] Tosafot Chad Mikamei on Yevamot 79b (score: 0.628)
+22:31:31 | DEBUG    | vector_search |     [2] Tosafot Chad Mikamei on Yevamot 56b (score: 0.628)
+22:31:31 | DEBUG    | vector_search |     [3] Tosafot Chad Mikamei on Yevamot 18a (score: 0.614)
+22:31:31 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.628)
+22:31:31 | INFO     | step_one_decipher |   Found 12 potential matches
+22:31:31 | INFO     | step_one_decipher |   Top 5 unique matches:
+22:31:31 | INFO     | step_one_decipher |     1. Tosafot Chad Mikamei on Yevamot 79b (score: 0.628)
+22:31:31 | INFO     | step_one_decipher |        Hebrew: אר"ל אר"ל ממזרת לאחר עשרה דורות מותרת יליף עשירי ע...
+22:31:31 | INFO     | step_one_decipher |     2. Tosafot Chad Mikamei on Yevamot 56b (score: 0.628)
+22:31:31 | INFO     | step_one_decipher |        Hebrew: אמר רבה שכבת זרע דכתב גבי שפחה חרופה למעט מינה דכל...
+22:31:31 | INFO     | step_one_decipher |     3. Tosafot Chad Mikamei on Yevamot 115a (score: 0.616)
+22:31:31 | INFO     | step_one_decipher |        Hebrew: מסקנא דשמעת' דבקטן אוכל נבלות דבאסורא דרבנן פשיטא ...
+22:31:31 | INFO     | step_one_decipher |     4. Tosafot Chad Mikamei on Yevamot 18a (score: 0.614)
+22:31:31 | INFO     | step_one_decipher |        Hebrew: הא דתנן עשה בה מאמר ומת חולצת ולא מתיבמת ה"ה אע"ג ...
+22:31:31 | INFO     | step_one_decipher |     5. Chullin 90b (score: 0.613)
+22:31:31 | INFO     | step_one_decipher |        Hebrew: שיעורא בעינן ועבודת כוכבים כתותי מכתת שיעורא הכא כ...
+22:31:31 | INFO     | step_one_decipher |   → Sending to Claude for verification...
+22:31:31 | INFO     | step_one_decipher |   [CLAUDE] Verifying candidates...
+22:31:31 | DEBUG    | anthropic._base_client | Request options: {'method': 'post', 'url': '/v1/messages', 'timeout': Timeout(connect=5.0, read=600, write=600, pool=600), 'files': None, 'idempotency_key': 'stainless-python-retry-66b985d3-ab44-4d6f-a8d2-757d3166dd2c', 'json_data': {'max_tokens': 800, 'messages': [{'role': 'user', 'content': 'User\'s transliteration: "mvazeh es chaveiro"\n\nHere are the top candidates from vector search:\n\n[Candidate 1]\nSource: Tosafot Chad Mikamei on Yevamot 79b\nHebrew: אר"ל אר"ל ממזרת לאחר עשרה דורות מותרת יליף עשירי עשירי מעמוני מה להלן נקבות מותרות אף כאן נקבות מותרות. אי מה להלן מיד אף כאן מיד כי גמירי [ג"ש] מעשירי ואילך ולית הלכתא כר"ל דס"ל דון מינה ואוקי באתרא \nScore: 0.628\n\n[Candidate 2]\nSource: Tosafot Chad Mikamei on Yevamot 56b\nHebrew: אמר רבה שכבת זרע דכתב גבי שפחה חרופה למעט מינה דכל חייבי לאוין בהעראה דא"כ לישתוק קרא מיניה דשפחה חרופה. שכבת זרע דאשת איש למ"ד משמש מת בעריות חייב פרט למשמש מתה. שכבת זרע דסוטה לאו למעקרה קינא לה שלא\nScore: 0.628\n\n[Candidate 3]\nSource: Tosafot Chad Mikamei on Yevamot 115a\nHebrew: מסקנא דשמעת\' דבקטן אוכל נבלות דבאסורא דרבנן פשיטא דאין ב"ד מצווין עליו להפרישו ובאיסורא דרבנן נמי פשיטא דאין אומרי\' לתינוק עשה דבר זה. וכי פליג באיסורא דאוריית\' ומסתברא דאין ב"ד מצווין עליו להפרישו דמ\nScore: 0.616\n\n[Candidate 4]\nSource: Tosafot Chad Mikamei on Yevamot 18a\nHebrew: הא דתנן עשה בה מאמר ומת חולצת ולא מתיבמת ה"ה אע"ג דלא עבד בה מאמר שניה מחלץ חלצה יבומי לא מיבמה דקי"ל כשמואל דאמר יש זיקה אפי\' בתרי אחי וה"ל צרת א)אחות אשה בזיקה. והא דקתני עשה בה מאמר לאפוקי מב"ש דאמ\nScore: 0.614\n\n[Candidate 5]\nSource: Chullin 90b\nHebrew: שיעורא בעינן ועבודת כוכבים כתותי מכתת שיעורא הכא כל מה דמכתת מעלי לכסוי: <br><br><big><strong>הדרן עלך כסוי הדם</strong></big><br><br> מתני׳ <big><strong>גיד</strong></big> הנשה נוהג בארץ ובחוצה לארץ \nScore: 0.613\n\n[Candidate 6]\nSource: Chiddushei HaRambam on Rosh Hashanah 7a\nHebrew: <b>אמר רבא כיוון שעבר עליו רגל אחד</b> ולא הביא (נדרו) <b>עובד בעשה</b> [נ״א פירוש כיון שעבר עליו רגל אחד ולא הביא נדרו עובר בעשה] דכתיב (דברים יב:ה-ו) ובאת שמה. והבאתם וגו׳ אבל בבל תאחר עד שיעברו עלי\nScore: 0.612\n\n[Candidate 7]\nSource: Zevachim 46b\nHebrew: במזיד לא הורצה בד"א ביחיד אבל בציבור בין בשוגג בין במזיד הורצה ובעובדי כוכבי\' בין בשוגג ובין במזיד לא הורצה אמרוה רבנן קמיה דרב פפא כמאן דלא כרבי יוסי דאי רבי יוסי האמר בכולן אני רואה להחמיר אמר להו ר\nScore: 0.602\n\n[Candidate 8]\nSource: Tosafot Chad Mikamei on Yevamot 106b\nHebrew: א"ר ישמעאל בר"י המתפלל צריך שיתן עיניו למטה ולבו למעלה כדי לקיים ב\' מקראות הללו והיו עיני ולבי שם כל הימים וכתיב נשא לבבנו אל כפים אל אל בשמים. הא דפסקי הלכתא עד שתביא ב\' שערות ה"מ לכתחלה דלא חלצה עד \nScore: 0.600\n\n[Candidate 9]\nSource: Zevachim 121b\nHebrew: מה עופות שאין המום פוסל בהן זמן פוסל בהן קדשי במה קטנה שהמום פוסל בהן אינו דין שזמן פוסל בהן מה לעופות שכן אין הזר כשר בהן תאמר בבמה קטנה שהזר כשר בה לא יהא זמן פסול בה ת"ל (ויקרא ז, יא) וזאת תורת זבח\nScore: 0.578\n\nWhich candidate best matches the user\'s query?'}], 'model': 'claude-sonnet-4-20250514', 'system': 'You are a Torah scholar assistant helping identify Hebrew/Aramaic terms from transliterations.\n\nReview the candidates from vector search and pick the best match for the user\'s query.\n\nIMPORTANT:\n- Match phonetically (ch=ח, sh=ש, tz=צ, s=ת in yeshivish)\n- Consider context and meaning\n- Be confident when there\'s a clear match\n- Admit uncertainty if candidates don\'t match well\n\nReturn JSON:\n{\n  "matched": true/false,\n  "hebrew_term": "The Hebrew/Aramaic term (first 50 chars)",\n  "source_ref": "Where it appears",\n  "confidence": "high/medium/low",\n  "explanation": "Why this is the best match"\n}'}}
+22:31:31 | DEBUG    | anthropic._base_client | Sending HTTP Request: POST https://api.anthropic.com/v1/messages
+22:31:31 | DEBUG    | httpcore.connection | connect_tcp.started host='api.anthropic.com' port=443 local_address=None timeout=5.0 socket_options=[(65535, 8, True), (6, 17, 60), (6, 16, 5), (6, 3, 60)]
+22:31:32 | DEBUG    | httpcore.connection | connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000028221BA5AF0>
+22:31:32 | DEBUG    | httpcore.connection | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000028221B83340> server_hostname='api.anthropic.com' timeout=5.0
+22:31:32 | DEBUG    | httpcore.connection | start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000028221BA5CA0>
+22:31:32 | DEBUG    | httpcore.http11 | send_request_headers.started request=<Request [b'POST']>
+22:31:32 | DEBUG    | httpcore.http11 | send_request_headers.complete
+22:31:32 | DEBUG    | httpcore.http11 | send_request_body.started request=<Request [b'POST']>
+22:31:32 | DEBUG    | httpcore.http11 | send_request_body.complete
+22:31:32 | DEBUG    | httpcore.http11 | receive_response_headers.started request=<Request [b'POST']>
+22:31:38 | DEBUG    | httpcore.http11 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Thu, 04 Dec 2025 03:31:38 GMT'), (b'Content-Type', b'application/json'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Content-Encoding', b'gzip'), (b'anthropic-ratelimit-input-tokens-limit', b'30000'), (b'anthropic-ratelimit-input-tokens-remaining', b'29000'), (b'anthropic-ratelimit-input-tokens-reset', b'2025-12-04T03:31:36Z'), (b'anthropic-ratelimit-output-tokens-limit', b'8000'), (b'anthropic-ratelimit-output-tokens-remaining', b'8000'), (b'anthropic-ratelimit-output-tokens-reset', b'2025-12-04T03:31:40Z'), (b'anthropic-ratelimit-requests-limit', b'50'), (b'anthropic-ratelimit-requests-remaining', b'49'), (b'anthropic-ratelimit-requests-reset', b'2025-12-04T03:31:33Z'), (b'retry-after', b'28'), (b'anthropic-ratelimit-tokens-limit', b'38000'), (b'anthropic-ratelimit-tokens-remaining', b'37000'), (b'anthropic-ratelimit-tokens-reset', b'2025-12-04T03:31:36Z'), (b'request-id', b'req_011CVkwY6ugaGvjWiAaXrBQV'), (b'strict-transport-security', b'max-age=31536000; includeSubDomains; preload'), (b'anthropic-organization-id', b'73a09491-cda3-40b4-8544-d00ca1bc9331'), (b'x-envoy-upstream-service-time', b'6385'), (b'cf-cache-status', b'DYNAMIC'), (b'X-Robots-Tag', b'none'), (b'Server', b'cloudflare'), (b'CF-RAY', b'9a883b3ded00d218-EWR')])
+22:31:38 | INFO     | httpx | HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+22:31:38 | DEBUG    | httpcore.http11 | receive_response_body.started request=<Request [b'POST']>
+22:31:38 | DEBUG    | httpcore.http11 | receive_response_body.complete
+22:31:38 | DEBUG    | httpcore.http11 | response_closed.started
+22:31:38 | DEBUG    | httpcore.http11 | response_closed.complete
+22:31:38 | DEBUG    | anthropic._base_client | HTTP Response: POST https://api.anthropic.com/v1/messages "200 OK" Headers({'date': 'Thu, 04 Dec 2025 03:31:38 GMT', 'content-type': 'application/json', 'transfer-encoding': 'chunked', 'connection': 'keep-alive', 'content-encoding': 'gzip', 'anthropic-ratelimit-input-tokens-limit': '30000', 'anthropic-ratelimit-input-tokens-remaining': '29000', 'anthropic-ratelimit-input-tokens-reset': '2025-12-04T03:31:36Z', 'anthropic-ratelimit-output-tokens-limit': '8000', 'anthropic-ratelimit-output-tokens-remaining': '8000', 'anthropic-ratelimit-output-tokens-reset': '2025-12-04T03:31:40Z', 'anthropic-ratelimit-requests-limit': '50', 'anthropic-ratelimit-requests-remaining': '49', 'anthropic-ratelimit-requests-reset': '2025-12-04T03:31:33Z', 'retry-after': '28', 'anthropic-ratelimit-tokens-limit': '38000', 'anthropic-ratelimit-tokens-remaining': '37000', 'anthropic-ratelimit-tokens-reset': '2025-12-04T03:31:36Z', 'request-id': 'req_011CVkwY6ugaGvjWiAaXrBQV', 'strict-transport-security': 'max-age=31536000; includeSubDomains; preload', 'anthropic-organization-id': '73a09491-cda3-40b4-8544-d00ca1bc9331', 'x-envoy-upstream-service-time': '6385', 'cf-cache-status': 'DYNAMIC', 'x-robots-tag': 'none', 'server': 'cloudflare', 'cf-ray': '9a883b3ded00d218-EWR'})
+22:31:38 | DEBUG    | anthropic._base_client | request_id: req_011CVkwY6ugaGvjWiAaXrBQV
+22:31:38 | INFO     | step_one_decipher |   [CLAUDE] Full response: Looking at the user's transliteration "mvazeh es chaveiro" and analyzing the candidates, I need to find a Hebrew term that phonetically matches this phrase.
+
+The transliteration appears to be "מבזה את חבירו" (mevazeh et chaveiro), which means "one who humiliates/disgraces his fellow/friend."
+
+However, examining all the provided candidates carefully, I cannot find any text that contains this specific phrase or its components. The candidates contain various Talmudic discussions about different halachic topics, but none appear to contain the terms "מבזה" (mevazeh - humiliates) or "חבירו" (chaveiro - his fellow).
+
+```json
+{
+  "matched": false,
+  "hebrew_term": "",
+  "source_ref": "",
+  "confidence": "high",
+  "explanation": "None of the provided candidates contain the Hebrew phrase 'מבזה את חבירו' (mevazeh et chaveiro - one who humiliates his fellow). The candidates discuss various Talmudic topics but do not include this specific term about interpersonal conduct."
+}
+```
+22:31:38 | INFO     | step_one_decipher |   ✗ Claude could not find good match
+22:31:38 | INFO     | step_one_decipher | ================================================================================
+22:31:38 | INFO     | step_one_decipher | STEP 1: DECIPHER
+22:31:38 | INFO     | step_one_decipher | ================================================================================
+22:31:38 | INFO     | step_one_decipher | Query: 'hasam es piv'
+22:31:38 | INFO     | step_one_decipher | Normalized: 'hasam es piv'
+22:31:38 | INFO     | step_one_decipher | 
+[TOOL 1] Word Dictionary - Checking cache...
+22:31:38 | INFO     | step_one_decipher |   → Dictionary miss or low confidence, continuing...
+22:31:38 | INFO     | step_one_decipher | 
+[TOOL 2] Transliteration Map - Generating Hebrew variants...
+22:31:38 | INFO     | step_one_decipher |   Generated 5 SMART Hebrew variants (prioritized by frequency)
+22:31:38 | INFO     | step_one_decipher |   Sample variants (first 10): ['הסמ אס', 'הסמ אש', 'השמ אס', 'השמ אש', 'הסמ אס פיו']
+22:31:38 | INFO     | step_one_decipher |   All variants count: 5
+22:31:38 | INFO     | step_one_decipher |   Transliteration confidence: medium
+22:31:38 | INFO     | step_one_decipher |   → Multiple variants or low confidence, escalating to vector search...
+22:31:38 | INFO     | step_one_decipher | 
+[TOOL 3] Vector Search + Claude Verification...
+22:31:38 | INFO     | step_one_decipher |   Searching vector index for 5 SMART variants...
+22:31:38 | INFO     | step_one_decipher |     Searching variant 1/5: 'הסמ אס'
+22:31:38 | DEBUG    | vector_search | Vector search for: 'הסמ אס' (top_k=3)
+22:31:38 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:31:38 | DEBUG    | httpcore.connection | close.started
+22:31:38 | DEBUG    | httpcore.connection | close.complete
+22:31:38 | DEBUG    | vector_search |   Top 3 matches:
+22:31:38 | DEBUG    | vector_search |     [1] Chiddushei HaRambam on Rosh Hashanah 24b (score: 0.583)
+22:31:38 | DEBUG    | vector_search |     [2] Sanhedrin 109a (score: 0.580)
+22:31:38 | DEBUG    | vector_search |     [3] Gittin 66b (score: 0.572)
+22:31:38 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.583)
+22:31:38 | INFO     | step_one_decipher |     Searching variant 2/5: 'הסמ אש'
+22:31:38 | DEBUG    | vector_search | Vector search for: 'הסמ אש' (top_k=3)
+22:31:38 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:31:38 | DEBUG    | vector_search |   Top 3 matches:
+22:31:38 | DEBUG    | vector_search |     [1] Sanhedrin 109a (score: 0.569)
+22:31:38 | DEBUG    | vector_search |     [2] Tosafot Chad Mikamei on Yevamot 117a (score: 0.558)
+22:31:38 | DEBUG    | vector_search |     [3] Chiddushei HaRambam on Rosh Hashanah 24b (score: 0.556)
+22:31:38 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.569)
+22:31:38 | INFO     | step_one_decipher |     Searching variant 3/5: 'השמ אס'
+22:31:38 | DEBUG    | vector_search | Vector search for: 'השמ אס' (top_k=3)
+22:31:38 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:31:38 | DEBUG    | vector_search |   Top 3 matches:
+22:31:38 | DEBUG    | vector_search |     [1] Tosafot Chad Mikamei on Yevamot 79b (score: 0.589)
+22:31:38 | DEBUG    | vector_search |     [2] Tosafot Chad Mikamei on Yevamot 56b (score: 0.588)
+22:31:38 | DEBUG    | vector_search |     [3] Tosafot Chad Mikamei on Yevamot 112a (score: 0.584)
+22:31:38 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.589)
+22:31:38 | INFO     | step_one_decipher |     Searching variant 4/5: 'השמ אש'
+22:31:38 | DEBUG    | vector_search | Vector search for: 'השמ אש' (top_k=3)
+22:31:38 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:31:39 | DEBUG    | vector_search |   Top 3 matches:
+22:31:39 | DEBUG    | vector_search |     [1] Tosafot Chad Mikamei on Yevamot 26b (score: 0.592)
+22:31:39 | DEBUG    | vector_search |     [2] Tosafot Chad Mikamei on Yevamot 35b (score: 0.589)
+22:31:39 | DEBUG    | vector_search |     [3] Tosafot Chad Mikamei on Yevamot 44b (score: 0.584)
+22:31:39 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.592)
+22:31:39 | INFO     | step_one_decipher |     Searching variant 5/5: 'הסמ אס פיו'
+22:31:39 | DEBUG    | vector_search | Vector search for: 'הסמ אס פיו' (top_k=3)
+22:31:39 | DEBUG    | vector_search |   Query embedded (shape: (768,))
+22:31:39 | DEBUG    | vector_search |   Top 3 matches:
+22:31:39 | DEBUG    | vector_search |     [1] Chullin 90b (score: 0.628)
+22:31:39 | DEBUG    | vector_search |     [2] Menachot 68b (score: 0.597)
+22:31:39 | DEBUG    | vector_search |     [3] Zevachim 121b (score: 0.593)
+22:31:39 | INFO     | step_one_decipher |       → Found 3 results (top score: 0.628)
+22:31:39 | INFO     | step_one_decipher |   Found 15 potential matches
+22:31:39 | INFO     | step_one_decipher |   Top 5 unique matches:
+22:31:39 | INFO     | step_one_decipher |     1. Chullin 90b (score: 0.628)
+22:31:39 | INFO     | step_one_decipher |        Hebrew: שיעורא בעינן ועבודת כוכבים כתותי מכתת שיעורא הכא כ...
+22:31:39 | INFO     | step_one_decipher |     2. Menachot 68b (score: 0.597)
+22:31:39 | INFO     | step_one_decipher |        Hebrew: אי הכי אפילו חלה נמי אפשר דאפי לה פחות מחמשת רבעים...
+22:31:39 | INFO     | step_one_decipher |     3. Zevachim 121b (score: 0.593)
+22:31:39 | INFO     | step_one_decipher |        Hebrew: מה עופות שאין המום פוסל בהן זמן פוסל בהן קדשי במה ...
+22:31:39 | INFO     | step_one_decipher |     4. Tosafot Chad Mikamei on Yevamot 26b (score: 0.592)
+22:31:39 | INFO     | step_one_decipher |        Hebrew: אמר רב מנשה גזלן דדבריהם כשר לעדות הא דדברי תורה פ...
+22:31:39 | INFO     | step_one_decipher |     5. Tosafot Chad Mikamei on Yevamot 79b (score: 0.589)
+22:31:39 | INFO     | step_one_decipher |        Hebrew: אר"ל אר"ל ממזרת לאחר עשרה דורות מותרת יליף עשירי ע...
+22:31:39 | INFO     | step_one_decipher |   → Sending to Claude for verification...
+22:31:39 | INFO     | step_one_decipher |   [CLAUDE] Verifying candidates...
+22:31:39 | DEBUG    | anthropic._base_client | Request options: {'method': 'post', 'url': '/v1/messages', 'timeout': Timeout(connect=5.0, read=600, write=600, pool=600), 'files': None, 'idempotency_key': 'stainless-python-retry-3af03e8a-df6e-447f-8919-b64b8bf69619', 'json_data': {'max_tokens': 800, 'messages': [{'role': 'user', 'content': 'User\'s transliteration: "hasam es piv"\n\nHere are the top candidates from vector search:\n\n[Candidate 1]\nSource: Chullin 90b\nHebrew: שיעורא בעינן ועבודת כוכבים כתותי מכתת שיעורא הכא כל מה דמכתת מעלי לכסוי: <br><br><big><strong>הדרן עלך כסוי הדם</strong></big><br><br> מתני׳ <big><strong>גיד</strong></big> הנשה נוהג בארץ ובחוצה לארץ \nScore: 0.628\n\n[Candidate 2]\nSource: Menachot 68b\nHebrew: אי הכי אפילו חלה נמי אפשר דאפי לה פחות מחמשת רבעים קמח ועוד תרומה נמי אפשר דעביד לה כדר\' אושעיא דאמר רבי אושעיא מערים אדם על תבואתו ומכניסה במוץ שלה כדי שתהא בהמתו אוכלת ופטורה מן המעשר אי נמי דעייל ל\nScore: 0.597\n\n[Candidate 3]\nSource: Zevachim 121b\nHebrew: מה עופות שאין המום פוסל בהן זמן פוסל בהן קדשי במה קטנה שהמום פוסל בהן אינו דין שזמן פוסל בהן מה לעופות שכן אין הזר כשר בהן תאמר בבמה קטנה שהזר כשר בה לא יהא זמן פסול בה ת"ל (ויקרא ז, יא) וזאת תורת זבח\nScore: 0.593\n\n[Candidate 4]\nSource: Tosafot Chad Mikamei on Yevamot 26b\nHebrew: אמר רב מנשה גזלן דדבריהם כשר לעדות הא דדברי תורה פסול לעדות אשה:\n הא דתנן החכם שאסר את האשה בנדר לא ישאנה וקי"ל ביחיד מומחה ולפום הכי אם התירה ישאנה אבל בתלתא אפילו אסרו ישאנה משום שהם ב"ד ובבכורות פר\nScore: 0.592\n\n[Candidate 5]\nSource: Tosafot Chad Mikamei on Yevamot 79b\nHebrew: אר"ל אר"ל ממזרת לאחר עשרה דורות מותרת יליף עשירי עשירי מעמוני מה להלן נקבות מותרות אף כאן נקבות מותרות. אי מה להלן מיד אף כאן מיד כי גמירי [ג"ש] מעשירי ואילך ולית הלכתא כר"ל דס"ל דון מינה ואוקי באתרא \nScore: 0.589\n\n[Candidate 6]\nSource: Tosafot Chad Mikamei on Yevamot 35b\nHebrew: אמר רב נחמן אמר שמואל כל שנשתהה עשר שנים אחר בעלה ונשאת שוב אין נתעברת. ולא אמרן אלא שאין דעתה להנשא אבל דעתה להנשא מתעברת:\n\nScore: 0.589\n\n[Candidate 7]\nSource: Tosafot Chad Mikamei on Yevamot 56b\nHebrew: אמר רבה שכבת זרע דכתב גבי שפחה חרופה למעט מינה דכל חייבי לאוין בהעראה דא"כ לישתוק קרא מיניה דשפחה חרופה. שכבת זרע דאשת איש למ"ד משמש מת בעריות חייב פרט למשמש מתה. שכבת זרע דסוטה לאו למעקרה קינא לה שלא\nScore: 0.588\n\n[Candidate 8]\nSource: Tosafot Chad Mikamei on Yevamot 44b\nHebrew: גריס הרב אלפס אמר רב נחמן ק"ו ומה במקום שאסור לספר ולכבס מותר לארס מקום שמותר לספר ולכבס אינו דין שמותר לארס ומוכח מהכא שהאשה מותרת לספר בשבעת האיבול והכי איתא באבל רבתי ורש"י ז"ל גריס ומה במקום שאסור\nScore: 0.584\n\n[Candidate 9]\nSource: Tosafot Chad Mikamei on Yevamot 112a\nHebrew: מסקנא דשמעת\' חרשת קנויה ומשויירת קטנה קנויה ואינה קנויה והא דתנן חרשת וקטנה בא יבם על הקטנה וחזר ובא על החרשת או שבא אחיו על החרשת פוסל את הקטנה בדין הוא דלא פסל הקטנה ממ"נ אי קטנה קנויה היא אין ביאת \nScore: 0.584\n\n[Candidate 10]\nSource: Chiddushei HaRambam on Rosh Hashanah 24b\nHebrew: <b>היינו לפני החמה היינו לצפונה היינו לאחר החמה היינו לדרומה.</b> פירוש כבר פירשנו למעלה שהירח קודם המולד הוא אחר השמש שעדיין לא נקבץ עמה ואחר המולד הוא לפני השמש שכבר נקבץ עמה והלך לפניה. ועל זה הקשי\nScore: 0.583\n\nWhich candidate best matches the user\'s query?'}], 'model': 'claude-sonnet-4-20250514', 'system': 'You are a Torah scholar assistant helping identify Hebrew/Aramaic terms from transliterations.\n\nReview the candidates from vector search and pick the best match for the user\'s query.\n\nIMPORTANT:\n- Match phonetically (ch=ח, sh=ש, tz=צ, s=ת in yeshivish)\n- Consider context and meaning\n- Be confident when there\'s a clear match\n- Admit uncertainty if candidates don\'t match well\n\nReturn JSON:\n{\n  "matched": true/false,\n  "hebrew_term": "The Hebrew/Aramaic term (first 50 chars)",\n  "source_ref": "Where it appears",\n  "confidence": "high/medium/low",\n  "explanation": "Why this is the best match"\n}'}}
+22:31:39 | DEBUG    | anthropic._base_client | Sending HTTP Request: POST https://api.anthropic.com/v1/messages
+22:31:39 | DEBUG    | httpcore.connection | connect_tcp.started host='api.anthropic.com' port=443 local_address=None timeout=5.0 socket_options=[(65535, 8, True), (6, 17, 60), (6, 16, 5), (6, 3, 60)]
+22:31:39 | DEBUG    | httpcore.connection | connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000028221B7E5E0>
+22:31:39 | DEBUG    | httpcore.connection | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000028221B83340> server_hostname='api.anthropic.com' timeout=5.0
+22:31:39 | DEBUG    | httpcore.connection | start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000028221B7E670>
+22:31:39 | DEBUG    | httpcore.http11 | send_request_headers.started request=<Request [b'POST']>
+22:31:39 | DEBUG    | httpcore.http11 | send_request_headers.complete
+22:31:39 | DEBUG    | httpcore.http11 | send_request_body.started request=<Request [b'POST']>
+22:31:39 | DEBUG    | httpcore.http11 | send_request_body.complete
+22:31:39 | DEBUG    | httpcore.http11 | receive_response_headers.started request=<Request [b'POST']>
+22:31:46 | DEBUG    | httpcore.http11 | receive_response_headers.failed exception=KeyboardInterrupt()
+22:31:46 | DEBUG    | httpcore.http11 | response_closed.started
+22:31:46 | DEBUG    | httpcore.http11 | response_closed.complete
+22:31:47 | DEBUG    | httpcore.connection | close.started
+22:31:47 | DEBUG    | httpcore.connection | close.complete
