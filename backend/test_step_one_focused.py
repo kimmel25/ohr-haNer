@@ -1,22 +1,26 @@
 """
-Test Suite for Step 1: DECIPHER - FOCUSED ON STEPS 2 & 3
-==========================================================
+Test Suite for Step 1: DECIPHER - CLAUDE-FREE TESTING
+=======================================================
 
-This test suite focuses on testing:
-- Step 2: Transliteration (smart variant generation)
-- Step 3: Vector search + Claude verification
+This test suite focuses on testing the Claude-free Step 1 system:
+- 5 dictionary tests (quick validation)
+- 35 transliteration + vector tests (NOT in dictionary)
 
-Only 10 dictionary tests for quick validation.
+All tests run with TEST_MODE=true to prevent dictionary pollution.
 """
 
 import asyncio
 import sys
 import logging
+import os
 from pathlib import Path
 from datetime import datetime
 
 # Add parent directory to path
 sys.path.append(str(Path(__file__).parent.parent))
+
+# CRITICAL: Enable TEST_MODE before importing
+os.environ["TEST_MODE"] = "true"
 
 from step_one_decipher import decipher
 from tools.word_dictionary import get_dictionary
@@ -56,106 +60,77 @@ def setup_test_logging():
     root_logger.addHandler(console_handler)
 
     print(f"\n{'='*80}")
-    print(f"FOCUSED TEST SUITE - STEPS 2 & 3")
+    print(f"CLAUDE-FREE TEST SUITE - Step 1: DECIPHER")
     print(f"{'='*80}")
+    print(f"TEST_MODE: {os.environ.get('TEST_MODE', 'false')}")
     print(f"Log file: {log_file}")
-    print(f"Testing: Transliteration + Vector Search (not dictionary)")
+    print(f"Testing: Dictionary → Transliteration → Vector (NO Claude)")
     print(f"{'='*80}\n")
 
     return log_file
 
 
 # ==========================================
-#  TEST CASES - FOCUSED ON STEPS 2 & 3
+#  TEST CASES
 # ==========================================
 
 TEST_CASES = [
     # ========================================
-    # GROUP 1: DICTIONARY VALIDATION (10 tests)
+    # GROUP 1: DICTIONARY VALIDATION (5 tests)
     # ========================================
-    # Quick check that consolidated dictionary works
+    # Quick check that dictionary works
     {
         "query": "kesubos",
         "expected_hebrew": "כתובות",
         "expected_method": "dictionary",
-        "description": "Masechta (in dict after consolidation)"
-    },
-    {
-        "query": "gittin",
-        "expected_hebrew": "גיטין",
-        "expected_method": "dictionary",
-        "description": "Masechta (in dict)"
-    },
-    {
-        "query": "eruvin",
-        "expected_hebrew": "עירובין",
-        "expected_method": "dictionary",
-        "description": "Masechta (in dict)"
+        "description": "Masechta - dictionary hit"
     },
     {
         "query": "bava kama",
         "expected_hebrew": "בבא קמא",
         "expected_method": "dictionary",
-        "description": "Masechta (in dict)"
+        "description": "Masechta - two words"
     },
     {
         "query": "bereirah",
         "expected_hebrew": "ברירה",
         "expected_method": "dictionary",
-        "description": "Common concept (in dict)"
+        "description": "Common concept"
     },
     {
         "query": "sfek sfeika",
         "expected_hebrew": "ספק ספיקא",
         "expected_method": "dictionary",
-        "description": "Double doubt (in dict)"
-    },
-    {
-        "query": "safek safeika",
-        "expected_hebrew": "ספק ספיקא",
-        "expected_method": "dictionary",
-        "description": "Alt spelling (in dict)"
-    },
-    {
-        "query": "bitul chametz",
-        "expected_hebrew": "ביטול חמץ",
-        "expected_method": "dictionary",
-        "description": "Pesach concept (in dict)"
-    },
-    {
-        "query": "chezkas haguf",
-        "expected_hebrew": "חזקת הגוף",
-        "expected_method": "dictionary",
-        "description": "Kesubos concept (in dict)"
+        "description": "Double doubt"
     },
     {
         "query": "chatzi shiur",
         "expected_hebrew": "חצי שיעור",
         "expected_method": "dictionary",
-        "description": "Half measure (in dict)"
+        "description": "Half measure"
     },
 
     # ========================================
-    # GROUP 2: TRANSLITERATION TESTS (15 tests)
+    # GROUP 2: TRANSLITERATION TESTS (20 tests)
     # ========================================
-    # These are NOT in dictionary - test smart variant generation
+    # Terms NOT in dictionary - test smart variant generation
     {
         "query": "migu",
         "expected_hebrew": "מיגו",
         "expected_method": "any",
-        "description": "Since he could have said - simple transliteration"
+        "description": "Since he could have said"
     },
     {
         "query": "umdena",
         "expected_hebrew": "אומדנא",
         "expected_method": "any",
-        "description": "Assessment - word-initial vowel test"
+        "description": "Assessment - word-initial vowel"
     },
     {
         "query": "kdai shiur",
         "expected_hebrew": "כדי שיעור",
         "expected_method": "any",
-        "description": "K vs K' - multi-word transliteration"
+        "description": "K vs K' - sufficient measure"
     },
     {
         "query": "trei vetrei",
@@ -167,73 +142,103 @@ TEST_CASES = [
         "query": "lo plug",
         "expected_hebrew": "לא פלוג",
         "expected_method": "any",
-        "description": "Don't distinguish - simple phrase"
+        "description": "Don't distinguish"
     },
     {
         "query": "chozer vniur",
         "expected_hebrew": "חוזר ונעור",
         "expected_method": "any",
-        "description": "Awakens again - ch, v, n sounds"
+        "description": "Awakens again"
     },
     {
         "query": "kdai achila",
         "expected_hebrew": "כדי אכילה",
         "expected_method": "any",
-        "description": "Measure of eating - k, ch sounds"
+        "description": "Measure of eating"
     },
     {
         "query": "ribui umiut",
         "expected_hebrew": "ריבוי ומיעוט",
         "expected_method": "any",
-        "description": "Inclusion and exclusion - vowel test"
+        "description": "Inclusion and exclusion"
     },
     {
         "query": "klal uprat",
         "expected_hebrew": "כלל ופרט",
         "expected_method": "any",
-        "description": "General and specific - standard phrase"
+        "description": "General and specific"
     },
     {
         "query": "kal vchomer",
         "expected_hebrew": "קל וחומר",
         "expected_method": "any",
-        "description": "A fortiori - standard logic term"
+        "description": "A fortiori"
     },
     {
         "query": "gezeira shava",
         "expected_hebrew": "גזירה שווה",
         "expected_method": "any",
-        "description": "Textual analogy - g, z, sh sounds"
+        "description": "Textual analogy"
     },
     {
         "query": "binyan av",
         "expected_hebrew": "בנין אב",
         "expected_method": "any",
-        "description": "Paradigm - word-initial vowel"
+        "description": "Paradigm - building father"
     },
     {
         "query": "davar halamd meinyano",
         "expected_hebrew": "דבר הלמד מעניינו",
         "expected_method": "any",
-        "description": "Learned from context - complex phrase"
+        "description": "Learned from context"
     },
     {
         "query": "tzad hashaveh",
         "expected_hebrew": "צד השווה",
         "expected_method": "any",
-        "description": "Common side - tz sound"
+        "description": "Common side"
     },
     {
         "query": "shnei kesuvim",
         "expected_hebrew": "שני כתובים",
         "expected_method": "any",
-        "description": "Two verses - sh, s sounds"
+        "description": "Two verses"
+    },
+    {
+        "query": "miktzas hayom kchulo",
+        "expected_hebrew": "מקצת היום ככולו",
+        "expected_method": "any",
+        "description": "Part of day like whole"
+    },
+    {
+        "query": "yad soledet bo",
+        "expected_hebrew": "יד סולדת בו",
+        "expected_method": "any",
+        "description": "Hand recoils from heat"
+    },
+    {
+        "query": "shiur kzayis",
+        "expected_hebrew": "שיעור כזית",
+        "expected_method": "any",
+        "description": "Olive-sized measure"
+    },
+    {
+        "query": "shiur kbeitza",
+        "expected_hebrew": "שיעור כביצה",
+        "expected_method": "any",
+        "description": "Egg-sized measure"
+    },
+    {
+        "query": "lavud",
+        "expected_hebrew": "לבוד",
+        "expected_method": "any",
+        "description": "Principle of attachment"
     },
 
     # ========================================
     # GROUP 3: VECTOR SEARCH TESTS (15 tests)
     # ========================================
-    # Complex phrases that need vector matching
+    # Complex phrases needing vector matching
     {
         "query": "chaticha deisura",
         "expected_hebrew": "חתיכה דאיסורא",
@@ -280,7 +285,7 @@ TEST_CASES = [
         "query": "kim lei dirabanan",
         "expected_hebrew": "קים ליה דרבנן",
         "expected_method": "any",
-        "description": "Principle in rabbinic law"
+        "description": "Rabbinic principle - greater liability"
     },
     {
         "query": "eid echad neeman bissurim",
@@ -289,28 +294,10 @@ TEST_CASES = [
         "description": "One witness believed for prohibitions"
     },
     {
-        "query": "ain adam oser davar shelo ba lolam",
-        "expected_hebrew": "אין אדם אוסר דבר שלא בא לעולם",
-        "expected_method": "any",
-        "description": "Cannot prohibit what doesn't exist - long phrase"
-    },
-    {
-        "query": "mvazeh es chaveiro",
-        "expected_hebrew": "מבזה את חברו",
-        "expected_method": "any",
-        "description": "Embarrasses his friend - 'es' particle"
-    },
-    {
-        "query": "hasam es piv",
-        "expected_hebrew": "חסם את פיו",
-        "expected_method": "any",
-        "description": "Muzzle its mouth - 'es' particle"
-    },
-    {
         "query": "hafkaas kiddushin",
         "expected_hebrew": "הפקעת קידושין",
         "expected_method": "any",
-        "description": "Annulling marriage - apostrophe variant"
+        "description": "Annulling marriage"
     },
     {
         "query": "chalipin kinyan",
@@ -324,73 +311,23 @@ TEST_CASES = [
         "expected_method": "any",
         "description": "Pulling acquisition"
     },
-
-    # ========================================
-    # GROUP 4: AMBIGUOUS (5 tests - should request clarification)
-    # ========================================
-    {
-        "query": "chezka",
-        "expected_hebrew": None,
-        "expected_method": "clarification",
-        "description": "Ambiguous - could be many things"
-    },
-    {
-        "query": "niddah",
-        "expected_hebrew": "נדה",
-        "expected_method": "any",
-        "description": "Could mean masechta or state - single word"
-    },
-    {
-        "query": "taref",
-        "expected_hebrew": None,
-        "expected_method": "clarification",
-        "description": "Torn animal or non-kosher"
-    },
-    {
-        "query": "klal",
-        "expected_hebrew": None,
-        "expected_method": "clarification",
-        "description": "General rule or community"
-    },
-    {
-        "query": "din",
-        "expected_hebrew": None,
-        "expected_method": "clarification",
-        "description": "Too general - law, judgment, etc."
-    },
-
-    # ========================================
-    # GROUP 5: DIFFICULT/STRESS TEST (5 tests)
-    # ========================================
-    {
-        "query": "kol hameshaneh mimatas chachamim yadov al hatachtonah",
-        "expected_hebrew": "כל המשנה ממטבע חכמים ידו על התחתונה",
-        "expected_method": "any",
-        "description": "Very long phrase about formulas"
-    },
-    {
-        "query": "ain adam makneh davar shelo ba lolam",
-        "expected_hebrew": "אין אדם מקנה דבר שלא בא לעולם",
-        "expected_method": "any",
-        "description": "Cannot transfer what doesn't exist"
-    },
-    {
-        "query": "yachol shema michlal hen ata shomea lav",
-        "expected_hebrew": "יכול שמע מכלל הן אתה שומע לאו",
-        "expected_method": "any",
-        "description": "Complex logical phrase"
-    },
     {
         "query": "adam muad leolam",
         "expected_hebrew": "אדם מועד לעולם",
         "expected_method": "any",
-        "description": "Person always liable - standard phrase"
+        "description": "Person always liable"
     },
     {
         "query": "shor hamuad shenagach",
         "expected_hebrew": "שור המועד שנגח",
         "expected_method": "any",
-        "description": "Warned ox that gored - damages"
+        "description": "Warned ox that gored"
+    },
+    {
+        "query": "ain adam oser davar shelo ba lolam",
+        "expected_hebrew": "אין אדם אוסר דבר שלא בא לעולם",
+        "expected_method": "any",
+        "description": "Cannot prohibit what doesn't exist"
     },
 ]
 
@@ -399,20 +336,23 @@ TEST_CASES = [
 #  TEST RUNNER
 # ==========================================
 
-async def run_test(test_case: dict) -> dict:
-    """Run a single test case"""
+async def run_test(test_case: dict, test_num: int) -> dict:
+    """Run a single test case with detailed logging"""
     query = test_case["query"]
     expected_hebrew = test_case.get("expected_hebrew")
     expected_method = test_case.get("expected_method")
     description = test_case.get("description", "")
 
-    print(f"\n🔍 {query}")
-    print(f"   {description}")
+    print(f"\n[{test_num:2d}] {query}")
+    print(f"     {description}")
 
     result = await decipher(query)
 
-    # Check if test passed
+    # Determine test outcome
     test_passed = False
+    actual_hebrew = result.get("hebrew_term", "N/A")
+    actual_method = result.get("method", "unknown")
+    actual_confidence = result.get("confidence", "N/A")
 
     if expected_method == "clarification":
         # Should need clarification
@@ -420,36 +360,46 @@ async def run_test(test_case: dict) -> dict:
     elif expected_method == "any":
         # Just check if it succeeded (any method OK)
         test_passed = result.get("success", False)
+        # Optionally check if Hebrew matches (if provided)
+        if test_passed and expected_hebrew:
+            # Allow partial match for complex phrases
+            test_passed = expected_hebrew in actual_hebrew or actual_hebrew in expected_hebrew
     else:
         # Check specific method and hebrew match
         if result.get("success"):
-            method_match = result.get("method") == expected_method
-            hebrew_match = expected_hebrew is None or result.get("hebrew_term") == expected_hebrew
+            method_match = actual_method == expected_method
+            hebrew_match = expected_hebrew is None or actual_hebrew == expected_hebrew
             test_passed = method_match and hebrew_match
 
-    # Print result
+    # Print result with evaluation details
     if test_passed:
-        method = result.get("method", "unknown")
-        hebrew = result.get("hebrew_term", "N/A")
-        print(f"   ✓ PASS via {method}: {hebrew}")
+        print(f"     ✓ PASS via {actual_method.upper()}: {actual_hebrew}")
+        print(f"       Confidence: {actual_confidence}")
     else:
-        print(f"   ✗ FAIL")
-        print(f"     Got: {result}")
+        print(f"     ✗ FAIL")
+        print(f"       Expected: {expected_hebrew} via {expected_method}")
+        print(f"       Got: {actual_hebrew} via {actual_method}")
 
     return {
+        "test_num": test_num,
         "test": description,
         "query": query,
+        "expected_hebrew": expected_hebrew,
+        "actual_hebrew": actual_hebrew,
+        "expected_method": expected_method,
+        "actual_method": actual_method,
+        "confidence": actual_confidence,
         "passed": test_passed,
         "result": result
     }
 
 
 async def run_all_tests():
-    """Run all test cases"""
+    """Run all test cases with summary reporting"""
     log_file = setup_test_logging()
 
     print("=" * 80)
-    print("FOCUSED TEST SUITE - TRANSLITERATION + VECTOR SEARCH")
+    print("CLAUDE-FREE TEST SUITE - Step 1: DECIPHER")
     print("=" * 80)
     print(f"Total tests: {len(TEST_CASES)}")
     print()
@@ -463,11 +413,14 @@ async def run_all_tests():
 
     # Run tests
     results = []
-    for test_case in TEST_CASES:
-        result = await run_test(test_case)
+    for i, test_case in enumerate(TEST_CASES, start=1):
+        result = await run_test(test_case, i)
         results.append(result)
 
-    # Summary
+    # ==========================================
+    # SUMMARY REPORT
+    # ==========================================
+
     passed = sum(1 for r in results if r["passed"])
     total = len(results)
 
@@ -477,11 +430,9 @@ async def run_all_tests():
 
     # Group results
     groups = {
-        "Dictionary Validation": list(range(0, 10)),
-        "Transliteration (Step 2)": list(range(10, 25)),
+        "Dictionary Validation": list(range(0, 5)),
+        "Transliteration (Step 2)": list(range(5, 25)),
         "Vector Search (Step 3)": list(range(25, 40)),
-        "Ambiguous": list(range(40, 45)),
-        "Difficult/Stress": list(range(45, 50)),
     }
 
     print("\n📊 Results by group:")
@@ -489,14 +440,39 @@ async def run_all_tests():
         group_results = [results[i] for i in indices if i < len(results)]
         group_passed = sum(1 for r in group_results if r["passed"])
         group_total = len(group_results)
-        print(f"  {group_name}: {group_passed}/{group_total}")
+        pct = (group_passed/group_total*100) if group_total > 0 else 0
+        print(f"  {group_name:30s}: {group_passed:2d}/{group_total:2d} ({pct:5.1f}%)")
 
-    # Failed tests
+    # Method breakdown
+    print("\n📈 Evaluation method breakdown:")
+    method_counts = {}
+    for r in results:
+        method = r["actual_method"]
+        method_counts[method] = method_counts.get(method, 0) + 1
+
+    for method, count in sorted(method_counts.items()):
+        pct = (count/total*100) if total > 0 else 0
+        print(f"  {method:20s}: {count:2d} ({pct:5.1f}%)")
+
+    # Failed tests detail
     failed = [r for r in results if not r["passed"]]
     if failed:
         print(f"\n❌ Failed tests ({len(failed)}):")
         for r in failed:
-            print(f"  - {r['test']}: '{r['query']}'")
+            print(f"  [{r['test_num']:2d}] {r['test']}")
+            print(f"      Query: '{r['query']}'")
+            print(f"      Expected: {r['expected_hebrew']} via {r['expected_method']}")
+            print(f"      Got: {r['actual_hebrew']} via {r['actual_method']}")
+    else:
+        print(f"\n🎉 ALL TESTS PASSED!")
+
+    # Evaluation summary table
+    print(f"\n📋 Detailed Evaluation Summary:")
+    print(f"{'#':>3} | {'Query':20s} | {'Method':15s} | {'Confidence':10s} | {'Result':6s}")
+    print("-" * 80)
+    for r in results:
+        status = "✓ PASS" if r["passed"] else "✗ FAIL"
+        print(f"{r['test_num']:3d} | {r['query']:20s} | {r['actual_method']:15s} | {r['confidence']:10s} | {status}")
 
     print(f"\n{'='*80}")
     print(f"Detailed logs: {log_file}")

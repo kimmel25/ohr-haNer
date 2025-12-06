@@ -165,7 +165,8 @@ TRANSLIT_MAP = {
     
     # Conjunctions
     "u": ["ו"],           # u'mishum
-    "v": ["ו"],           # sometimes vav
+    # NOTE: "v" mapping removed - conflicts with "v" = vet in consonants
+    # Use "ve" or "va" for vav hachibur
     "ve": ["ו"],
     "va": ["ו"],
     
@@ -315,7 +316,8 @@ def generate_smart_variants(query: str, max_variants: int = 15) -> List[str]:
 
     # Process each word separately
     for word in words:
-        word_variants = _generate_smart_word_variants(word, max_variants=5)
+        # Generate more variants per word for better matching
+        word_variants = _generate_smart_word_variants(word, max_variants=15)
         all_variants.append(word_variants)
 
     # Combine word variants
@@ -324,32 +326,65 @@ def generate_smart_variants(query: str, max_variants: int = 15) -> List[str]:
     elif len(all_variants) == 1:
         return all_variants[0][:max_variants]
     else:
-        # Combine multi-word variants (limit combinations)
-        combined = []
-        for v1 in all_variants[0][:3]:  # Only use top 3 from each word
-            for v2 in all_variants[1][:3]:
-                combined.append(v1 + " " + v2)
-                if len(combined) >= max_variants:
-                    return combined
+        # Combine multi-word variants
+        # For multi-word phrases, we need to be smart about combinations
+        # to avoid exponential explosion while still covering all words
 
-        # If more than 2 words, limit further
-        if len(all_variants) > 2:
-            for v3 in all_variants[2][:2]:
-                combined.append(all_variants[0][0] + " " + all_variants[1][0] + " " + v3)
+        num_words = len(all_variants)
+        combined = []
+
+        if num_words == 2:
+            # 2 words: try all combinations of top 3 variants from each
+            for v1 in all_variants[0][:3]:
+                for v2 in all_variants[1][:3]:
+                    combined.append(v1 + " " + v2)
+                    if len(combined) >= max_variants:
+                        return combined
+
+        elif num_words <= 4:
+            # 3-4 words: use top 2 from each word
+            # Generate combinations recursively
+            def combine_words(word_idx, current_phrase):
+                if word_idx >= num_words:
+                    combined.append(current_phrase.strip())
+                    return len(combined) >= max_variants
+
+                for variant in all_variants[word_idx][:2]:
+                    new_phrase = current_phrase + " " + variant if current_phrase else variant
+                    if combine_words(word_idx + 1, new_phrase):
+                        return True
+                return False
+
+            combine_words(0, "")
+
+        else:
+            # 5+ words: use best variant for each word (too many combinations)
+            # Generate a few variations by trying alternatives for key words
+            # 1. Best variant for all words
+            combined.append(" ".join(w[0] for w in all_variants))
+
+            # 2-4. Try alternative for first, second, and third word
+            for word_idx in [0, 1, 2]:
+                if word_idx < num_words and len(all_variants[word_idx]) > 1:
+                    phrase_parts = [w[0] for w in all_variants]
+                    phrase_parts[word_idx] = all_variants[word_idx][1]  # Use alternative
+                    combined.append(" ".join(phrase_parts))
+                    if len(combined) >= max_variants:
+                        break
 
         return combined[:max_variants]
 
 
-def _generate_smart_word_variants(word: str, max_variants: int = 5) -> List[str]:
+def _generate_smart_word_variants(word: str, max_variants: int = 15) -> List[str]:
     """
     Generate smart variants for a SINGLE WORD using context-aware rules.
 
-    Returns ~5 high-quality variants per word.
+    Returns up to 15 high-quality variants per word.
     """
     variants = []
     word_len = len(word)
 
-    # Strategy: Generate 1 "best guess" + 4 alternatives for ambiguous letters
+    # Strategy: Generate 1 "best guess" + multiple alternatives for ambiguous letters
     def generate_variant(use_alternatives: Dict[str, bool]) -> str:
         """Generate one variant based on whether to use alternative mappings"""
         result = ""
@@ -367,10 +402,15 @@ def _generate_smart_word_variants(word: str, max_variants: int = 5) -> List[str]
                 # Check if this is word-final position
                 is_final = (i + length >= word_len)
 
-                # Special handling for word-initial vowels
+                # Special handling for word-initial vowels (try alternatives too!)
                 if is_initial and pattern in WORD_INITIAL_VOWELS:
                     options = WORD_INITIAL_VOWELS[pattern]
-                    result += options[0]  # Use first (most common)
+                    use_alt = use_alternatives.get(pattern, False)
+                    # Try second option if requested
+                    if use_alt and len(options) > 1:
+                        result += options[1]
+                    else:
+                        result += options[0]  # Use first (most common)
                     matched = True
                     i += length
                     break
@@ -378,7 +418,11 @@ def _generate_smart_word_variants(word: str, max_variants: int = 5) -> List[str]
                 # Special handling for word-final patterns
                 if is_final and pattern in WORD_FINAL_PATTERNS:
                     options = WORD_FINAL_PATTERNS[pattern]
-                    result += options[0]  # Use first (most common)
+                    use_alt = use_alternatives.get(pattern, False)
+                    if use_alt and len(options) > 1:
+                        result += options[1]
+                    else:
+                        result += options[0]  # Use first (most common)
                     matched = True
                     i += length
                     break
@@ -391,7 +435,8 @@ def _generate_smart_word_variants(word: str, max_variants: int = 5) -> List[str]
                     use_alt = use_alternatives.get(pattern, False)
 
                     # For highly ambiguous patterns, try second option
-                    if use_alt and len(options) > 1 and pattern in ["ch", "k", "s", "t", "h"]:
+                    # EXPANDED: Now includes vowels and more consonants
+                    if use_alt and len(options) > 1:
                         result += options[1]
                     else:
                         result += options[0]  # Use most common
@@ -410,14 +455,32 @@ def _generate_smart_word_variants(word: str, max_variants: int = 5) -> List[str]
     # 1. Best guess (all most-common mappings)
     variants.append(generate_variant({}))
 
-    # 2-5. Try alternatives for key ambiguous letters
-    ambiguous_patterns = ["ch", "k", "s", "t", "h"]
+    # 2-15. Try alternatives for ambiguous patterns
+    # EXPANDED: Now includes vowels and more consonants
+    ambiguous_patterns = [
+        "ch", "k", "s", "t", "h",  # Original consonants
+        "a", "e", "i", "o", "u",    # Vowels (important for short words!)
+        "ai", "ei", "oi",           # Diphthongs
+        "sh", "tz", "kh",           # Multi-char consonants
+    ]
 
     for pattern in ambiguous_patterns:
         if pattern in word and len(variants) < max_variants:
             variant = generate_variant({pattern: True})
             if variant and variant not in variants:
                 variants.append(variant)
+
+    # 3. For short words (≤5 chars), try combinations of two alternatives
+    if word_len <= 5 and len(variants) < max_variants:
+        # Try pairs of ambiguous letters
+        found_patterns = [p for p in ambiguous_patterns if p in word]
+        for i, p1 in enumerate(found_patterns[:3]):  # Limit to avoid explosion
+            for p2 in found_patterns[i+1:4]:
+                if len(variants) >= max_variants:
+                    break
+                variant = generate_variant({p1: True, p2: True})
+                if variant and variant not in variants:
+                    variants.append(variant)
 
     return variants[:max_variants]
 
