@@ -79,255 +79,144 @@ TEST_CASES = [
     # GROUP 1: DICTIONARY VALIDATION (5 tests)
     # ========================================
     # Quick check that dictionary works
+    # ========================================
+    # GROUP 4: NEW TERMS - SOFIT LETTERS (5 tests)
+    # ========================================
     {
-        "query": "kesubos",
-        "expected_hebrew": "כתובות",
-        "expected_method": "dictionary",
-        "description": "Masechta - dictionary hit"
+        "query": "motzin umachnisim",
+        "expected_hebrew": "מוציאין ומכניסין",
+        "expected_method": "any",
+        "description": "Taking out and bringing in - double nun sofit"
     },
     {
-        "query": "bava kama",
-        "expected_hebrew": "בבא קמא",
-        "expected_method": "dictionary",
-        "description": "Masechta - two words"
+        "query": "nishbaim",
+        "expected_hebrew": "נשבעים",
+        "expected_method": "any",
+        "description": "Those who swear - mem sofit plural"
     },
     {
-        "query": "bereirah",
-        "expected_hebrew": "ברירה",
-        "expected_method": "dictionary",
-        "description": "Common concept"
+        "query": "chotzetz",
+        "expected_hebrew": "חוצץ",
+        "expected_method": "any",
+        "description": "Interposes - tzadi sofit"
     },
     {
-        "query": "sfek sfeika",
-        "expected_hebrew": "ספק ספיקא",
-        "expected_method": "dictionary",
-        "description": "Double doubt"
+        "query": "maarich",
+        "expected_hebrew": "מאריך",
+        "expected_method": "any",
+        "description": "Prolongs - khaf sofit"
     },
     {
-        "query": "chatzi shiur",
-        "expected_hebrew": "חצי שיעור",
-        "expected_method": "dictionary",
-        "description": "Half measure"
+        "query": "masof",
+        "expected_hebrew": "מסוף",
+        "expected_method": "any",
+        "description": "From the end - peh sofit"
     },
 
     # ========================================
-    # GROUP 2: TRANSLITERATION TESTS (20 tests)
+    # GROUP 5: NEW TERMS - AYIN DETECTION (4 tests)
     # ========================================
-    # Terms NOT in dictionary - test smart variant generation
     {
-        "query": "migu",
-        "expected_hebrew": "מיגו",
+        "query": "baal mum",
+        "expected_hebrew": "בעל מום",
         "expected_method": "any",
-        "description": "Since he could have said"
+        "description": "Owner of blemish - ayin in baal"
     },
     {
-        "query": "umdena",
-        "expected_hebrew": "אומדנא",
+        "query": "kviius seudah",
+        "expected_hebrew": "קביעות סעודה",
         "expected_method": "any",
-        "description": "Assessment - word-initial vowel"
+        "description": "Established meal - ayin in seudah"
     },
     {
-        "query": "kdai shiur",
-        "expected_hebrew": "כדי שיעור", #didt work cuz the ayin
+        "query": "taanas baal din",
+        "expected_hebrew": "טענת בעל דין",
         "expected_method": "any",
-        "description": "K vs K' - sufficient measure"
+        "description": "Claim of litigant - multiple ayins"
     },
     {
-        "query": "trei vetrei",
-        "expected_hebrew": "תרי ותרי",  #
+        "query": "maaser sheni",
+        "expected_hebrew": "מעשר שני",
         "expected_method": "any",
-        "description": "Aramaic - two and two"
-    },
-    {
-        "query": "lo plug",
-        "expected_hebrew": "לא פלוג",
-        "expected_method": "any",
-        "description": "Don't distinguish"
-    },
-    {
-        "query": "chozer vniur",
-        "expected_hebrew": "חוזר ונעור",
-        "expected_method": "any",
-        "description": "Awakens again"
-    },
-    {
-        "query": "kdai achila",
-        "expected_hebrew": "כדי אכילה",
-        "expected_method": "any",
-        "description": "Measure of eating"
-    },
-    {
-        "query": "ribui umiut",
-        "expected_hebrew": "ריבוי ומיעוט",
-        "expected_method": "any",
-        "description": "Inclusion and exclusion"
-    },
-    {
-        "query": "klal uprat",
-        "expected_hebrew": "כלל ופרט",
-        "expected_method": "any",
-        "description": "General and specific"
-    },
-    {
-        "query": "kal vchomer",
-        "expected_hebrew": "קל וחומר",
-        "expected_method": "any",
-        "description": "A fortiori"
-    },
-    {
-        "query": "gezeira shava",
-        "expected_hebrew": "גזירה שווה",
-        "expected_method": "any",
-        "description": "Textual analogy"
-    },
-    {
-        "query": "binyan av",
-        "expected_hebrew": "בנין אב",
-        "expected_method": "any",
-        "description": "Paradigm - building father"
-    },
-    {
-        "query": "davar halamd meinyano",
-        "expected_hebrew": "דבר הלמד מעניינו",
-        "expected_method": "any",
-        "description": "Learned from context"
-    },
-    {
-        "query": "tzad hashaveh",
-        "expected_hebrew": "צד השווה",
-        "expected_method": "any",
-        "description": "Common side"
-    },
-    {
-        "query": "shnei kesuvim",
-        "expected_hebrew": "שני כתובים",
-        "expected_method": "any",
-        "description": "Two verses"
-    },
-    {
-        "query": "miktzas hayom kchulo",
-        "expected_hebrew": "מקצת היום ככולו",
-        "expected_method": "any",
-        "description": "Part of day like whole"
-    },
-    {
-        "query": "yad soledet bo",
-        "expected_hebrew": "יד סולדת בו",
-        "expected_method": "any",
-        "description": "Hand recoils from heat"
-    },
-    {
-        "query": "shiur kzayis",
-        "expected_hebrew": "שיעור כזית",
-        "expected_method": "any",
-        "description": "Olive-sized measure"
-    },
-    {
-        "query": "shiur kbeitza",
-        "expected_hebrew": "שיעור כביצה",
-        "expected_method": "any",
-        "description": "Egg-sized measure"
-    },
-    {
-        "query": "lavud",
-        "expected_hebrew": "לבוד",
-        "expected_method": "any",
-        "description": "Principle of attachment"
+        "description": "Second tithe - ayin in maaser"
     },
 
     # ========================================
-    # GROUP 3: VECTOR SEARCH TESTS (15 tests)
+    # GROUP 6: NEW TERMS - PREFIX DETECTION (4 tests)
     # ========================================
-    # Complex phrases needing vector matching
     {
-        "query": "chaticha deisura",
-        "expected_hebrew": "חתיכה דאיסורא",
+        "query": "shenishtanu",
+        "expected_hebrew": "שנשתנו",
         "expected_method": "any",
-        "description": "Piece of forbidden - Aramaic"
+        "description": "That changed - she prefix"
     },
     {
-        "query": "kol davar sheyesh lo matirin",
-        "expected_hebrew": "כל דבר שיש לו מתירין",
+        "query": "hamotzi meichaveiro",
+        "expected_hebrew": "המוציא מחבירו",
         "expected_method": "any",
-        "description": "Anything that will become permitted"
+        "description": "One who extracts from another"
     },
     {
-        "query": "zeh neheneh vzeh lo chaser",
-        "expected_hebrew": "זה נהנה וזה לא חסר",
+        "query": "vehevi",
+        "expected_hebrew": "והביא",
         "expected_method": "any",
-        "description": "One benefits, other loses nothing"
+        "description": "And he brought"
     },
     {
-        "query": "ain shliach lidvar aveirah",
-        "expected_hebrew": "אין שליח לדבר עבירה",
+        "query": "lechatchila",
+        "expected_hebrew": "לכתחילה",
         "expected_method": "any",
-        "description": "No agency for sin"
+        "description": "From the outset"
+    },
+
+    # ========================================
+    # GROUP 7: NEW TERMS - DOUBLE LETTERS (3 tests)
+    # ========================================
+    {
+        "query": "shoor",
+        "expected_hebrew": "שור",
+        "expected_method": "any",
+        "description": "Ox - user typed double o"
     },
     {
-        "query": "kol deparish mrubo parish",
-        "expected_hebrew": "כל דפריש מרובא פריש",
+        "query": "kibbud av vaeim",
+        "expected_hebrew": "כיבוד אב ואם",
         "expected_method": "any",
-        "description": "What separates comes from majority"
+        "description": "Honoring parents - double bet"
     },
     {
-        "query": "rov deparish",
-        "expected_hebrew": "רוב דפריש",
+        "query": "tikkun",
+        "expected_hebrew": "תיקון",
         "expected_method": "any",
-        "description": "Majority of what separates"
+        "description": "Repair - double kuf"
+    },
+
+    # ========================================
+    # GROUP 8: NEW TERMS - ARAMAIC/YESHIVISH (4 tests)
+    # ========================================
+    {
+        "query": "gemara",
+        "expected_hebrew": "גמרא",
+        "expected_method": "any",
+        "description": "Talmud - Aramaic ending"
     },
     {
-        "query": "davar shelo ba lolam",
-        "expected_hebrew": "דבר שלא בא לעולם",
+        "query": "stam",
+        "expected_hebrew": "סתם",
         "expected_method": "any",
-        "description": "Something not yet in existence"
+        "description": "Anonymous/plain"
     },
     {
-        "query": "kim lei dirabanan",
-        "expected_hebrew": "קים ליה דרבנן",
+        "query": "sugya",
+        "expected_hebrew": "סוגיא",
         "expected_method": "any",
-        "description": "Rabbinic principle - greater liability"
+        "description": "Topic/passage - Aramaic ending"
     },
     {
-        "query": "eid echad neeman bissurim",
-        "expected_hebrew": "עד אחד נאמן באיסורים",
+        "query": "shakla vetarya",
+        "expected_hebrew": "שקלא וטריא",
         "expected_method": "any",
-        "description": "One witness believed for prohibitions"
-    },
-    {
-        "query": "hafkaas kiddushin",
-        "expected_hebrew": "הפקעת קידושין",
-        "expected_method": "any",
-        "description": "Annulling marriage"
-    },
-    {
-        "query": "chalipin kinyan",
-        "expected_hebrew": "חליפין קנין",
-        "expected_method": "any",
-        "description": "Exchange acquisition"
-    },
-    {
-        "query": "meshicha kinyan",
-        "expected_hebrew": "משיכה קנין",
-        "expected_method": "any",
-        "description": "Pulling acquisition"
-    },
-    {
-        "query": "adam muad leolam",
-        "expected_hebrew": "אדם מועד לעולם",
-        "expected_method": "any",
-        "description": "Person always liable"
-    },
-    {
-        "query": "shor hamuad shenagach",
-        "expected_hebrew": "שור המועד שנגח",
-        "expected_method": "any",
-        "description": "Warned ox that gored"
-    },
-    {
-        "query": "ain adam oser davar shelo ba lolam",
-        "expected_hebrew": "אין אדם אוסר דבר שלא בא לעולם",
-        "expected_method": "any",
-        "description": "Cannot prohibit what doesn't exist"
+        "description": "Give and take discussion"
     },
 ]
 

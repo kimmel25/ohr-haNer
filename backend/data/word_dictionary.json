@@ -863,9 +863,9 @@
   "chaticha deisura": {
     "hebrew": "חתיכה דאיסורא",
     "confidence": "high",
-    "usage_count": 18,
+    "usage_count": 19,
     "source": "manual",
-    "last_used": "2025-12-06T21:45:25.270105"
+    "last_used": "2025-12-06T22:42:09.496179"
   },
   "chaticha daisura": {
     "hebrew": "חתיכה דאיסורא",
@@ -891,9 +891,9 @@
   "sfek sfeika": {
     "hebrew": "ספק ספיקא",
     "confidence": "high",
-    "usage_count": 16,
+    "usage_count": 17,
     "source": "manual",
-    "last_used": "2025-12-06T21:44:56.172012"
+    "last_used": "2025-12-06T22:42:07.809802"
   },
   "safek safeika": {
     "hebrew": "ספק ספיקא",
@@ -975,9 +975,9 @@
   "kesubos": {
     "hebrew": "כתובות",
     "confidence": "high",
-    "usage_count": 24,
+    "usage_count": 25,
     "source": "transliteration",
-    "last_used": "2025-12-06T21:44:56.151344"
+    "last_used": "2025-12-06T22:42:07.774245"
   },
   "shabbos": {
     "hebrew": "שבת",
@@ -996,9 +996,9 @@
   "bava kama": {
     "hebrew": "בבא קמא",
     "confidence": "high",
-    "usage_count": 20,
+    "usage_count": 21,
     "source": "transliteration",
-    "last_used": "2025-12-06T21:44:56.160960"
+    "last_used": "2025-12-06T22:42:07.798291"
   },
   "sotah": {
     "hebrew": "סוטה",
@@ -1038,23 +1038,23 @@
   "bereirah": {
     "hebrew": "ברירה",
     "confidence": "high",
-    "usage_count": 17,
+    "usage_count": 18,
     "source": "manual",
-    "last_used": "2025-12-06T21:44:56.165908"
+    "last_used": "2025-12-06T22:42:07.804809"
   },
   "chatzi shiur": {
     "hebrew": "חצי שיעור",
     "confidence": "high",
-    "usage_count": 17,
+    "usage_count": 18,
     "source": "manual",
-    "last_used": "2025-12-06T21:44:56.178696"
+    "last_used": "2025-12-06T22:42:07.823750"
   },
   "chozer vniur": {
     "hebrew": "חוזר ונעור",
     "confidence": "high",
-    "usage_count": 16,
+    "usage_count": 17,
     "source": "manual",
-    "last_used": "2025-12-06T21:45:05.380081"
+    "last_used": "2025-12-06T22:42:09.430281"
   },
   "kim lei bidrabba minei": {
     "hebrew": "קים ליה בדרבה מיניה",
@@ -1066,9 +1066,9 @@
   "kim lei dirabanan": {
     "hebrew": "קים ליה דרבנן",
     "confidence": "high",
-    "usage_count": 15,
+    "usage_count": 16,
     "source": "manual",
-    "last_used": "2025-12-06T21:45:25.322486"
+    "last_used": "2025-12-06T22:42:15.232151"
   },
   "rov depursa": {
     "hebrew": "רוב דפורתא",
@@ -1080,9 +1080,9 @@
   "rov deparish": {
     "hebrew": "רוב דפריש",
     "confidence": "high",
-    "usage_count": 15,
+    "usage_count": 16,
     "source": "manual",
-    "last_used": "2025-12-06T21:45:25.305947"
+    "last_used": "2025-12-06T22:42:09.517769"
   },
   "kavua kmechtza al mechtza": {
     "hebrew": "קבוע כמחצה על מחצה",
@@ -1115,30 +1115,30 @@
   "ain shliach lidvar aveirah": {
     "hebrew": "אין שליח לדבר עבירה",
     "confidence": "high",
-    "usage_count": 15,
+    "usage_count": 16,
     "source": "manual",
-    "last_used": "2025-12-06T21:45:25.292347"
+    "last_used": "2025-12-06T22:42:09.509238"
   },
   "kol deparish mrubo parish": {
     "hebrew": "כל דפריש מרובא פריש",
     "confidence": "high",
-    "usage_count": 15,
+    "usage_count": 16,
     "source": "manual",
-    "last_used": "2025-12-06T21:45:25.296883"
+    "last_used": "2025-12-06T22:42:09.512768"
   },
   "kol davar sheyesh lo matirin": {
     "hebrew": "כל דבר שיש לו מתירין",
     "confidence": "high",
-    "usage_count": 15,
+    "usage_count": 16,
     "source": "manual",
-    "last_used": "2025-12-06T21:45:25.276104"
+    "last_used": "2025-12-06T22:42:09.500177"
   },
   "zeh neheneh vzeh lo chaser": {
     "hebrew": "זה נהנה וזה לא חסר",
     "confidence": "high",
-    "usage_count": 15,
+    "usage_count": 16,
     "source": "manual",
-    "last_used": "2025-12-06T21:45:25.287223"
+    "last_used": "2025-12-06T22:42:09.505238"
   },
   "hafka'as kiddushin": {
     "hebrew": "הפקעת קידושין",
@@ -1428,162 +1428,274 @@
   "migu": {
     "hebrew": "מגו",
     "confidence": "high",
-    "usage_count": 1,
+    "usage_count": 2,
     "source": "sefaria",
-    "last_used": "2025-12-06T21:44:58.148255"
+    "last_used": "2025-12-06T22:42:07.828751"
   },
   "umdena": {
     "hebrew": "ומדנא",
     "confidence": "low",
-    "usage_count": 1,
+    "usage_count": 3,
     "source": "sefaria",
-    "last_used": "2025-12-06T21:44:59.058303"
+    "last_used": "2025-12-06T22:42:09.409230"
   },
   "kdai shiur": {
     "hebrew": "כדי שיעור",
     "confidence": "high",
-    "usage_count": 1,
+    "usage_count": 2,
     "source": "sefaria",
-    "last_used": "2025-12-06T21:45:02.261340"
+    "last_used": "2025-12-06T22:42:09.414252"
   },
   "trei vetrei": {
     "hebrew": "תרי ותרי",
     "confidence": "high",
-    "usage_count": 1,
+    "usage_count": 2,
     "source": "sefaria",
-    "last_used": "2025-12-06T21:45:03.703204"
+    "last_used": "2025-12-06T22:42:09.419766"
   },
   "lo plug": {
     "hebrew": "לא פלוג",
     "confidence": "high",
-    "usage_count": 1,
+    "usage_count": 2,
     "source": "sefaria",
-    "last_used": "2025-12-06T21:45:05.374688"
+    "last_used": "2025-12-06T22:42:09.425689"
   },
   "kdai achila": {
     "hebrew": "כדי אכילה",
     "confidence": "medium",
-    "usage_count": 1,
+    "usage_count": 2,
     "source": "sefaria",
-    "last_used": "2025-12-06T21:45:06.538252"
+    "last_used": "2025-12-06T22:42:09.436397"
   },
   "ribui umiut": {
     "hebrew": "ריבוי ומיעוט",
     "confidence": "medium",
-    "usage_count": 1,
+    "usage_count": 2,
     "source": "sefaria",
-    "last_used": "2025-12-06T21:45:08.327433"
+    "last_used": "2025-12-06T22:42:09.442089"
   },
   "klal uprat": {
     "hebrew": "כלל ופרט",
     "confidence": "high",
-    "usage_count": 1,
+    "usage_count": 2,
     "source": "sefaria",
-    "last_used": "2025-12-06T21:45:09.612235"
+    "last_used": "2025-12-06T22:42:09.446086"
   },
   "kal vchomer": {
     "hebrew": "קל וחומר",
     "confidence": "high",
-    "usage_count": 1,
+    "usage_count": 2,
     "source": "sefaria",
-    "last_used": "2025-12-06T21:45:11.537124"
+    "last_used": "2025-12-06T22:42:09.451120"
   },
   "gezeira shava": {
     "hebrew": "גזירה שוה",
     "confidence": "high",
-    "usage_count": 1,
+    "usage_count": 2,
     "source": "sefaria",
-    "last_used": "2025-12-06T21:45:12.993336"
+    "last_used": "2025-12-06T22:42:09.457122"
   },
   "binyan av": {
     "hebrew": "בנין אב",
     "confidence": "high",
-    "usage_count": 1,
+    "usage_count": 2,
     "source": "sefaria",
-    "last_used": "2025-12-06T21:45:14.528394"
+    "last_used": "2025-12-06T22:42:09.460123"
   },
   "davar halamd meinyano": {
     "hebrew": "דבר הלמד מענינו",
     "confidence": "high",
-    "usage_count": 1,
+    "usage_count": 2,
     "source": "sefaria",
-    "last_used": "2025-12-06T21:45:16.799557"
+    "last_used": "2025-12-06T22:42:09.464214"
   },
   "tzad hashaveh": {
     "hebrew": "צד השוה",
     "confidence": "high",
-    "usage_count": 1,
+    "usage_count": 2,
     "source": "sefaria",
-    "last_used": "2025-12-06T21:45:17.983644"
+    "last_used": "2025-12-06T22:42:09.468216"
   },
   "shnei kesuvim": {
     "hebrew": "שני כתובים",
     "confidence": "high",
-    "usage_count": 1,
+    "usage_count": 2,
     "source": "sefaria",
-    "last_used": "2025-12-06T21:45:19.277311"
+    "last_used": "2025-12-06T22:42:09.473560"
   },
   "miktzas hayom kchulo": {
     "hebrew": "מקצת היום ככולו",
     "confidence": "high",
-    "usage_count": 1,
+    "usage_count": 2,
     "source": "sefaria",
-    "last_used": "2025-12-06T21:45:20.791250"
+    "last_used": "2025-12-06T22:42:09.476559"
   },
   "yad soledet bo": {
     "hebrew": "יד סולדת בו",
     "confidence": "medium",
-    "usage_count": 1,
+    "usage_count": 2,
     "source": "sefaria",
-    "last_used": "2025-12-06T21:45:23.051192"
+    "last_used": "2025-12-06T22:42:09.480065"
   },
   "shiur kzayis": {
     "hebrew": "שיעור כזית",
     "confidence": "high",
-    "usage_count": 1,
+    "usage_count": 2,
     "source": "sefaria",
-    "last_used": "2025-12-06T21:45:23.924500"
+    "last_used": "2025-12-06T22:42:09.484071"
   },
   "shiur kbeitza": {
     "hebrew": "שיעור כביצה",
     "confidence": "medium",
-    "usage_count": 1,
+    "usage_count": 2,
     "source": "sefaria",
-    "last_used": "2025-12-06T21:45:24.587176"
+    "last_used": "2025-12-06T22:42:09.490071"
   },
   "lavud": {
     "hebrew": "לבוד",
     "confidence": "high",
-    "usage_count": 1,
+    "usage_count": 2,
     "source": "sefaria",
-    "last_used": "2025-12-06T21:45:25.261703"
+    "last_used": "2025-12-06T22:42:09.493179"
   },
   "hafkaas kiddushin": {
     "hebrew": "הפקעת קידושין",
     "confidence": "medium",
-    "usage_count": 1,
+    "usage_count": 2,
     "source": "sefaria",
-    "last_used": "2025-12-06T21:45:26.575232"
+    "last_used": "2025-12-06T22:42:21.747814"
   },
   "chalipin kinyan": {
     "hebrew": "חליפין קנין",
     "confidence": "low",
-    "usage_count": 1,
+    "usage_count": 3,
     "source": "sefaria",
-    "last_used": "2025-12-06T21:45:27.855363"
+    "last_used": "2025-12-06T22:42:23.518138"
   },
   "meshicha kinyan": {
     "hebrew": "משיכה קנין",
     "confidence": "low",
-    "usage_count": 1,
+    "usage_count": 3,
     "source": "sefaria",
-    "last_used": "2025-12-06T21:45:29.045296"
+    "last_used": "2025-12-06T22:42:26.078045"
   },
   "adam muad leolam": {
     "hebrew": "אדם מועד לעולם",
     "confidence": "high",
+    "usage_count": 2,
+    "source": "sefaria",
+    "last_used": "2025-12-06T22:42:26.084146"
+  },
+  "ain adam oser davar shelo ba leolam": {
+    "hebrew": "אין אדם אוסר דבר שלא בא לעולם",
+    "confidence": "low",
     "usage_count": 1,
     "source": "sefaria",
-    "last_used": "2025-12-06T21:45:31.803807"
+    "last_used": "2025-12-06T22:42:30.240421"
+  },
+  "nishbaim": {
+    "hebrew": "נשבעים",
+    "confidence": "high",
+    "usage_count": 3,
+    "source": "sefaria",
+    "last_used": "2025-12-07T16:51:58.139712"
+  },
+  "maarich": {
+    "hebrew": "מעריך",
+    "confidence": "high",
+    "usage_count": 3,
+    "source": "sefaria",
+    "last_used": "2025-12-07T16:51:59.744368"
+  },
+  "masof": {
+    "hebrew": "מסוף",
+    "confidence": "high",
+    "usage_count": 2,
+    "source": "sefaria",
+    "last_used": "2025-12-07T16:51:59.750285"
+  },
+  "baal mum": {
+    "hebrew": "בעל מום",
+    "confidence": "high",
+    "usage_count": 2,
+    "source": "sefaria",
+    "last_used": "2025-12-07T16:51:59.756308"
+  },
+  "maaser sheni": {
+    "hebrew": "מעשר שני",
+    "confidence": "high",
+    "usage_count": 3,
+    "source": "sefaria",
+    "last_used": "2025-12-07T16:52:11.363716"
+  },
+  "shenishtanu": {
+    "hebrew": "שנשתנו",
+    "confidence": "high",
+    "usage_count": 3,
+    "source": "sefaria",
+    "last_used": "2025-12-07T16:52:11.932508"
+  },
+  "vehevi": {
+    "hebrew": "והוי",
+    "confidence": "high",
+    "usage_count": 2,
+    "source": "sefaria",
+    "last_used": "2025-12-07T16:52:17.167724"
+  },
+  "lechatchila": {
+    "hebrew": "לחצלא",
+    "confidence": "low",
+    "usage_count": 3,
+    "source": "sefaria",
+    "last_used": "2025-12-07T16:52:18.089480"
+  },
+  "shoor": {
+    "hebrew": "שור",
+    "confidence": "high",
+    "usage_count": 2,
+    "source": "sefaria",
+    "last_used": "2025-12-07T16:52:18.095037"
+  },
+  "tikkun": {
+    "hebrew": "תיכון",
+    "confidence": "high",
+    "usage_count": 2,
+    "source": "sefaria",
+    "last_used": "2025-12-07T16:52:21.581292"
+  },
+  "gemara": {
+    "hebrew": "גמרה",
+    "confidence": "high",
+    "usage_count": 2,
+    "source": "sefaria",
+    "last_used": "2025-12-07T16:52:21.589383"
+  },
+  "stam": {
+    "hebrew": "סתם",
+    "confidence": "high",
+    "usage_count": 2,
+    "source": "sefaria",
+    "last_used": "2025-12-07T16:52:21.594571"
+  },
+  "sugya": {
+    "hebrew": "סוגיה",
+    "confidence": "high",
+    "usage_count": 2,
+    "source": "sefaria",
+    "last_used": "2025-12-07T16:52:21.598001"
+  },
+  "chotzetz": {
+    "hebrew": "חוצץ",
+    "confidence": "high",
+    "usage_count": 1,
+    "source": "sefaria",
+    "last_used": "2025-12-07T16:51:58.978327"
+  },
+  "shakla vetarya": {
+    "hebrew": "שקלא וטריא",
+    "confidence": "high",
+    "usage_count": 1,
+    "source": "sefaria",
+    "last_used": "2025-12-07T16:52:25.129104"
   }
 }

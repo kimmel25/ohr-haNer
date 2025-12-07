@@ -4,6 +4,7 @@
   // Enable reading the envFile when creating terminals from VS Code
   "python.terminal.useEnvFile": true,
   "python.analysis.extraPaths": [
-    "./backend"
+    "./backend",
+    "./backend/tools"
   ]
 }
