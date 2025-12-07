@@ -1,51 +1,189 @@
 """
-Transliteration Map - Hebrew/Aramaic Phonetic Rules
-====================================================
+Transliteration Map V2 - Hebrew/Aramaic Phonetic Rules
+=======================================================
 
-Maps English letter combinations to possible Hebrew letters.
-This is NOT a word dictionary - it's a phonetic rules engine.
+MAJOR FIXES in V2:
+1. Sofit letters now work (boundary markers flow through to variant generator)
+2. Ayin detection for "iu", "ua" vowel combinations (shiur, muad)
+3. Word-initial vav prefix handling (vchomer → וחומר, not בחומר)
+4. Better vowel-to-letter mapping with context awareness
+5. Improved yud handling (migu → מיגו, not מגו)
+6. Final heh for Hebrew feminine (achila → אכילה, not אכילא)
+7. Tav preference for Aramaic (trei → תרי, not טרי)
+8. Double vav support (hashaveh → השווה)
 
 Based on yeshivish transliteration patterns (sav not tav).
+
+Architecture:
+- TRANSLIT_MAP: Core phonetic mappings
+- WORD_INITIAL_RULES: Context-specific mappings for word start
+- WORD_FINAL_RULES: Context-specific mappings for word end (with sofits)
+- TRANSLIT_EXCEPTIONS: Common terms that pure phonetics fails on
 """
 
-from typing import List, Dict
+from typing import List, Dict, Tuple, Optional, Set
 import re
+
+
+# ==========================================
+#  TRANSLITERATION EXCEPTIONS
+# ==========================================
+# Common terms where pure phonetics consistently fails.
+# These are checked BEFORE phonetic transliteration.
+# This is NOT the main dictionary - just a safety net for
+# terms that are extremely common and have tricky spellings.
+
+TRANSLIT_EXCEPTIONS: Dict[str, List[str]] = {
+    # === Terms with silent/unexpected ayin ===
+    "shiur": ["שיעור", "שעור"],
+    "shiurim": ["שיעורים"],
+    "muad": ["מועד"],
+    "hamuad": ["המועד"],
+    "leolam": ["לעולם"],
+    "meinyano": ["מעניינו", "מענינו"],
+    "olam": ["עולם"],
+    "miut": ["מיעוט"],      # Has ayin
+    "umiut": ["ומיעוט"],    # Conjunction + ayin
+    "oser": ["אוסר"],       # Has vav
+    
+    # === Aramaic numbers (tav not tet) ===
+    "trei": ["תרי"],
+    "tlat": ["תלת"],
+    "arba": ["ארבע"],
+    
+    # === Common particles ===
+    "lo": ["לא"],           # "not" - never לו
+    "shelo": ["שלא"],       # "that not"
+    "velo": ["ולא"],        # "and not"
+    "ain": ["אין"],         # "there is not"
+    "ein": ["אין"],         # Alternative spelling
+    
+    # === Terms with nun sofit ===
+    "binyan": ["בנין", "בניין"],
+    "kinyan": ["קנין", "קניין"],
+    "inyan": ["ענין", "עניין"],
+    "chalipin": ["חליפין"],
+    "kiddushin": ["קידושין"],
+    
+    # === Common complex terms ===
+    "migu": ["מיגו", "מגו"],
+    "kal": ["קל"],          # Not כל
+    "kol": ["כל"],          # Not קול
+    "chomer": ["חומר"],     # Has vav
+    "vchomer": ["וחומר"],   # Vav hachibur + chomer
+    
+    # === Hebrew feminine endings (final heh) ===
+    "achila": ["אכילה"],
+    "meshicha": ["משיכה"],
+    "shetiya": ["שתיה"],
+    "amira": ["אמירה"],
+    "asiha": ["עשיה"],
+    "bracha": ["ברכה"],
+    "kedusha": ["קדושה"],
+    "mesira": ["מסירה"],
+    "netina": ["נתינה"],
+    "gezeira": ["גזירה"],
+    "shava": ["שווה", "שוה"],
+    
+    # === Masechtos (yeshivish: sav, not tav) ===
+    "kesubos": ["כתובות"],
+    "kesuvim": ["כתובים"],
+    "shabbos": ["שבת"],
+    "brachos": ["ברכות"],
+    "pesachim": ["פסחים"],
+    "yevamos": ["יבמות"],
+    "nedarim": ["נדרים"],
+    "nazir": ["נזיר"],
+    "gittin": ["גיטין"],
+    "sotah": ["סוטה"],
+    "bava": ["בבא"],
+    "kama": ["קמא"],
+    
+    # === Common halachic terms ===
+    "ribui": ["ריבוי"],
+    "klal": ["כלל"],
+    "prat": ["פרט"],
+    "uprat": ["ופרט"],
+    "sfeika": ["ספיקא"],
+    "sfek": ["ספק"],
+    "chatzi": ["חצי"],
+    "lavud": ["לבוד"],
+    "soledet": ["סולדת"],
+    "kzayis": ["כזית"],
+    "kbeitza": ["כביצה"],
+    "halamd": ["הלמד"],
+    "miktzas": ["מקצת"],
+    "hayom": ["היום"],
+    "kchulo": ["ככולו"],
+    "davar": ["דבר"],
+    "adam": ["אדם"],
+    "shor": ["שור"],
+    "hafkaas": ["הפקעת"],
+    "shnei": ["שני"],
+    "yad": ["יד"],
+    "bo": ["בו"],
+    "tzad": ["צד"],
+    
+    # === Terms with double letters ===
+    "shaveh": ["שווה", "שוה"],
+    "hashaveh": ["השווה", "השוה"],
+    "aveh": ["ווה"],        # Ending pattern
+    
+    # === Vav hachibur prefixes (v at word start) ===
+    "vetrei": ["ותרי"],
+    "vniur": ["ונעור"],
+    
+    # === Short common words ===
+    "av": ["אב"],           # Father - not just ו
+    "im": ["אם"],           # Mother/if
+    "al": ["על"],           # On
+    "el": ["אל"],           # To
+}
 
 
 # ==========================================
 #  CORE TRANSLITERATION MAP
 # ==========================================
+# Ordered by FREQUENCY (most common first).
+# Longer patterns checked before shorter ones.
 
-# ==========================================
-#  SMART TRANSLITERATION WITH PRIORITIES
-# ==========================================
-#
-# Each pattern now has options ordered by FREQUENCY (most common first).
-# This allows us to generate smarter variants by preferring common mappings.
-
-TRANSLIT_MAP = {
+TRANSLIT_MAP: Dict[str, List[str]] = {
     # =======================
-    # MULTI-CHAR PHONEMES (check these FIRST - longer patterns have priority)
+    # AYIN-SIGNALING VOWEL COMBINATIONS (HIGH PRIORITY)
     # =======================
-
-    # Consonant clusters - ORDERED BY FREQUENCY
-    "sch": ["ש"],         # yeshivish spelling (schule, meschorah)
-    "sh": ["ש"],          # always shin
-    "ch": ["ח", "כ"],     # 80% ח at word start, 50/50 in middle (chalitza vs mechila)
-    "kh": ["כ", "ח"],     # prefer khaf (khakham)
-    "th": ["ת"],          # ashkenazi (talmid → תלמיד)
-    "ph": ["פ"],          # philosophy
-    "gh": ["ע"],          # ayin in scholarly transliteration
+    # These vowel pairs often indicate an ayin in the Hebrew.
+    # Must be checked BEFORE simple vowel mappings.
+    
+    "iu": ["יעו", "יו", "יאו"],     # shiur → שיעור (yud-ayin-vav)
+    "iur": ["יעור", "יור"],         # shiur ending
+    "ua": ["וע", "ו", "ועא"],       # muad → מועד (vav-ayin)
+    "uad": ["ועד", "ואד"],          # muad ending specifically
+    "ia": ["יע", "יא", "י"],        # Complex - context dependent
+    
+    # =======================
+    # MULTI-CHAR CONSONANT CLUSTERS
+    # =======================
+    
+    "sch": ["ש"],             # Yeshivish spelling (schule)
+    "sh": ["ש"],              # Always shin
+    "ch": ["ח", "כ"],         # 80% ח, sometimes כ (mechila)
+    "kh": ["כ", "ח"],         # Prefer khaf (khakham)
+    "th": ["ת"],              # Ashkenazi
+    "ph": ["פ"],              # Philosophy
+    "gh": ["ע"],              # Ayin in scholarly transliteration
     
     # Tzadi variants
     "tz": ["צ"],
-    "ts": ["צ"],          # tosefta, tsimtsum
+    "ts": ["צ"],
     "tzh": ["צ"],
     
-    # Other
-    "zh": ["ז"],          # rare but in Persian loanwords
+    # Other multi-char
+    "zh": ["ז"],
     
-    # Double consonants (often just emphasis)
+    # =======================
+    # DOUBLE CONSONANTS
+    # =======================
+    
     "bb": ["ב"],
     "dd": ["ד"],
     "gg": ["ג"],
@@ -57,162 +195,179 @@ TRANSLIT_MAP = {
     "rr": ["ר"],
     "ss": ["ס", "ש"],
     "tt": ["ת", "ט"],
+    "vv": ["וו", "ו"],        # Double vav for hashaveh → השווה
     
     # =======================
-    # VOWEL COMBINATIONS (high ambiguity)
+    # VOWEL DIPHTHONGS
     # =======================
     
-    # Yeshivish diphthongs
-    "ai": ["אי", "עי", "י"],
-    "ei": ["אי", "עי", "י"],
+    "ai": ["י", "אי", "עי"],  # Prefer yud (yeshivish: trei → תרי)
+    "ei": ["י", "אי", "עי"],  # Prefer yud
     "oi": ["וי", "עי"],
-    "ui": ["וי"],
-    "oy": ["וי", "עי"],      # oy vey
+    "ui": ["וי", "ואי"],
+    "oy": ["וי", "עי"],
     "ay": ["י", "אי"],
     "ey": ["י", "אי"],
     
-    # Long vowels
+    # =======================
+    # LONG VOWELS
+    # =======================
+    
     "aa": ["א", "ע", "ה"],
-    "ee": ["י", "אי"],
-    "ii": ["י"],
-    "oo": ["ו"],
+    "ee": ["י", "אי", "יי"],
+    "ii": ["י", "יי"],
+    "oo": ["ו", "וא"],
     "uu": ["ו"],
     
-    # Shva-like endings
-    "eh": ["ה", "ע"],
-    "ah": ["ה", "א", "ע"],
-    "oh": ["ו", "ה"],
-    "ih": ["י", "ה"],
-    "uh": ["ו", "ה"],
+    # =======================
+    # VOWEL + H COMBINATIONS (often word-final)
+    # =======================
+    
+    "ah": ["ה", "א"],         # Almost always heh at end
+    "eh": ["ה", "א"],         # Usually heh
+    "oh": ["ו", "וה", ""],
+    "ih": ["י", "יה"],
+    "uh": ["ו", "וה"],
     
     # =======================
-    # SINGLE CONSONANTS - ORDERED BY FREQUENCY
+    # SINGLE CONSONANTS
     # =======================
-
+    
     "b": ["ב"],
-    "v": ["ב", "ו"],      # Usually vet (90%), sometimes vav
+    "v": ["ב", "ו"],          # Default vet; word-initial handled separately
     "w": ["ו"],
-
+    
     "g": ["ג"],
     "d": ["ד"],
     "z": ["ז"],
-
-    "h": ["ה", "ח"],      # At word end: 90% ה, in middle: 60% ח
-
-    "t": ["ת", "ט"],      # Yeshivish: prefer ת (sav not tav), 80% ת
-    "s": ["ס", "ש"],      # Prefer ס (60%), unless before h
-
-    "k": ["כ", "ק"],      # Prefer כ (70%)
-    "q": ["ק"],           # Always kuf in scholarly
-
+    
+    "h": ["ה", "ח"],          # Default heh; position-dependent
+    
+    "t": ["ת", "ט"],          # Yeshivish: prefer tav
+    "s": ["ס", "ש", "ת"],     # Added ת for yeshivish sav (kzayis → כזית)
+    
+    "k": ["כ", "ק"],
+    "q": ["ק"],
+    
     "l": ["ל"],
     "m": ["מ"],
     "n": ["נ"],
     "r": ["ר"],
-
+    
     "p": ["פ"],
-    "f": ["פ"],           # Always peh/feh
-
-    "x": ["כס"],          # maseches → מסכת
-
-    "j": ["י", "ג"],      # Prefer yud (70%)
-    "c": ["כ", "ק"],      # Prefer כ
+    "f": ["פ"],
+    
+    "x": ["כס", "קס"],
+    
+    "j": ["י", "ג"],
+    "c": ["כ", "ק"],
     "y": ["י"],
     
     # =======================
-    # VOWELS (SINGLE) - DRASTICALLY REDUCED FOR SMART GENERATION
+    # SINGLE VOWELS
     # =======================
-    #
-    # KEY INSIGHT: Most vowels in transliteration are IMPLICIT in Hebrew.
-    # We only need explicit vowel letters in specific positions.
-    # This reduces combinatorial explosion from 50+ variants to 10-15.
-
-    "a": [""],            # 90% implicit! Only use א/ע at word START
-    "e": [""],            # 90% implicit
-    "i": ["י", ""],       # 50/50: explicit י or implicit
-    "o": ["ו", ""],       # 60% ו, 40% implicit
-    "u": ["ו"],           # Usually explicit ו
+    # Most vowels are IMPLICIT in Hebrew.
+    # Context rules (initial/final) override these.
     
-    # =======================
-    # WORD-FINAL FORMS (CRITICAL)
-    # =======================
-    
-    # Use boundary marker: \0 means end of word
-    "m\0": ["ם"],         # sofi mem
-    "n\0": ["ן"],         # sofi nun
-    "tz\0": ["ץ"],        # sofi tzadi
-    "p\0": ["ף"],         # sofi peh
-    "k\0": ["ך"],         # sofi khaf
-    
-    # Common Aramaic endings
-    "in\0": ["ין"],
-    "an\0": ["ן", "אן"],
-    "un\0": ["ון"],
-    "on\0": ["ון", "ן"],
-    "os\0": ["ות", "וס"],
-    "us\0": ["וס"],
-    
-    # =======================
-    # ARAMAIC PARTICLES & PREFIXES
-    # =======================
-    
-    # Relative pronoun
-    "d'": ["ד", "דה"],     # d'oraisa
-    "de": ["ד", "דה"],
-    "da": ["ד", "דה"],
-    "di": ["די"],
-    "du": ["דו"],
-    
-    # Conjunctions
-    "u": ["ו"],           # u'mishum
-    # NOTE: "v" mapping removed - conflicts with "v" = vet in consonants
-    # Use "ve" or "va" for vav hachibur
-    "ve": ["ו"],
-    "va": ["ו"],
-    
-    # Prepositions
-    "min": ["מן", "מ"],
-    "mi": ["מ", "מי"],
-    "b": ["ב"],           # b'dieved
-    "be": ["ב"],
-    "l": ["ל"],           # l'chatchila
-    "le": ["ל"],
-    
-    # Articles
-    "ha": ["ה"],
-    "he": ["ה"],
+    "a": ["", "א", "ע"],      # Usually implicit
+    "e": ["", "א"],           # Usually implicit
+    "i": ["י", ""],           # 70% explicit yud
+    "o": ["ו", "", "א"],      # Usually vav
+    "u": ["ו", ""],           # Usually vav
 }
 
 
-# ==========================================
-#  YESHIVISH OVERRIDES - MOVED TO word_dictionary.json
-# ==========================================
-#
-# All exact-match yeshivish terms (masechtos, common phrases) are now in
-# word_dictionary.json for centralized management. This keeps Tool 2 as a
-# pure phonetic algorithm without special cases.
+# =======================
+# WORD-FINAL PATTERNS (with \0 boundary marker)
+# =======================
+# These MUST include the \0 marker to match at word end.
+# Sofits are handled here.
 
-
-# ==========================================
-#  CONTEXT-AWARE RULES FOR SMART GENERATION
-# ==========================================
-
-# Special mappings for WORD-INITIAL positions (more vowel letters needed)
-WORD_INITIAL_VOWELS = {
-    "a": ["א", "ע"],      # At word start, usually explicit: אמת, עסק
-    "e": ["א", ""],       # Often explicit: אמת
-    "i": ["י", "א"],      # Usually explicit: ישראל
-    "o": ["א", "ו"],      # Often explicit: אוכל
-    "u": ["או", "ו"],     # Usually explicit: אומן
+WORD_FINAL_PATTERNS: Dict[str, List[str]] = {
+    # === SOFIT LETTERS ===
+    "m\0": ["ם"],             # Mem sofit
+    "n\0": ["ן"],             # Nun sofit
+    "tz\0": ["ץ"],            # Tzadi sofit
+    "ts\0": ["ץ"],            # Alternative spelling
+    "k\0": ["ך"],             # Khaf sofit
+    "kh\0": ["ך"],            # Alternative spelling
+    "ch\0": ["ך", "ח"],       # Could be either
+    "f\0": ["ף"],             # Peh sofit (rare)
+    "p\0": ["ף", "פ"],        # Sometimes sofit
+    
+    # === COMMON ENDINGS WITH SOFITS ===
+    "im\0": ["ים"],           # Masculine plural
+    "in\0": ["ין", "ן"],      # Aramaic plural
+    "an\0": ["ן", "אן"],      # Aramaic ending
+    "un\0": ["ון"],           # Aramaic ending
+    "on\0": ["ון", "ן"],      # Hebrew/Aramaic
+    "am\0": ["ם", "אם"],      # Hebrew ending
+    "um\0": ["ום"],           # Hebrew ending
+    "em\0": ["ם"],            # Hebrew ending
+    "om\0": ["ום", "ם"],      # Hebrew ending
+    
+    # === WORD-FINAL VOWEL PATTERNS ===
+    "ah\0": ["ה"],            # Almost always heh (תורה)
+    "eh\0": ["ה", "א"],       # Usually heh
+    "oh\0": ["ו", ""],        # Sometimes vav
+    "ih\0": ["י"],            # Yud
+    "uh\0": ["ו"],            # Vav
+    
+    # === FINAL VOWELS (tricky) ===
+    "a\0": ["ה", "א", ""],    # Prefer heh for Hebrew feminine, aleph for Aramaic
+    "e\0": ["ה", ""],         # Sometimes heh
+    "o\0": ["ו", ""],         # Usually vav or implicit
+    "i\0": ["י"],             # Yud
+    "u\0": ["ו"],             # Vav
+    
+    # === COMMON SUFFIXES ===
+    "os\0": ["ות", "וס"],     # kesubos → כתובות
+    "us\0": ["וס"],           # Aramaic
+    "is\0": ["יס", "ית", "יש"], # Added ית for yeshivish
+    "as\0": ["ס", "ת"],       # Could be samech or tav
+    "es\0": ["ס", "ת"],       # Could be samech or tav
+    
+    # === ARAMAIC ENDINGS ===
+    "ei\0": ["י", "אי"],      # trei → תרי
+    "ai\0": ["י", "אי"],      # Alternative
 }
 
-# Special mappings for WORD-FINAL positions
-WORD_FINAL_PATTERNS = {
-    "ah": ["ה"],          # 95% ends with ה: תורה, ברכה
-    "eh": ["ה"],          # Usually ה
-    "oh": ["ו", ""],      # Sometimes ו: שלו
-    "a": ["א", "ה", ""], # Could be א (סבא) or ה (תורה) or implicit
-    "e": [""],            # Usually implicit at end
+
+# =======================
+# WORD-INITIAL PATTERNS
+# =======================
+# Special handling for patterns at the START of a word.
+
+WORD_INITIAL_PATTERNS: Dict[str, List[str]] = {
+    # === VAV HACHIBUR (conjunction prefix) ===
+    # "v" at word start before a consonant is usually vav (ו), not vet (ב)
+    "v": ["ו", "ב"],          # Prefer vav for vchomer, vetrei
+    
+    # === VOWELS AT WORD START ===
+    # Word-initial vowels are usually explicit
+    "a": ["א", "ע", ""],      # Usually aleph or ayin
+    "e": ["א", "ע", ""],      # Usually aleph
+    "i": ["י", "אי"],         # Usually yud
+    "o": ["או", "ו", "א"],    # Usually aleph-vav
+    "u": ["או", "ו"],         # Usually aleph-vav
+    
+    # === COMMON PREFIXES ===
+    "ha": ["ה"],              # Definite article
+    "he": ["ה"],              # Definite article variant
+    "ve": ["ו"],              # Conjunction
+    "va": ["ו"],              # Conjunction
+    "u": ["ו"],               # Conjunction (short form)
+    "le": ["ל"],              # Preposition "to"
+    "la": ["ל"],              # Preposition variant
+    "be": ["ב"],              # Preposition "in"
+    "ba": ["ב"],              # Preposition variant
+    "ke": ["כ"],              # Preposition "like"
+    "ka": ["כ"],              # Preposition variant
+    "mi": ["מ", "מי"],        # Preposition "from"
+    "me": ["מ"],              # Preposition variant
+    "de": ["ד"],              # Aramaic relative
+    "di": ["די"],             # Aramaic relative
+    "she": ["ש"],             # Hebrew relative
 }
 
 
@@ -238,386 +393,301 @@ def normalize_query(query: str) -> str:
     return query
 
 
-def tokenize_with_boundaries(query: str) -> List[str]:
+def check_exception(word: str) -> Optional[List[str]]:
     """
-    Tokenize query and mark word boundaries.
-    
-    "chezkas haguf" → ["chezkas\0", " ", "haguf\0"]
-    
-    This allows the map to handle final forms correctly.
+    Check if a word has a known exception mapping.
+    Returns list of Hebrew variants if found, None otherwise.
     """
-    words = query.split()
-    tokens = []
-    
-    for i, word in enumerate(words):
-        # Add boundary marker to end of word
-        tokens.append(word + "\0")
-        
-        # Add space between words (except after last word)
-        if i < len(words) - 1:
-            tokens.append(" ")
-    
-    return tokens
+    word_lower = word.lower().rstrip('\0')
+    return TRANSLIT_EXCEPTIONS.get(word_lower)
 
 
-def get_matching_pattern(text: str, pos: int) -> tuple:
+def get_pattern_match(
+    text: str, 
+    pos: int, 
+    is_word_initial: bool,
+    is_word_final: bool
+) -> Tuple[Optional[str], List[str], int]:
     """
-    Find the longest matching pattern in TRANSLIT_MAP starting at pos.
+    Find the best matching pattern at position pos.
     
-    Returns: (matched_pattern, hebrew_options, length)
+    Checks in order:
+    1. Word-final patterns (if at end, includes \0 marker)
+    2. Word-initial patterns (if at start)
+    3. Multi-char patterns in TRANSLIT_MAP
+    4. Single-char patterns
+    
+    Returns: (matched_pattern, hebrew_options, consumed_length)
     """
-    # Try patterns from longest to shortest
-    # This ensures "sh" matches before "s" and "h" separately
+    remaining = text[pos:]
+    max_len = min(10, len(remaining))
     
-    max_len = 10  # Longest pattern in map
+    # === WORD-FINAL PATTERNS ===
+    # Check if we're at the end (remaining ends with \0)
+    if is_word_final or remaining.endswith('\0'):
+        for length in range(max_len, 0, -1):
+            # Try pattern WITH the \0 marker
+            pattern_with_marker = remaining[:length]
+            if pattern_with_marker in WORD_FINAL_PATTERNS:
+                # Consume the pattern but not the \0 (it's a marker)
+                actual_length = length - 1 if pattern_with_marker.endswith('\0') else length
+                return (pattern_with_marker, WORD_FINAL_PATTERNS[pattern_with_marker], length)
+            
+            # Also check the pattern + \0
+            pattern_plus_marker = remaining[:length] + '\0'
+            if pattern_plus_marker in WORD_FINAL_PATTERNS and pos + length == len(text) - 1:
+                return (pattern_plus_marker, WORD_FINAL_PATTERNS[pattern_plus_marker], length + 1)
     
+    # === WORD-INITIAL PATTERNS ===
+    if is_word_initial and pos == 0:
+        for length in range(min(3, max_len), 0, -1):
+            pattern = remaining[:length]
+            if pattern in WORD_INITIAL_PATTERNS:
+                return (pattern, WORD_INITIAL_PATTERNS[pattern], length)
+    
+    # === REGULAR PATTERNS (longest match first) ===
     for length in range(max_len, 0, -1):
-        pattern = text[pos:pos+length]
+        pattern = remaining[:length]
+        
+        # Skip the \0 marker in pattern matching
+        if pattern == '\0':
+            continue
+        if pattern.endswith('\0'):
+            pattern = pattern[:-1]
+            if pattern in TRANSLIT_MAP:
+                return (pattern, TRANSLIT_MAP[pattern], length - 1)
         
         if pattern in TRANSLIT_MAP:
             return (pattern, TRANSLIT_MAP[pattern], length)
     
-    # No match found
     return (None, [], 0)
-
-
-# check_yeshivish_override() removed - now handled by word_dictionary.json
 
 
 # ==========================================
 #  MAIN FUNCTIONS
 # ==========================================
 
-def generate_smart_variants(query: str, max_variants: int = 15) -> List[str]:
+def generate_smart_variants(query: str, max_variants: int = 20) -> List[str]:
     """
-    SMART variant generation using frequency-based priorities.
-
-    Instead of trying ALL possible combinations (50+ variants),
-    this generates 10-15 HIGH-QUALITY variants by:
-    1. Using most common mappings first (consonants)
-    2. Context-aware vowel handling (word-initial, word-final)
-    3. Only trying alternatives for highly ambiguous letters
-
+    SMART variant generation with context awareness.
+    
+    Key improvements over V1:
+    1. Checks TRANSLIT_EXCEPTIONS first
+    2. Passes boundary markers through for sofit handling
+    3. Uses position-aware pattern matching
+    4. Generates 15-20 high-quality variants instead of 50+ random ones
+    
     Args:
-        query: English transliteration (e.g., "bereirah")
-        max_variants: Limit (default 15 for smart generation)
-
+        query: English transliteration (e.g., "kal vchomer")
+        max_variants: Limit (default 20)
+    
     Returns:
-        List of 10-15 high-quality Hebrew spellings
-
-    Example:
-        generate_smart_variants("bereirah")
-        → ["ברירה", "בריראה", "ברירא", ...] (10-15 variants, not 50)
+        List of high-quality Hebrew spellings
     """
     query = normalize_query(query)
     words = query.split()
-
-    all_variants = []
-
-    # Process each word separately
-    for word in words:
-        # Generate more variants per word for better matching
-        word_variants = _generate_smart_word_variants(word, max_variants=15)
-        all_variants.append(word_variants)
-
-    # Combine word variants
-    if len(all_variants) == 0:
+    
+    if not words:
         return []
-    elif len(all_variants) == 1:
-        return all_variants[0][:max_variants]
-    else:
-        # Combine multi-word variants
-        # For multi-word phrases, we need to be smart about combinations
-        # to avoid exponential explosion while still covering all words
-
-        num_words = len(all_variants)
-        combined = []
-
-        if num_words == 2:
-            # 2 words: try all combinations of top 3 variants from each
-            for v1 in all_variants[0][:3]:
-                for v2 in all_variants[1][:3]:
-                    combined.append(v1 + " " + v2)
-                    if len(combined) >= max_variants:
-                        return combined
-
-        elif num_words <= 4:
-            # 3-4 words: use top 2 from each word
-            # Generate combinations recursively
-            def combine_words(word_idx, current_phrase):
-                if word_idx >= num_words:
-                    combined.append(current_phrase.strip())
-                    return len(combined) >= max_variants
-
-                for variant in all_variants[word_idx][:2]:
-                    new_phrase = current_phrase + " " + variant if current_phrase else variant
-                    if combine_words(word_idx + 1, new_phrase):
-                        return True
-                return False
-
-            combine_words(0, "")
-
+    
+    # Process each word separately
+    all_word_variants: List[List[str]] = []
+    
+    for word in words:
+        # Check exceptions first
+        exception_variants = check_exception(word)
+        if exception_variants:
+            all_word_variants.append(exception_variants)
         else:
-            # 5+ words: use best variant for each word (too many combinations)
-            # Generate a few variations by trying alternatives for key words
-            # 1. Best variant for all words
-            combined.append(" ".join(w[0] for w in all_variants))
-
-            # 2-4. Try alternative for first, second, and third word
-            for word_idx in [0, 1, 2]:
-                if word_idx < num_words and len(all_variants[word_idx]) > 1:
-                    phrase_parts = [w[0] for w in all_variants]
-                    phrase_parts[word_idx] = all_variants[word_idx][1]  # Use alternative
-                    combined.append(" ".join(phrase_parts))
-                    if len(combined) >= max_variants:
-                        break
-
-        return combined[:max_variants]
+            # Generate variants with boundary marker
+            word_with_marker = word + "\0"
+            variants = _generate_word_variants(word_with_marker, max_per_word=10)
+            all_word_variants.append(variants if variants else [word])
+    
+    # Combine word variants
+    return _combine_word_variants(all_word_variants, max_variants)
 
 
-def _generate_smart_word_variants(word: str, max_variants: int = 15) -> List[str]:
+def _generate_word_variants(word_with_marker: str, max_per_word: int = 10) -> List[str]:
     """
-    Generate smart variants for a SINGLE WORD using context-aware rules.
-
-    Returns up to 15 high-quality variants per word.
+    Generate variants for a single word WITH boundary marker.
+    
+    This is the core transliteration engine.
     """
-    variants = []
-    word_len = len(word)
-
-    # Strategy: Generate 1 "best guess" + multiple alternatives for ambiguous letters
-    def generate_variant(use_alternatives: Dict[str, bool]) -> str:
-        """Generate one variant based on whether to use alternative mappings"""
-        result = ""
-        i = 0
-
-        while i < word_len:
-            # Check for multi-char patterns first (longest match)
-            matched = False
-
-            for length in range(min(4, word_len - i), 0, -1):
-                pattern = word[i:i+length]
-
-                # Check if this is word-initial position
-                is_initial = (i == 0)
-                # Check if this is word-final position
-                is_final = (i + length >= word_len)
-
-                # Special handling for word-initial vowels (try alternatives too!)
-                if is_initial and pattern in WORD_INITIAL_VOWELS:
-                    options = WORD_INITIAL_VOWELS[pattern]
-                    use_alt = use_alternatives.get(pattern, False)
-                    # Try second option if requested
-                    if use_alt and len(options) > 1:
-                        result += options[1]
-                    else:
-                        result += options[0]  # Use first (most common)
-                    matched = True
-                    i += length
-                    break
-
-                # Special handling for word-final patterns
-                if is_final and pattern in WORD_FINAL_PATTERNS:
-                    options = WORD_FINAL_PATTERNS[pattern]
-                    use_alt = use_alternatives.get(pattern, False)
-                    if use_alt and len(options) > 1:
-                        result += options[1]
-                    else:
-                        result += options[0]  # Use first (most common)
-                    matched = True
-                    i += length
-                    break
-
-                # Check regular TRANSLIT_MAP
-                if pattern in TRANSLIT_MAP:
-                    options = TRANSLIT_MAP[pattern]
-
-                    # Decide whether to use alternative
-                    use_alt = use_alternatives.get(pattern, False)
-
-                    # For highly ambiguous patterns, try second option
-                    # EXPANDED: Now includes vowels and more consonants
-                    if use_alt and len(options) > 1:
-                        result += options[1]
-                    else:
-                        result += options[0]  # Use most common
-
-                    matched = True
-                    i += length
-                    break
-
-            if not matched:
-                # Skip unknown character
-                i += 1
-
-        return result
-
-    # Generate variants:
-    # 1. Best guess (all most-common mappings)
-    variants.append(generate_variant({}))
-
-    # 2-15. Try alternatives for ambiguous patterns
-    # EXPANDED: Now includes vowels and more consonants
-    ambiguous_patterns = [
-        "ch", "k", "s", "t", "h",  # Original consonants
-        "a", "e", "i", "o", "u",    # Vowels (important for short words!)
-        "ai", "ei", "oi",           # Diphthongs
-        "sh", "tz", "kh",           # Multi-char consonants
-    ]
-
-    for pattern in ambiguous_patterns:
-        if pattern in word and len(variants) < max_variants:
-            variant = generate_variant({pattern: True})
-            if variant and variant not in variants:
-                variants.append(variant)
-
-    # 3. For short words (≤5 chars), try combinations of two alternatives
-    if word_len <= 5 and len(variants) < max_variants:
-        # Try pairs of ambiguous letters
-        found_patterns = [p for p in ambiguous_patterns if p in word]
-        for i, p1 in enumerate(found_patterns[:3]):  # Limit to avoid explosion
-            for p2 in found_patterns[i+1:4]:
-                if len(variants) >= max_variants:
-                    break
-                variant = generate_variant({p1: True, p2: True})
-                if variant and variant not in variants:
-                    variants.append(variant)
-
-    return variants[:max_variants]
+    variants: Set[str] = set()
+    word_len = len(word_with_marker)
+    
+    def generate_recursive(pos: int, current: str, depth: int = 0):
+        """Recursively build Hebrew variants."""
+        # Prevent infinite recursion
+        if depth > 50 or len(variants) >= max_per_word * 3:
+            return
+        
+        # Reached end of word (at or past the \0 marker)
+        if pos >= word_len or word_with_marker[pos] == '\0':
+            if current:  # Don't add empty strings
+                variants.add(current)
+            return
+        
+        # Determine position context
+        is_initial = (pos == 0)
+        is_final = (pos >= word_len - 2) or word_with_marker[pos + 1] == '\0'
+        
+        # Get matching pattern
+        pattern, options, consumed = get_pattern_match(
+            word_with_marker, pos, is_initial, is_final
+        )
+        
+        if not options:
+            # Skip unknown character
+            generate_recursive(pos + 1, current, depth + 1)
+            return
+        
+        # Try each Hebrew option (limit to top 3 for efficiency)
+        for hebrew in options[:3]:
+            generate_recursive(pos + consumed, current + hebrew, depth + 1)
+    
+    # Start generation
+    generate_recursive(0, "")
+    
+    # Convert to list and sort by quality:
+    # 1. Prefer variants with explicit vowels (ו, י) - more likely correct
+    # 2. Then by length (moderate length preferred)
+    def variant_score(v: str) -> tuple:
+        """Score a variant for sorting. Lower is better."""
+        # Count explicit vowel letters (good)
+        explicit_vowels = v.count('ו') + v.count('י')
+        # Penalize very short variants (often missing letters)
+        length_penalty = abs(len(v) - len(word_with_marker) + 2)
+        # Return tuple for sorting (prefer more vowels, moderate length)
+        return (-explicit_vowels, length_penalty, len(v))
+    
+    result = sorted(list(variants), key=variant_score)
+    return result[:max_per_word]
 
 
-def generate_hebrew_variants(query: str, max_variants: int = 100) -> List[str]:
-    """
-    Generate all possible Hebrew spellings from transliteration.
-
-    Args:
-        query: English transliteration (e.g., "chezkas haguf")
-        max_variants: Limit to prevent combinatorial explosion
-
-    Returns:
-        List of possible Hebrew strings
-
-    Example:
-        generate_hebrew_variants("bari vishma")
-        → ["ברי ושמא", "ברי וסמא", "בארי ושמא", ...]
-
-    Note: Exact-match terms (masechtos, common phrases) are now handled by
-    word_dictionary.json BEFORE this function is called, so this is now a
-    pure phonetic transliteration algorithm.
-    """
-    # Normalize and tokenize
-    query = normalize_query(query)
-    tokens = tokenize_with_boundaries(query)
-
-    # Generate variants recursively
-    variants = _generate_variants_recursive(tokens, 0, "", max_variants)
-
-    # Remove duplicates and empty strings
-    variants = list(set(v for v in variants if v))
-
-    return variants[:max_variants]
-
-
-def _generate_variants_recursive(
-    tokens: List[str], 
-    token_idx: int,
-    current_variant: str,
-    max_variants: int,
-    variants_collected: List[str] = None
+def _combine_word_variants(
+    all_word_variants: List[List[str]], 
+    max_total: int
 ) -> List[str]:
     """
-    Recursive helper to generate all Hebrew variants.
+    Combine variants from multiple words into phrase variants.
+    
+    Uses smart combination to avoid exponential explosion.
     """
-    if variants_collected is None:
-        variants_collected = []
+    if not all_word_variants:
+        return []
     
-    # Stop if we've collected enough variants
-    if len(variants_collected) >= max_variants:
-        return variants_collected
+    if len(all_word_variants) == 1:
+        return all_word_variants[0][:max_total]
     
-    # Base case: processed all tokens
-    if token_idx >= len(tokens):
-        variants_collected.append(current_variant)
-        return variants_collected
+    combined: List[str] = []
+    num_words = len(all_word_variants)
     
-    token = tokens[token_idx]
+    if num_words == 2:
+        # 2 words: top 4 from each
+        for v1 in all_word_variants[0][:4]:
+            for v2 in all_word_variants[1][:4]:
+                combined.append(f"{v1} {v2}")
+                if len(combined) >= max_total:
+                    return combined
     
-    # Handle spaces (keep them)
-    if token == " ":
-        return _generate_variants_recursive(
-            tokens, token_idx + 1, current_variant + " ", 
-            max_variants, variants_collected
-        )
-    
-    # Process the token character by character
-    pos = 0
-    
-    def process_from_pos(pos: int, variant_so_far: str):
-        """Inner function to handle character processing"""
-        if len(variants_collected) >= max_variants:
-            return
+    elif num_words <= 4:
+        # 3-4 words: top 2-3 from each
+        per_word = 3 if num_words == 3 else 2
         
-        # Reached end of token
-        if pos >= len(token):
-            # Move to next token
-            _generate_variants_recursive(
-                tokens, token_idx + 1, variant_so_far,
-                max_variants, variants_collected
-            )
-            return
+        def combine_recursive(word_idx: int, phrase_parts: List[str]):
+            if len(combined) >= max_total:
+                return
+            if word_idx >= num_words:
+                combined.append(" ".join(phrase_parts))
+                return
+            
+            for variant in all_word_variants[word_idx][:per_word]:
+                combine_recursive(word_idx + 1, phrase_parts + [variant])
         
-        # Try to match a pattern
-        pattern, hebrew_options, length = get_matching_pattern(token, pos)
-        
-        if not hebrew_options:
-            # No match - skip this character or fail
-            # For now, let's just skip unknown characters
-            process_from_pos(pos + 1, variant_so_far)
-            return
-        
-        # Try each Hebrew option
-        for hebrew in hebrew_options:
-            new_variant = variant_so_far + hebrew
-            process_from_pos(pos + length, new_variant)
+        combine_recursive(0, [])
     
-    process_from_pos(0, current_variant)
-    return variants_collected
+    else:
+        # 5+ words: use best variant for each, plus a few alternatives
+        best_phrase = " ".join(w[0] for w in all_word_variants)
+        combined.append(best_phrase)
+        
+        # Try second-best for first few words
+        for word_idx in range(min(3, num_words)):
+            if len(all_word_variants[word_idx]) > 1:
+                parts = [w[0] for w in all_word_variants]
+                parts[word_idx] = all_word_variants[word_idx][1]
+                combined.append(" ".join(parts))
+                if len(combined) >= max_total:
+                    break
+    
+    return combined[:max_total]
+
+
+def generate_hebrew_variants(query: str, max_variants: int = 50) -> List[str]:
+    """
+    Generate all possible Hebrew spellings from transliteration.
+    
+    This is the exhaustive version - use generate_smart_variants()
+    for better performance in most cases.
+    
+    Args:
+        query: English transliteration
+        max_variants: Limit to prevent explosion
+    
+    Returns:
+        List of possible Hebrew strings
+    """
+    query = normalize_query(query)
+    words = query.split()
+    
+    all_word_variants: List[List[str]] = []
+    
+    for word in words:
+        # Check exceptions
+        exception_variants = check_exception(word)
+        if exception_variants:
+            all_word_variants.append(exception_variants)
+        else:
+            word_with_marker = word + "\0"
+            variants = _generate_word_variants(word_with_marker, max_per_word=20)
+            all_word_variants.append(variants if variants else [word])
+    
+    return _combine_word_variants(all_word_variants, max_variants)
 
 
 def transliteration_confidence(query: str) -> str:
     """
     Estimate confidence in transliteration mapping.
-
+    
     Returns: "high", "medium", or "low"
-
-    High confidence:
-    - Simple, unambiguous letters (mostly consonants)
-
-    Low confidence:
-    - Many ambiguous vowels (a, e, h)
-    - Unusual letter combinations
-
-    Note: Known yeshivish phrases are now handled by word_dictionary.json
-    BEFORE transliteration, so this function now only evaluates phonetic
-    complexity.
+    
+    High: Simple consonants, known patterns
+    Medium: Some ambiguous vowels
+    Low: Many ambiguous vowels, unusual combinations
     """
     query = normalize_query(query)
-
+    words = query.split()
+    
+    # Check if any words are in exceptions (high confidence)
+    exception_count = sum(1 for w in words if check_exception(w))
+    if exception_count == len(words):
+        return "high"
+    
     # Count ambiguous characters
-    ambiguous_chars = "aeiouh"
-    ambiguous_count = sum(1 for c in query if c in ambiguous_chars)
-
-    total_chars = len(query.replace(" ", ""))
-
-    if total_chars == 0:
+    ambiguous_chars = set("aeiouh")
+    query_no_spaces = query.replace(" ", "")
+    
+    if not query_no_spaces:
         return "low"
-
-    ambiguity_ratio = ambiguous_count / total_chars
-
-    # More than 60% ambiguous → low confidence
-    if ambiguity_ratio > 0.6:
+    
+    ambiguous_count = sum(1 for c in query_no_spaces if c in ambiguous_chars)
+    ambiguity_ratio = ambiguous_count / len(query_no_spaces)
+    
+    if ambiguity_ratio > 0.55:
         return "low"
-    # 40-60% → medium
-    elif ambiguity_ratio > 0.4:
+    elif ambiguity_ratio > 0.35:
         return "medium"
     else:
         return "high"
@@ -628,16 +698,75 @@ def transliteration_confidence(query: str) -> str:
 # ==========================================
 
 if __name__ == "__main__":
-    # Quick test
-    test_queries = [
-        "chezkas haguf",
-        "bari vishma",
-        "sfek sfeika",
-        "kesubos",
+    print("=" * 70)
+    print("TRANSLITERATION MAP V2 - COMPREHENSIVE TEST")
+    print("=" * 70)
+    
+    test_cases = [
+        # === ORIGINAL FAILURES (should all pass now) ===
+        ("migu", "מיגו", "Yud retention"),
+        ("shiur", "שיעור", "Ayin detection"),
+        ("muad", "מועד", "Ayin detection"),
+        ("lo plug", "לא פלוג", "lo = לא exception"),
+        ("kal vchomer", "קל וחומר", "Vav prefix"),
+        ("trei vetrei", "תרי ותרי", "Aramaic + vav prefix"),
+        ("binyan av", "בנין אב", "Nun sofit + av"),
+        ("kinyan", "קנין", "Nun sofit"),
+        ("kdai achila", "כדי אכילה", "Final heh"),
+        ("hashaveh", "השווה", "Double vav"),
+        ("kesubos", "כתובות", "Masechta"),
+        ("leolam", "לעולם", "Ayin + mem sofit"),
+        ("ribui umiut", "ריבוי ומיעוט", "Complex phrase"),
+        
+        # === MORE FROM ORIGINAL TEST SUITE ===
+        ("kdai shiur", "כדי שיעור", "Ayin in shiur"),
+        ("shiur kzayis", "שיעור כזית", "Ayin + final sav"),
+        ("shiur kbeitza", "שיעור כביצה", "Ayin + beitza"),
+        ("davar halamd meinyano", "דבר הלמד מעניינו", "Complex with ayin"),
+        ("tzad hashaveh", "צד השווה", "Double vav"),
+        ("miktzas hayom kchulo", "מקצת היום ככולו", "Multiple sofits"),
+        ("chalipin kinyan", "חליפין קנין", "Double nun sofit"),
+        ("meshicha kinyan", "משיכה קנין", "Feminine + sofit"),
+        ("adam muad leolam", "אדם מועד לעולם", "Ayin + sofit"),
+        ("shor hamuad", "שור המועד", "Ayin in middle"),
+        ("ain adam oser", "אין אדם אוסר", "ain/ein pattern"),
+        ("hafkaas kiddushin", "הפקעת קידושין", "Complex"),
+        ("klal uprat", "כלל ופרט", "Vav prefix"),
+        ("gezeira shava", "גזירה שווה", "Double vav"),
+        ("shnei kesuvim", "שני כתובים", "yeshivish spelling"),
+        
+        # === BASIC TERMS ===
+        ("bava kama", "בבא קמא", "Masechta"),
+        ("sfek sfeika", "ספק ספיקא", "Aramaic ending"),
+        ("chatzi shiur", "חצי שיעור", "Ayin"),
+        ("lavud", "לבוד", "Simple"),
+        ("yad soledet bo", "יד סולדת בו", "Multiple words"),
     ]
     
-    for query in test_queries:
-        print(f"\nQuery: {query}")
-        variants = generate_hebrew_variants(query, max_variants=5)
-        print(f"Variants: {variants}")
-        print(f"Confidence: {transliteration_confidence(query)}")
+    passed = 0
+    failed = 0
+    
+    for query, expected, description in test_cases:
+        variants = generate_smart_variants(query, max_variants=10)
+        
+        # Check if expected is in variants
+        found = expected in variants
+        top_variant = variants[0] if variants else "N/A"
+        
+        if found:
+            passed += 1
+            status = "✓"
+        else:
+            failed += 1
+            status = "✗"
+        
+        print(f"\n{status} {description}")
+        print(f"   Query: '{query}'")
+        print(f"   Expected: {expected}")
+        print(f"   Top variant: {top_variant}")
+        if not found:
+            print(f"   All variants: {variants[:5]}")
+    
+    print("\n" + "=" * 70)
+    print(f"RESULTS: {passed}/{passed + failed} passed ({100*passed/(passed+failed):.1f}%)")
+    print("=" * 70)

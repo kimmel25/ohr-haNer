@@ -1,0 +1,220 @@
+# ========================================
+    # GROUP 2: TRANSLITERATION TESTS (20 tests)
+    # ========================================
+    # Terms NOT in dictionary - test smart variant generation
+    {
+        "query": "migu",    
+        "expected_hebrew": "מיגו",      #didnt work but i removed from dict. 
+        "expected_method": "any",
+        "description": "Since he could have said"
+    },
+    {
+        "query": "umdena",
+        "expected_hebrew": "אומדנא",    #worked!
+        "expected_method": "any",
+        "description": "Assessment - word-initial vowel"
+    },
+    {
+        "query": "kdai shiur",
+        "expected_hebrew": "כדי שיעור", #didt work cuz the ayin
+        "expected_method": "any",
+        "description": "K vs K' - sufficient measure"
+    },
+    {
+        "query": "trei vetrei",
+        "expected_hebrew": "תרי ותרי",  #got   → טראי וטראי and 0 hits, cuz no yud
+        "expected_method": "any",
+        "description": "Aramaic - two and two"
+    },
+    {
+        "query": "lo plug",
+        "expected_hebrew": "לא פלוג",   #didnt work because didnt get lamed alef
+        "expected_method": "any",
+        "description": "Don't distinguish"
+    },
+    {
+        "query": "chozer vniur",
+        "expected_hebrew": "חוזר ונעור",    #got dict, wat to try agai
+        "expected_method": "any",
+        "description": "Awakens again"
+    },
+    {
+        "query": "kdai achila",
+        "expected_hebrew": "כדי אכילה",     #didt get the heh at the end
+        "expected_method": "any",
+        "description": "Measure of eating"
+    },
+    {
+        "query": "ribui umiut",
+        "expected_hebrew": "ריבוי ומיעוט",      #didnt get the vav into the mem 
+        "expected_method": "any",
+        "description": "Inclusion and exclusion"
+    },
+    {
+        "query": "klal uprat",
+        "expected_hebrew": "כלל ופרט",      #dict, want to try again
+        "expected_method": "any",
+        "description": "General and specific"
+    },
+    {
+        "query": "kal vchomer",
+        "expected_hebrew": "קל וחומר",   #failed, didnt get the vav
+        "expected_method": "any",
+        "description": "A fortiori"
+    },
+    {
+        "query": "gezeira shava",
+        "expected_hebrew": "גזירה שווה",        #found in dict, should also add gezeiras. would def fail tho
+        "expected_method": "any",
+        "description": "Textual analogy"
+    },
+    {
+        "query": "binyan av",
+        "expected_hebrew": "בנין אב",           #failed, i assume because of the nun sofit
+        "expected_method": "any",
+        "description": "Paradigm - building father"
+    },
+    {
+        "query": "davar halamd meinyano",
+        "expected_hebrew": "דבר הלמד מעניינו",      #failed, didnt get the veis in davar among other issues in other words
+        "expected_method": "any",
+        "description": "Learned from context"
+    },
+    {
+        "query": "tzad hashaveh",
+        "expected_hebrew": "צד השווה",          #close but wrong, no two vavs. that is a tough one
+        "expected_method": "any",
+        "description": "Common side"
+    },
+    {
+        "query": "shnei kesuvim",
+        "expected_hebrew": "שני כתובים",            #dict, curious to try again
+        "expected_method": "any",
+        "description": "Two verses"
+    },
+    {
+        "query": "miktzas hayom kchulo",
+        "expected_hebrew": "מקצת היום ככולו",       #no hits. also i doubt it got the mem sofit
+        "expected_method": "any",
+        "description": "Part of day like whole"
+    },
+    {
+        "query": "yad soledet bo",
+        "expected_hebrew": "יד סולדת בו",       #got! yay
+        "expected_method": "any",   
+        "description": "Hand recoils from heat"
+    },
+    {
+        "query": "shiur kzayis",
+        "expected_hebrew": "שיעור כזית",        #missed the ayin and the saf
+        "expected_method": "any",
+        "description": "Olive-sized measure"
+    },
+    {
+        "query": "shiur kbeitza",
+        "expected_hebrew": "שיעור כביצה",       #missed the ayin again
+        "expected_method": "any",
+        "description": "Egg-sized measure"
+    },
+    {
+        "query": "lavud",   
+        "expected_hebrew": "לבוד",          #got it!!
+        "expected_method": "any",
+        "description": "Principle of attachment"
+    },
+
+    # ========================================
+    # GROUP 3: VECTOR SEARCH TESTS (15 tests)
+    # ========================================
+    # Complex phrases needing vector matching
+    {
+        "query": "chaticha deisura",
+        "expected_hebrew": "חתיכה דאיסורא",    #dict hit
+        "expected_method": "any",
+        "description": "Piece of forbidden - Aramaic"
+    },
+    {
+        "query": "kol davar sheyesh lo matirin",
+        "expected_hebrew": "כל דבר שיש לו מתירין",      #dict hit
+        "expected_method": "any",
+        "description": "Anything that will become permitted"
+    },
+    {
+        "query": "zeh neheneh vzeh lo chaser",
+        "expected_hebrew": "זה נהנה וזה לא חסר",        #dict hit
+        "expected_method": "any",
+        "description": "One benefits, other loses nothing"
+    },
+    {
+        "query": "ain shliach lidvar aveirah",
+        "expected_hebrew": "אין שליח לדבר עבירה",   #dict hit
+        "expected_method": "any",
+        "description": "No agency for sin"
+    },
+    {
+        "query": "kol deparish mrubo parish",
+        "expected_hebrew": "כל דפריש מרובא פריש",       #dict hit
+        "expected_method": "any",
+        "description": "What separates comes from majority"
+    },
+    {
+        "query": "rov deparish",
+        "expected_hebrew": "רוב דפריש",         #dict hit
+        "expected_method": "any",
+        "description": "Majority of what separates"
+    },
+    {
+        "query": "davar shelo ba lolam",
+        "expected_hebrew": "דבר שלא בא לעולם",          #dict hit
+        "expected_method": "any",
+        "description": "Something not yet in existence"
+    },
+    {
+        "query": "kim lei dirabanan",
+        "expected_hebrew": "קים ליה דרבנן",              #dict hit
+        "expected_method": "any",
+        "description": "Rabbinic principle - greater liability"
+    },
+    {
+        "query": "eid echad neeman bissurim",
+        "expected_hebrew": "עד אחד נאמן באיסורים",          #dict hit
+        "expected_method": "any",
+        "description": "One witness believed for prohibitions"
+    },
+    {
+        "query": "hafkaas kiddushin",
+        "expected_hebrew": "הפקעת קידושין",     #no hit, hard word though i understand
+        "expected_method": "any",
+        "description": "Annulling marriage"
+    },
+    {
+        "query": "chalipin kinyan",
+        "expected_hebrew": "חליפין קנין",           #no hit, the nun sofit again
+        "expected_method": "any",
+        "description": "Exchange acquisition"
+    },
+    {
+        "query": "meshicha kinyan",
+        "expected_hebrew": "משיכה קנין",            #no hit, the nun sofit again
+        "expected_method": "any",
+        "description": "Pulling acquisition"
+    },
+    {
+        "query": "adam muad leolam",
+        "expected_hebrew": "אדם מועד לעולם",            #no ayin in muad or mem sofit in leolam
+        "expected_method": "any",
+        "description": "Person always liable"
+    },
+    {
+        "query": "shor hamuad shenagach",
+        "expected_hebrew": "שור המועד שנגח",        #missed the vav in hamuad
+        "expected_method": "any",
+        "description": "Warned ox that gored"
+    },
+    {
+        "query": "ain adam oser davar shelo ba lolam",
+        "expected_hebrew": "אין אדם אוסר דבר שלא בא לעולם",     #sofits again
+        "expected_method": "any",
+        "description": "Cannot prohibit what doesn't exist"
+    },
+]

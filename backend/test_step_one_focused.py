@@ -128,13 +128,13 @@ TEST_CASES = [
     },
     {
         "query": "kdai shiur",
-        "expected_hebrew": "כדי שיעור",
+        "expected_hebrew": "כדי שיעור", #didt work cuz the ayin
         "expected_method": "any",
         "description": "K vs K' - sufficient measure"
     },
     {
         "query": "trei vetrei",
-        "expected_hebrew": "תרי ותרי",
+        "expected_hebrew": "תרי ותרי",  #
         "expected_method": "any",
         "description": "Aramaic - two and two"
     },
