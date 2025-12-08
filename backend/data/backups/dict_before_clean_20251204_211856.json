@@ -1,0 +1,1645 @@
+{
+  "mai kamashma lan": {
+    "hebrew": "מאי קמ",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "safek sotah": {
+    "hebrew": "ספק סוטה",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "leosrah alav": {
+    "hebrew": "לאוסרה עליו",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "shema yavoyu edim": {
+    "hebrew": "שמא יבואו עדים",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "shel tosfos": {
+    "hebrew": "של תוס",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "efshar lomar": {
+    "hebrew": "אפשר לומר",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "ksubos 22": {
+    "hebrew": "כתובות כב",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "issurei biah": {
+    "hebrew": "איסורי ביאה",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "al atzmo": {
+    "hebrew": "על עצמו",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "yoser mimeah edim": {
+    "hebrew": "יותר ממאה עדים",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "oy lo": {
+    "hebrew": "או לא",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "lefi harashba": {
+    "hebrew": "לפי הרשבא",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "safek kevadai": {
+    "hebrew": "ספק כודאי",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "hacha itman neemenes vehacha itmar einah": {
+    "hebrew": "הכא איתמר נאמנת והכא איתמר אינה",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "vlo gara": {
+    "hebrew": "ולא גרע",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "ain edim lo": {
+    "hebrew": "אין עדים לא",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "umi amar": {
+    "hebrew": "ומי אמר",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "pachos mishnyim": {
+    "hebrew": "פחות משנים",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "al haav lehavi rayah": {
+    "hebrew": "על האב להביא ראיה",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "al habaal lehavi rayah": {
+    "hebrew": "על הבעל להביא ראיה",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "lefi rashi": {
+    "hebrew": "לפי רשי",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "asaan": {
+    "hebrew": "אתאן",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "bari adif": {
+    "hebrew": "ברי עדיף",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "ed echad": {
+    "hebrew": "עד אחד",
+    "confidence": "high",
+    "usage_count": 6,
+    "source": "manual",
+    "last_used": "2025-12-03T22:24:26.256768"
+  },
+  "aval kasheh": {
+    "hebrew": "אבל קשה",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "savar": {
+    "hebrew": "סבר",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "lav bari adif": {
+    "hebrew": "לאו ברי עדיף",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "alim ley bari": {
+    "hebrew": "אלים ליה ברי",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "alim leh": {
+    "hebrew": "אלים ליה",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "mekach taos": {
+    "hebrew": "מקח טעות",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "sikum hasugya": {
+    "hebrew": "סיכום הסוגיא",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "shekasav": {
+    "hebrew": "שכתב",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "divrei harambam": {
+    "hebrew": "דברי הרמבם",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "vekeivan shechen": {
+    "hebrew": "וכיון שכן",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "bedivrei": {
+    "hebrew": "בדברי",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "ritva": {
+    "hebrew": "ריטבא",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "al": {
+    "hebrew": "על",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "aval": {
+    "hebrew": "אבל",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "ki hu zeh": {
+    "hebrew": "כי הוא זה",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "divrei hagra": {
+    "hebrew": "דברי הגרא",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "dlo amrinan": {
+    "hebrew": "דלא אמרינן",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "dezeh eyno": {
+    "hebrew": "דזה אינו",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "lehafsid ksuvasah": {
+    "hebrew": "להפסיד כתובתה",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "haynu": {
+    "hebrew": "היינו",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "yesh": {
+    "hebrew": "יש",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "divrei": {
+    "hebrew": "דברי",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "nimtza": {
+    "hebrew": "נמצא",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "al divrei tosfos": {
+    "hebrew": "על דברי תוס",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "lashon": {
+    "hebrew": "לשון",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "eyno": {
+    "hebrew": "אינו",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "uletaymech": {
+    "hebrew": "ולטעמיך",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "lekiyume milsa": {
+    "hebrew": "לקיומי מילתא",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "gitin": {
+    "hebrew": "גיטין",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "davar barur": {
+    "hebrew": "דבר ברור",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "aliba": {
+    "hebrew": "אליבא",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "ain zh mkvmv": {
+    "hebrew": "אין זה מקומו",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "dbri rshb": {
+    "hebrew": "דברי רשב",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "av ak": {
+    "hebrew": "או עכ",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "pisvi ktnh avns": {
+    "hebrew": "פיתוי קטנה אונס",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "spk avns spk rtzvn": {
+    "hebrew": "ספק אונס ספק רצון",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "vmkch kv": {
+    "hebrew": "ומכח קו",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "lsrtz kv": {
+    "hebrew": "לתרץ קו",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "lhvtzia mmvn": {
+    "hebrew": "להוציא ממון",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "shl hashh": {
+    "hebrew": "של האשה",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "lpi svs": {
+    "hebrew": "לפי תוס",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "vchzks hgvf": {
+    "hebrew": "וחזקת הגוף",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "bdf ib": {
+    "hebrew": "בדף יב",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "ain lvmr": {
+    "hebrew": "אין לומר",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "hva dla amrinn": {
+    "hebrew": "הוא דלא אמרינן",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "abl hrmb": {
+    "hebrew": "אבל הרמב",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "chvlk al": {
+    "hebrew": "חולק על",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "abl svs": {
+    "hebrew": "אבל תוס",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "bchzks mrih": {
+    "hebrew": "בחזקת מריה",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "dmbvar mgm": {
+    "hebrew": "דמבואר מגמ",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "bdf tz": {
+    "hebrew": "בדף טז",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "namnvs dr": {
+    "hebrew": "נאמנות דר",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "ad kan la kamr": {
+    "hebrew": "עד כאן לא קאמר",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "vavd hkshh": {
+    "hebrew": "ועוד הקשה",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "aliba dr": {
+    "hebrew": "אליבא דר",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "bdpi hri": {
+    "hebrew": "בדפי הרי",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "bla bal": {
+    "hebrew": "בלא בעל",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "rba amr risha kan nmtzav vkan": {
+    "hebrew": "רבא אמר רישא כאן נמצאו וכאן",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "hiv sipa nmi kan nmtzav vkan": {
+    "hebrew": "היו סיפא נמי כאן נמצאו וכאן",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "vlpi rsh": {
+    "hebrew": "ולפי רש",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "rb ashi amr risha mnh laba": {
+    "hebrew": "רב אשי אמר רישא מנה לאבא",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "bidk sipa mnh li bidk": {
+    "hebrew": "בידך סיפא מנה לי בידך",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "kvlh kr": {
+    "hebrew": "כולה כר",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "mh kv": {
+    "hebrew": "מה קו",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "sna svna klh": {
+    "hebrew": "תנא תונא כלה",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "mtzrik bv": {
+    "hebrew": "מצריך בו",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "dbri hr": {
+    "hebrew": "דברי הר",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "sipa nmi": {
+    "hebrew": "סיפא נמי",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "vlpi dbri hr": {
+    "hebrew": "ולפי דברי הר",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "namns aliba dr": {
+    "hebrew": "נאמנת אליבא דר",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "vmshvm hai tama": {
+    "hebrew": "ומשום האי טעמא",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "kl hn": {
+    "hebrew": "כל הנ",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "ain mchzikin": {
+    "hebrew": "אין מחזיקין",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "dbri ritb": {
+    "hebrew": "דברי ריטב",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "vlanin gitin": {
+    "hebrew": "ולענין גיטין",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "lika chzkh dmmvna": {
+    "hebrew": "ליכא חזקה דממונא",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "bsr chzks hgvf": {
+    "hebrew": "בתר חזקת הגוף",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "dbri hra": {
+    "hebrew": "דברי הרא",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "lshvn hsvs": {
+    "hebrew": "לשון התוס",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "ain zh kv": {
+    "hebrew": "אין זה קו",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "bdbri hra": {
+    "hebrew": "בדברי הרא",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "ksb vz": {
+    "hebrew": "כתב וז",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "shainv idva": {
+    "hebrew": "שאינו ידוע",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "shla iabr aliv": {
+    "hebrew": "שלא יעבר עליו",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "bitvl balma sgi": {
+    "hebrew": "ביטול בעלמא סגי",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "rbinv prtz": {
+    "hebrew": "רבינו פרץ",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "lshvn hritb": {
+    "hebrew": "לשון הריטב",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "la bdil minih": {
+    "hebrew": "לא בדיל מיניה",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "hika dla bitlv": {
+    "hebrew": "היכא דלא ביטלו",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "aliv bb": {
+    "hebrew": "עליו בב",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "ha la ptr npshih bla bitvl": {
+    "hebrew": "הא לא פטר נפשיה בלא ביטול",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "mn hsvrh": {
+    "hebrew": "מן התורה",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "rbinv dvd": {
+    "hebrew": "רבינו דוד",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "abr aliv": {
+    "hebrew": "עבר עליו",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "avbr al": {
+    "hebrew": "עובר על",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "aliba dsvs": {
+    "hebrew": "אליבא דתוס",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "la hvi dbrim": {
+    "hebrew": "לא הוי דברים",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "al hasocher lbdvk": {
+    "hebrew": "על השוכר לבדוק",
+    "confidence": "medium",
+    "usage_count": 0,
+    "source": "notes",
+    "last_used": null
+  },
+  "shaviya anafshe": {
+    "hebrew": "שוייא אנפשיה",
+    "confidence": "high",
+    "usage_count": 7,
+    "source": "manual",
+    "last_used": "2025-12-03T22:24:26.148033"
+  },
+  "shavya anafshe": {
+    "hebrew": "שוייא אנפשיה",
+    "confidence": "high",
+    "usage_count": 0,
+    "source": "manual",
+    "last_used": null
+  },
+  "chaticha deisura": {
+    "hebrew": "חתיכה דאיסורא",
+    "confidence": "high",
+    "usage_count": 7,
+    "source": "manual",
+    "last_used": "2025-12-03T23:27:04.041603"
+  },
+  "chaticha daisura": {
+    "hebrew": "חתיכה דאיסורא",
+    "confidence": "high",
+    "usage_count": 0,
+    "source": "manual",
+    "last_used": null
+  },
+  "bari vishma": {
+    "hebrew": "ברי ושמא",
+    "confidence": "high",
+    "usage_count": 10,
+    "source": "manual",
+    "last_used": "2025-12-03T23:23:08.431531"
+  },
+  "bari vshma": {
+    "hebrew": "ברי ושמא",
+    "confidence": "high",
+    "usage_count": 0,
+    "source": "manual",
+    "last_used": null
+  },
+  "sfek sfeika": {
+    "hebrew": "ספק ספיקא",
+    "confidence": "high",
+    "usage_count": 4,
+    "source": "manual",
+    "last_used": "2025-12-03T23:26:52.559345"
+  },
+  "safek safeika": {
+    "hebrew": "ספק ספיקא",
+    "confidence": "high",
+    "usage_count": 9,
+    "source": "manual",
+    "last_used": "2025-12-03T23:26:52.564345"
+  },
+  "chezkas haguf": {
+    "hebrew": "חזקת הגוף",
+    "confidence": "high",
+    "usage_count": 13,
+    "source": "manual",
+    "last_used": "2025-12-03T23:26:52.575331"
+  },
+  "chezka haguf": {
+    "hebrew": "חזקת הגוף",
+    "confidence": "high",
+    "usage_count": 0,
+    "source": "manual",
+    "last_used": null
+  },
+  "chezkas mamon": {
+    "hebrew": "חזקת ממון",
+    "confidence": "high",
+    "usage_count": 0,
+    "source": "manual",
+    "last_used": null
+  },
+  "chezkas rav huna": {
+    "hebrew": "חזקת רב הונא",
+    "confidence": "high",
+    "usage_count": 0,
+    "source": "manual",
+    "last_used": null
+  },
+  "chezka rav huna": {
+    "hebrew": "חזקת רב הונא",
+    "confidence": "high",
+    "usage_count": 6,
+    "source": "manual",
+    "last_used": "2025-12-03T22:24:26.252768"
+  },
+  "eid echad": {
+    "hebrew": "עד אחד",
+    "confidence": "high",
+    "usage_count": 0,
+    "source": "manual",
+    "last_used": null
+  },
+  "bitul chametz": {
+    "hebrew": "ביטול חמץ",
+    "confidence": "high",
+    "usage_count": 8,
+    "source": "manual",
+    "last_used": "2025-12-03T23:26:52.569860"
+  },
+  "bitul chometz": {
+    "hebrew": "ביטול חמץ",
+    "confidence": "high",
+    "usage_count": 0,
+    "source": "manual",
+    "last_used": null
+  },
+  "besulah niseis": {
+    "hebrew": "בתולה נשאת",
+    "confidence": "high",
+    "usage_count": 0,
+    "source": "manual",
+    "last_used": null
+  },
+  "besulah nisais": {
+    "hebrew": "בתולה נשאת",
+    "confidence": "high",
+    "usage_count": 0,
+    "source": "manual",
+    "last_used": null
+  },
+  "kesubos": {
+    "hebrew": "כתובות",
+    "confidence": "high",
+    "usage_count": 12,
+    "source": "transliteration",
+    "last_used": "2025-12-03T23:26:52.531273"
+  },
+  "shabbos": {
+    "hebrew": "שבת",
+    "confidence": "high",
+    "usage_count": 8,
+    "source": "transliteration",
+    "last_used": "2025-12-03T23:23:08.441467"
+  },
+  "pesachim": {
+    "hebrew": "פסחים",
+    "confidence": "high",
+    "usage_count": 6,
+    "source": "transliteration",
+    "last_used": "2025-12-03T22:24:26.207904"
+  },
+  "bava kama": {
+    "hebrew": "בבא קמא",
+    "confidence": "high",
+    "usage_count": 8,
+    "source": "transliteration",
+    "last_used": "2025-12-03T23:26:52.550019"
+  },
+  "sotah": {
+    "hebrew": "סוטה",
+    "confidence": "high",
+    "usage_count": 5,
+    "source": "claude",
+    "last_used": "2025-12-03T22:24:26.237588"
+  },
+  "kiddushin": {
+    "hebrew": "קִידֵּשׁ אַחַת מֵחָמֵשׁ נָשִׁים",
+    "confidence": "high",
+    "usage_count": 5,
+    "source": "claude",
+    "last_used": "2025-12-03T22:24:26.242737"
+  },
+  "berachos": {
+    "hebrew": "ברכות",
+    "confidence": "high",
+    "usage_count": 2,
+    "source": "manual",
+    "last_used": "2025-12-03T22:24:26.230590"
+  },
+  "eruvin": {
+    "hebrew": "עירובין",
+    "confidence": "high",
+    "usage_count": 5,
+    "source": "manual",
+    "last_used": "2025-12-03T23:26:52.545503"
+  },
+  "sukkos": {
+    "hebrew": "סוכות",
+    "confidence": "high",
+    "usage_count": 2,
+    "source": "manual",
+    "last_used": "2025-12-03T22:24:26.222474"
+  },
+  "gittin": {
+    "hebrew": "גיטין",
+    "confidence": "high",
+    "usage_count": 5,
+    "source": "manual",
+    "last_used": "2025-12-03T23:26:52.541503"
+  },
+  "bereirah": {
+    "hebrew": "ברירה",
+    "confidence": "high",
+    "usage_count": 5,
+    "source": "manual",
+    "last_used": "2025-12-03T23:26:52.555020"
+  },
+  "migu": {
+    "hebrew": "מיגו",
+    "confidence": "high",
+    "usage_count": 5,
+    "source": "manual",
+    "last_used": "2025-12-03T23:26:52.589366"
+  },
+  "umdena": {
+    "hebrew": "אומדנא",
+    "confidence": "high",
+    "usage_count": 5,
+    "source": "manual",
+    "last_used": "2025-12-03T23:26:52.594799"
+  },
+  "chatzi shiur": {
+    "hebrew": "חצי שיעור",
+    "confidence": "high",
+    "usage_count": 5,
+    "source": "manual",
+    "last_used": "2025-12-03T23:26:52.582844"
+  },
+  "kdai shiur": {
+    "hebrew": "כדי שיעור",
+    "confidence": "high",
+    "usage_count": 5,
+    "source": "manual",
+    "last_used": "2025-12-03T23:26:52.600904"
+  },
+  "trei vetrei": {
+    "hebrew": "תרי ותרי",
+    "confidence": "high",
+    "usage_count": 5,
+    "source": "manual",
+    "last_used": "2025-12-03T23:26:52.606903"
+  },
+  "lo plug": {
+    "hebrew": "לא פלוג",
+    "confidence": "high",
+    "usage_count": 5,
+    "source": "manual",
+    "last_used": "2025-12-03T23:26:52.612167"
+  },
+  "chozer vniur": {
+    "hebrew": "חוזר ונעור",
+    "confidence": "high",
+    "usage_count": 5,
+    "source": "manual",
+    "last_used": "2025-12-03T23:26:52.617769"
+  },
+  "kim lei bidrabba minei": {
+    "hebrew": "קים ליה בדרבה מיניה",
+    "confidence": "high",
+    "usage_count": 2,
+    "source": "manual",
+    "last_used": "2025-12-03T22:24:26.157556"
+  },
+  "kim lei dirabanan": {
+    "hebrew": "קים ליה דרבנן",
+    "confidence": "high",
+    "usage_count": 4,
+    "source": "manual",
+    "last_used": "2025-12-03T23:27:04.081712"
+  },
+  "rov depursa": {
+    "hebrew": "רוב דפורתא",
+    "confidence": "high",
+    "usage_count": 2,
+    "source": "manual",
+    "last_used": "2025-12-03T22:24:26.162570"
+  },
+  "rov deparish": {
+    "hebrew": "רוב דפריש",
+    "confidence": "high",
+    "usage_count": 4,
+    "source": "manual",
+    "last_used": "2025-12-03T23:27:04.070959"
+  },
+  "kavua kmechtza al mechtza": {
+    "hebrew": "קבוע כמחצה על מחצה",
+    "confidence": "high",
+    "usage_count": 2,
+    "source": "manual",
+    "last_used": "2025-12-03T22:24:26.168719"
+  },
+  "gud asik mechitza": {
+    "hebrew": "גוד אסיק מחיצה",
+    "confidence": "high",
+    "usage_count": 2,
+    "source": "manual",
+    "last_used": "2025-12-03T22:24:26.184804"
+  },
+  "ain adam makneh davar shelo ba lolam": {
+    "hebrew": "אין אדם מקנה דבר שלא בא לעולם",
+    "confidence": "high",
+    "usage_count": 3,
+    "source": "manual",
+    "last_used": "2025-12-03T23:27:07.784833"
+  },
+  "davar shelo ba lolam": {
+    "hebrew": "דבר שלא בא לעולם",
+    "confidence": "high",
+    "usage_count": 4,
+    "source": "manual",
+    "last_used": "2025-12-03T23:27:04.076013"
+  },
+  "ain shliach lidvar aveirah": {
+    "hebrew": "אין שליח לדבר עבירה",
+    "confidence": "high",
+    "usage_count": 4,
+    "source": "manual",
+    "last_used": "2025-12-03T23:27:04.060187"
+  },
+  "kol deparish mrubo parish": {
+    "hebrew": "כל דפריש מרובא פריש",
+    "confidence": "high",
+    "usage_count": 4,
+    "source": "manual",
+    "last_used": "2025-12-03T23:27:04.065440"
+  },
+  "kol davar sheyesh lo matirin": {
+    "hebrew": "כל דבר שיש לו מתירין",
+    "confidence": "high",
+    "usage_count": 4,
+    "source": "manual",
+    "last_used": "2025-12-03T23:27:04.048131"
+  },
+  "zeh neheneh vzeh lo chaser": {
+    "hebrew": "זה נהנה וזה לא חסר",
+    "confidence": "high",
+    "usage_count": 4,
+    "source": "manual",
+    "last_used": "2025-12-03T23:27:04.055141"
+  },
+  "hafka'as kiddushin": {
+    "hebrew": "הפקעת קידושין",
+    "confidence": "high",
+    "usage_count": 2,
+    "source": "manual",
+    "last_used": "2025-12-03T22:24:26.308794"
+  },
+  "eid echad neeman bissurim": {
+    "hebrew": "עד אחד נאמן באיסורים",
+    "confidence": "high",
+    "usage_count": 4,
+    "source": "manual",
+    "last_used": "2025-12-03T23:27:04.087900"
+  },
+  "sfek sfeka lkula": {
+    "hebrew": "ספק ספיקא לקולא",
+    "confidence": "high",
+    "usage_count": 2,
+    "source": "manual",
+    "last_used": "2025-12-03T22:24:26.325641"
+  },
+  "berachot": {
+    "hebrew": "ברכות",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "shabbat": {
+    "hebrew": "שבת",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "shekalim": {
+    "hebrew": "שקלים",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "yoma": {
+    "hebrew": "יומא",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "sukkot": {
+    "hebrew": "סוכות",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "beitzah": {
+    "hebrew": "ביצה",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "rosh hashanah": {
+    "hebrew": "ראש השנה",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "taanis": {
+    "hebrew": "תענית",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "taanit": {
+    "hebrew": "תענית",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "megillah": {
+    "hebrew": "מגילה",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "moed katan": {
+    "hebrew": "מועד קטן",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "chagigah": {
+    "hebrew": "חגיגה",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "yevamos": {
+    "hebrew": "יבמות",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "yevamot": {
+    "hebrew": "יבמות",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "ketubot": {
+    "hebrew": "כתובות",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "ketubos": {
+    "hebrew": "כתובות",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "nedarim": {
+    "hebrew": "נדרים",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "nazir": {
+    "hebrew": "נזיר",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "bava metzia": {
+    "hebrew": "בבא מציעא",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "bava basra": {
+    "hebrew": "בבא בתרא",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "sanhedrin": {
+    "hebrew": "סנהדרין",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "makkos": {
+    "hebrew": "מכות",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "makkot": {
+    "hebrew": "מכות",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "shevuos": {
+    "hebrew": "שבועות",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "shevuot": {
+    "hebrew": "שבועות",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "avodah zarah": {
+    "hebrew": "עבודה זרה",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "horayos": {
+    "hebrew": "הוריות",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "horayot": {
+    "hebrew": "הוריות",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "zevachim": {
+    "hebrew": "זבחים",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "menachos": {
+    "hebrew": "מנחות",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "menachot": {
+    "hebrew": "מנחות",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "chullin": {
+    "hebrew": "חולין",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "hullin": {
+    "hebrew": "חולין",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "bechoros": {
+    "hebrew": "בכורות",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "bechorot": {
+    "hebrew": "בכורות",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "arachin": {
+    "hebrew": "ערכין",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "temurah": {
+    "hebrew": "תמורה",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "kerisos": {
+    "hebrew": "כריתות",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "keritot": {
+    "hebrew": "כריתות",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "meilah": {
+    "hebrew": "מעילה",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "tamid": {
+    "hebrew": "תמיד",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "middos": {
+    "hebrew": "מדות",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "middot": {
+    "hebrew": "מדות",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "kinnim": {
+    "hebrew": "קינים",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 0
+  },
+  "niddah": {
+    "hebrew": "נדה",
+    "confidence": "high",
+    "source": "yeshivish_consolidated",
+    "usage_count": 3,
+    "last_used": "2025-12-03T23:27:06.970859"
+  },
+  "klal uprat": {
+    "hebrew": "כלל ופרט",
+    "confidence": "high",
+    "usage_count": 3,
+    "source": "claude",
+    "last_used": "2025-12-03T23:27:02.008805"
+  },
+  "gezeira shava": {
+    "hebrew": "גמירי [ג\"ש]",
+    "confidence": "high",
+    "usage_count": 3,
+    "source": "claude",
+    "last_used": "2025-12-03T23:27:02.409370"
+  },
+  "shnei kesuvim": {
+    "hebrew": "ב' מקראות הללו",
+    "confidence": "high",
+    "usage_count": 2,
+    "source": "claude",
+    "last_used": "2025-12-03T23:27:04.034080"
+  },
+  "kdai achila": {
+    "hebrew": "שיעורא בעינן ועבודת כוכבים כתותי מכתת שיעורא הכא כ",
+    "confidence": "medium",
+    "usage_count": 1,
+    "source": "claude",
+    "last_used": "2025-12-03T23:27:01.044241"
+  },
+  "ribui umiut": {
+    "hebrew": "גריס הרב אלפס אמר רב נחמן ק\"ו ומה במקום שאסור לספר",
+    "confidence": "medium",
+    "usage_count": 1,
+    "source": "claude",
+    "last_used": "2025-12-03T23:27:02.002297"
+  },
+  "kal vchomer": {
+    "hebrew": "וְרַבִּי יְהוּדָה, הַאי ״וְעָנְתָה וְאָמְרָה״, מַא",
+    "confidence": "medium",
+    "usage_count": 1,
+    "source": "claude",
+    "last_used": "2025-12-03T23:27:02.404859"
+  },
+  "binyan av": {
+    "hebrew": "הא דתנן א\"ר [יהושע] שמעתי שהסריס חולץ וחולצין לאשת",
+    "confidence": "medium",
+    "usage_count": 1,
+    "source": "claude",
+    "last_used": "2025-12-03T23:27:02.820886"
+  },
+  "davar halamd meinyano": {
+    "hebrew": "הא רבי ישמעאל הא רבנן ואיבעית אימא הא והא בקדשי קד",
+    "confidence": "medium",
+    "usage_count": 1,
+    "source": "claude",
+    "last_used": "2025-12-03T23:27:03.821147"
+  },
+  "tzad hashaveh": {
+    "hebrew": "הא דתנן עשה בה מאמר ומת חולצת ולא מתיבמת ה\"ה אע\"ג ",
+    "confidence": "medium",
+    "usage_count": 1,
+    "source": "claude",
+    "last_used": "2025-12-03T23:27:04.029090"
+  },
+  "ain adam oser davar shelo ba lolam": {
+    "hebrew": "אי הכי אפילו חלה נמי אפשר דאפי לה פחות מחמשת רבעים",
+    "confidence": "medium",
+    "usage_count": 1,
+    "source": "claude",
+    "last_used": "2025-12-03T23:27:04.416822"
+  },
+  "mvazeh es chaveiro": {
+    "hebrew": "אר\"ל אר\"ל ממזרת לאחר עשרה דורות מותרת יליף עשירי ע",
+    "confidence": "medium",
+    "usage_count": 1,
+    "source": "claude",
+    "last_used": "2025-12-03T23:27:04.820630"
+  },
+  "hasam es piv": {
+    "hebrew": "שיעורא בעינן ועבודת כוכבים כתותי מכתת שיעורא הכא כ",
+    "confidence": "medium",
+    "usage_count": 1,
+    "source": "claude",
+    "last_used": "2025-12-03T23:27:05.309815"
+  },
+  "hafkaas kiddushin": {
+    "hebrew": "הא דתנן א\"ר [יהושע] שמעתי שהסריס חולץ וחולצין לאשת",
+    "confidence": "medium",
+    "usage_count": 1,
+    "source": "claude",
+    "last_used": "2025-12-03T23:27:05.825597"
+  },
+  "chalipin kinyan": {
+    "hebrew": "הא דתנן א\"ר [יהושע] שמעתי שהסריס חולץ וחולצין לאשת",
+    "confidence": "medium",
+    "usage_count": 1,
+    "source": "claude",
+    "last_used": "2025-12-03T23:27:06.219992"
+  },
+  "meshicha kinyan": {
+    "hebrew": "שיעורא בעינן ועבודת כוכבים כתותי מכתת שיעורא הכא כ",
+    "confidence": "medium",
+    "usage_count": 1,
+    "source": "claude",
+    "last_used": "2025-12-03T23:27:06.655291"
+  },
+  "chezka": {
+    "hebrew": "<b>היינו לפני החמה היינו לצפונה היינו לאחר החמה הי",
+    "confidence": "medium",
+    "usage_count": 1,
+    "source": "claude",
+    "last_used": "2025-12-03T23:27:06.965842"
+  },
+  "taref": {
+    "hebrew": "איבעיא להו בעלת הגט ובעלת מאמר איזה מהן קודמת לחלי",
+    "confidence": "medium",
+    "usage_count": 1,
+    "source": "claude",
+    "last_used": "2025-12-03T23:27:07.177799"
+  },
+  "klal": {
+    "hebrew": "גריס הרב אלפס אמר רב נחמן ק\"ו ומה במקום שאסור לספר",
+    "confidence": "medium",
+    "usage_count": 1,
+    "source": "claude",
+    "last_used": "2025-12-03T23:27:07.362348"
+  },
+  "din": {
+    "hebrew": "דין",
+    "confidence": "high",
+    "usage_count": 1,
+    "source": "transliteration",
+    "last_used": "2025-12-03T23:27:07.368860"
+  },
+  "kol hameshaneh mimatas chachamim yadov al hatachtonah": {
+    "hebrew": "ויש הקטרה פחותה מכזית ורבא אמר אין קומץ פחות משני ",
+    "confidence": "medium",
+    "usage_count": 1,
+    "source": "claude",
+    "last_used": "2025-12-03T23:27:07.779823"
+  },
+  "yachol shema michlal hen ata shomea lav": {
+    "hebrew": "<b>שתי הלחם בעצרת מפני שעצרת זמן פירות האילן.</b> ",
+    "confidence": "medium",
+    "usage_count": 1,
+    "source": "claude",
+    "last_used": "2025-12-03T23:27:08.229961"
+  },
+  "adam muad leolam": {
+    "hebrew": "רַבִּי יְהוּדָה אוֹמֵר: בִּמְעָרָה – הַולֵּךְ אַחַ",
+    "confidence": "medium",
+    "usage_count": 1,
+    "source": "claude",
+    "last_used": "2025-12-03T23:27:08.629897"
+  },
+  "shor hamuad shenagach": {
+    "hebrew": "א\"ר ישמעאל בר\"י המתפלל צריך שיתן עיניו למטה ולבו ל",
+    "confidence": "medium",
+    "usage_count": 1,
+    "source": "claude",
+    "last_used": "2025-12-03T23:27:08.933745"
+  }
+}

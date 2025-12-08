@@ -1,92 +1,233 @@
-import { useState } from 'react'
+/**
+ * Marei Mekomos V7 - Frontend
+ * ===========================
+ * 
+ * Step 1 (DECIPHER) Integration:
+ * - Shows transliteration → Hebrew conversion
+ * - Handles validation scenarios (CLARIFY/CHOOSE/UNKNOWN)
+ * - Allows user to confirm or reject translations
+ * - Per-word breakdown for multi-word queries
+ * 
+ * Following Architecture.md principles:
+ * - "Never yes or no questions, leave room for I'm not sure"
+ * - "Better annoy with asking than getting it wrong"
+ */
+
+import { useState, useCallback } from 'react'
 import './App.css'
 
+// API base URL - change for production
+const API_BASE = 'http://localhost:8000'
+
 function App() {
-  const [topic, setTopic] = useState('')
+  // ==========================================
+  //  STATE
+  // ==========================================
+  
+  const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(false)
-  const [results, setResults] = useState(null)
-  const [clarification, setClarification] = useState(null)
-  const [userClarification, setUserClarification] = useState('')
   const [error, setError] = useState('')
-  const [resolvedTerms, setResolvedTerms] = useState([])  // NEW: Track resolved Hebrew terms
+  
+  // Step 1 result
+  const [decipherResult, setDecipherResult] = useState(null)
+  
+  // For when user needs to make a selection
+  const [showValidation, setShowValidation] = useState(false)
+  
+  // For user feedback when translation is wrong
+  const [showFeedback, setShowFeedback] = useState(false)
+  const [feedbackText, setFeedbackText] = useState('')
+  
+  // Final confirmed Hebrew (after validation if needed)
+  const [confirmedHebrew, setConfirmedHebrew] = useState(null)
 
-  const handleSearch = async (e, withClarification = '') => {
-    e.preventDefault()
-    if (!topic.trim()) return
-
+  // ==========================================
+  //  API CALLS
+  // ==========================================
+  
+  const callDecipher = useCallback(async (queryText, strict = false) => {
     setLoading(true)
     setError('')
-    setResults(null)
-    setClarification(null)
-    setResolvedTerms([])  // Clear previous resolutions
-
+    setDecipherResult(null)
+    setShowValidation(false)
+    setShowFeedback(false)
+    setConfirmedHebrew(null)
+    
     try {
-      const body = { topic }
-      if (withClarification) {
-        body.clarification = withClarification
-      }
-
-      const response = await fetch('http://localhost:8000/search', {
+      const response = await fetch(`${API_BASE}/decipher`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: queryText, strict })
       })
-
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch sources')
+        throw new Error('Failed to process transliteration')
       }
-
+      
       const data = await response.json()
+      setDecipherResult(data)
       
-      // NEW: Extract resolved terms if present
-      if (data.resolved_terms && data.resolved_terms.length > 0) {
-        setResolvedTerms(data.resolved_terms)
+      // If high confidence, no validation needed
+      if (!data.needs_validation && data.hebrew_term) {
+        // For multi-word queries, build complete Hebrew from word_validations
+        const completeHebrew = data.word_validations?.length > 1
+          ? data.word_validations.map(wv => wv.best_match).join(' ')
+          : data.hebrew_term
+        setConfirmedHebrew(completeHebrew)
+      } else if (data.needs_validation) {
+        setShowValidation(true)
       }
       
-      // Check if we need clarification
-      if (data.needs_clarification && data.clarifying_questions && data.clarifying_questions.length > 0) {
-        setClarification({
-          interpreted_as: data.interpreted_query,
-          questions: data.clarifying_questions
-        })
-        setUserClarification('')
-      } else {
-        // We have results
-        setResults(data)
-      }
     } catch (err) {
       setError('Error connecting to server. Make sure the backend is running.')
       console.error(err)
     } finally {
       setLoading(false)
     }
-  }
-
-  const handleClarificationSubmit = (e) => {
-    e.preventDefault()
-    if (!userClarification.trim()) return
-    handleSearch(e, userClarification)
-  }
-
-  // Group sources by category
-  const groupedSources = results?.sources?.reduce((acc, source) => {
-    const category = source.category || 'Other'
-    if (!acc[category]) {
-      acc[category] = []
+  }, [])
+  
+  const confirmSelection = useCallback(async (selectionIndex, customHebrew = null) => {
+    if (!decipherResult) return
+    
+    setLoading(true)
+    
+    try {
+      const response = await fetch(`${API_BASE}/decipher/confirm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          original_query: decipherResult.original_query,
+          selection_index: selectionIndex,
+          selected_hebrew: customHebrew
+        })
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to confirm selection')
+      }
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        // Use the complete hebrew_term from backend (already computed there)
+        const completeHebrew = data.hebrew_term
+        console.log('Confirm response:', { 
+          hebrew_term: data.hebrew_term, 
+          word_validations: data.word_validations,
+          completeHebrew 
+        })
+        
+        setConfirmedHebrew(completeHebrew)
+        
+        // Update decipherResult with the new word_validations
+        if (data.word_validations?.length > 0) {
+          setDecipherResult(prev => ({
+            ...prev,
+            word_validations: data.word_validations,
+            hebrew_term: completeHebrew
+          }))
+        }
+        
+        setShowValidation(false)
+      } else {
+        setError(data.message || 'Could not confirm selection')
+      }
+      
+    } catch (err) {
+      setError('Error confirming selection')
+      console.error(err)
+    } finally {
+      setLoading(false)
     }
-    acc[category].push(source)
-    return acc
-  }, {})
+  }, [decipherResult])
+  
+  const rejectTranslation = useCallback(async () => {
+    if (!decipherResult || !decipherResult.hebrew_term) return
+    
+    setLoading(true)
+    
+    try {
+      const response = await fetch(`${API_BASE}/decipher/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          original_query: decipherResult.original_query,
+          incorrect_hebrew: decipherResult.hebrew_term,
+          user_feedback: feedbackText || null
+        })
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to submit feedback')
+      }
+      
+      const data = await response.json()
+      
+      // Update with new suggestions
+      if (data.suggestions && data.suggestions.length > 0) {
+        setDecipherResult(prev => ({
+          ...prev,
+          choose_options: data.suggestions,
+          needs_validation: true,
+          validation_type: 'CHOOSE',
+          message: data.message
+        }))
+        setShowValidation(true)
+        setShowFeedback(false)
+        setConfirmedHebrew(null)
+      } else {
+        setError("Couldn't find alternatives. Try a different spelling?")
+      }
+      
+    } catch (err) {
+      setError('Error submitting feedback')
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
+  }, [decipherResult, feedbackText])
 
-  // Define category order
-  const categoryOrder = [
-    'Chumash', 'Nach', 'Mishna', 'Gemara', 'Rishonim', 
-    'Shulchan Aruch', 'Acharonim', 'Other'
-  ]
+  // ==========================================
+  //  HANDLERS
+  // ==========================================
+  
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    if (!query.trim()) return
+    callDecipher(query)
+  }
+  
+  const handleOptionSelect = (index) => {
+    confirmSelection(index)
+  }
+  
+  const handleNoneOfThese = () => {
+    // Show feedback form instead of immediately rejecting
+    setShowFeedback(true)
+    setShowValidation(false)
+  }
+  
+  const handleNotWhatIMeant = () => {
+    setShowFeedback(true)
+  }
+  
+  const handleFeedbackSubmit = (e) => {
+    e.preventDefault()
+    rejectTranslation()
+  }
+  
+  const handleTryDifferentSpelling = () => {
+    setShowFeedback(false)
+    setDecipherResult(null)
+    setConfirmedHebrew(null)
+    // Focus the input
+    document.querySelector('.query-input')?.focus()
+  }
 
-  // NEW: Helper to get confidence badge color
+  // ==========================================
+  //  HELPER FUNCTIONS
+  // ==========================================
+  
   const getConfidenceColor = (confidence) => {
     switch (confidence) {
       case 'high': return 'confidence-high'
@@ -95,170 +236,204 @@ function App() {
       default: return 'confidence-unknown'
     }
   }
+  
+  const getConfidenceEmoji = (confidence) => {
+    switch (confidence) {
+      case 'high': return '🟢'
+      case 'medium': return '🟡'
+      case 'low': return '🔴'
+      default: return '⚪'
+    }
+  }
 
+  // ==========================================
+  //  RENDER
+  // ==========================================
+  
   return (
     <div className="app">
+      {/* Header */}
       <header className="header">
         <h1>אור הנר</h1>
-        <h2>Marei Mekomos Finder</h2>
-        <p>Enter any topic to find relevant מקומות</p>
-        <p className="version">V5.0 - Now with smart transliteration! 🎯</p>
+        <h2>מראי מקומות</h2>
+        <p className="tagline">Enter any term to find תורה sources</p>
+        {/* Version removed per request */}
       </header>
 
-      <form onSubmit={handleSearch} className="search-form">
+      {/* Search Form */}
+      <form onSubmit={handleSubmit} className="search-form">
         <div className="input-group">
           <input
             type="text"
-            value={topic}
-            onChange={(e) => setTopic(e.target.value)}
-            placeholder="Enter a topic (e.g, bedikas chometz, ביטול חמץ, chezkas rav huna)"
-            className="topic-input"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="e.g., chezkas haguf, bari vishma, מיגו"
+            className="query-input"
             dir="auto"
             disabled={loading}
           />
         </div>
-
-        <button type="submit" disabled={loading || !topic.trim()}>
-          {loading ? 'Searching...' : 'בודק'}
+        
+        <button 
+          type="submit" 
+          disabled={loading || !query.trim()}
+          className="search-btn"
+        >
+          {loading ? '...' : 'בדוק'}
         </button>
       </form>
 
-      {/* NEW: Display resolved Hebrew terms */}
-      {resolvedTerms.length > 0 && (
-        <div className="resolved-terms-box">
-          <h3>🎯 Found Hebrew Term{resolvedTerms.length > 1 ? 's' : ''}!</h3>
-          {resolvedTerms.map((term, idx) => (
-            <div key={idx} className="resolved-term">
-              <div className="term-header">
-                <span className="original-term">"{term.original}"</span>
-                <span className="arrow">→</span>
-                <span className="hebrew-term" dir="rtl">{term.hebrew}</span>
-                <span className={`confidence-badge ${getConfidenceColor(term.confidence)}`}>
-                  {term.confidence}
-                </span>
-              </div>
-              <div className="term-details">
-                <p className="source-ref">
-                  <strong>Source:</strong> {term.source_ref}
-                </p>
-                <p className="explanation">
-                  <strong>Why this match:</strong> {term.explanation}
-                </p>
-              </div>
-            </div>
-          ))}
+      {/* Error Display */}
+      {error && (
+        <div className="error-box">
+          <span className="error-icon">⚠️</span>
+          <p>{error}</p>
+          <button onClick={() => setError('')} className="dismiss-btn">×</button>
         </div>
       )}
 
-      {error && <div className="error">{error}</div>}
-
-      {clarification && (
-        <div className="clarification-box">
-          <h3>📋 I need a bit more info...</h3>
-          <p className="interpreted-as">
-            I understood you're asking about: <em>{clarification.interpreted_as}</em>
-          </p>
-          <div className="questions">
-            {clarification.questions.map((q, idx) => (
-              <p key={idx} className="question">
-                <strong>{idx + 1}.</strong> {q}
-              </p>
-            ))}
+      {/* Step 1 Result - High Confidence (no validation needed) */}
+      {confirmedHebrew && !showValidation && !showFeedback && (
+        <div className="result-box success">
+          <div className="result-header">
+            <h3>Result</h3>
           </div>
-          <form onSubmit={handleClarificationSubmit} className="clarification-form">
-            <textarea
-              value={userClarification}
-              onChange={(e) => setUserClarification(e.target.value)}
-              placeholder="Your answer... (e.g., 'I'm looking for the foundational sugya about chuppah being koneh')"
-              className="clarification-input"
-              rows="3"
-            />
-            <div className="clarification-buttons">
-              <button type="submit" disabled={!userClarification.trim()}>
-                Continue Search
+          
+          <div className="translation-display">
+            <span className="original-term">"{decipherResult?.original_query}"</span>
+            <span className="arrow">→</span>
+            <span className="hebrew-term" dir="rtl">{confirmedHebrew}</span>
+          </div>
+          
+          {/* Word-by-word breakdown for multi-word queries */}
+          {/* Word breakdown removed per request */}
+          
+          {/* Sample references from Sefaria */}
+          {decipherResult?.sample_refs?.length > 0 && (
+            <div className="sample-refs">
+              <strong>Found in:</strong> {decipherResult.sample_refs.slice(0, 3).join(', ')}
+            </div>
+          )}
+          
+          {/* Method indicator removed from UI per request */}
+          
+          {/* "Not what I meant" button */}
+          <button 
+            className="feedback-btn"
+            onClick={handleNotWhatIMeant}
+          >
+            Submit a correction
+          </button>
+        </div>
+      )}
+
+      {/* Validation Options - When confidence is low/medium */}
+      {showValidation && decipherResult && (
+        <div className="validation-box">
+          <h3>
+            {decipherResult.validation_type === 'CLARIFY' 
+              ? 'Did you mean...'
+              : decipherResult.validation_type === 'UNKNOWN'
+              ? "I'm not sure about this term"
+              : 'Please select the correct option'}
+          </h3>
+          
+          <p className="validation-message">{decipherResult.message}</p>
+          
+          <div className="validation-query">
+            <span className="query-label">Your input:</span>
+            <span className="query-text">"{decipherResult.original_query}"</span>
+          </div>
+          
+          {/* CLARIFY type - "Did you mean X or Y?" buttons */}
+          {decipherResult.validation_type === 'CLARIFY' && decipherResult.clarify_options?.length > 0 && (
+            <div className="clarify-options">
+              {decipherResult.clarify_options.map((opt, idx) => (
+                <button 
+                  key={idx}
+                  className="clarify-btn"
+                  onClick={() => handleOptionSelect(idx + 1)}
+                  disabled={loading}
+                >
+                  <span className="hebrew-option" dir="rtl">{opt.hebrew}</span>
+                  {opt.description && <span className="option-desc">{opt.description}</span>}
+                </button>
+              ))}
+            </div>
+          )}
+          
+          {/* CHOOSE type - numbered list */}
+          {(decipherResult.validation_type === 'CHOOSE' || decipherResult.validation_type === 'UNKNOWN') && 
+           decipherResult.choose_options?.length > 0 && (
+            <div className="choose-options">
+              {decipherResult.choose_options.map((opt, idx) => (
+                <button 
+                  key={idx}
+                  className="choose-btn"
+                  onClick={() => handleOptionSelect(idx + 1)}
+                  disabled={loading}
+                >
+                  <span className="option-number">{idx + 1}.</span>
+                  <span className="hebrew-option" dir="rtl">{opt}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          
+          {/* Per-word breakdown with indicators */}
+          {/* Per-word analysis removed per request */}
+          
+          {/* "None of these" option - per Architecture.md */}
+          <button 
+            className="none-btn"
+            onClick={handleNoneOfThese}
+            disabled={loading}
+          >
+            None of these / I'm not sure
+          </button>
+        </div>
+      )}
+
+      {/* Feedback Form - When user says "not what I meant" */}
+      {showFeedback && (
+        <div className="feedback-box">
+          <h3>Help us improve</h3>
+          <p>
+            You searched for <strong>"{decipherResult?.original_query}"</strong> 
+            {decipherResult?.hebrew_term && (
+              <> and we suggested <strong dir="rtl">{decipherResult.hebrew_term}</strong></>
+            )}
+          </p>
+          
+          <form onSubmit={handleFeedbackSubmit} className="feedback-form">
+            <label>
+              What were you looking for? (optional)
+              <textarea
+                value={feedbackText}
+                onChange={(e) => setFeedbackText(e.target.value)}
+                placeholder="e.g., 'I meant the concept from Kesubos, not Gittin' or 'The spelling should be...' or just leave blank"
+                rows="3"
+              />
+            </label>
+            
+            <div className="feedback-buttons">
+              <button type="submit" className="submit-feedback-btn" disabled={loading}>
+                {loading ? 'Searching...' : 'Show me other options'}
               </button>
               <button 
                 type="button" 
-                onClick={(e) => handleSearch(e, "Search for all related sources")}
-                className="secondary-button"
+                className="try-again-btn"
+                onClick={handleTryDifferentSpelling}
               >
-                Just show me everything related
+                Try a different spelling
               </button>
             </div>
           </form>
         </div>
       )}
 
-      {results && (
-        <div className="results">
-          <h3>Sources for: {results.topic}</h3>
-          
-          {results.interpreted_query && (
-            <p className="interpreted-query">
-              <strong>Interpreted as:</strong> {results.interpreted_query}
-            </p>
-          )}
-          
-          {results.summary && (
-            <p className="summary">{results.summary}</p>
-          )}
-
-          {results.sources.length === 0 ? (
-            <p>No sources found. Try a different topic or spelling.</p>
-          ) : (
-            <div className="sources-container">
-              {categoryOrder.map(category => {
-                const sources = groupedSources?.[category]
-                if (!sources || sources.length === 0) return null
-
-                return (
-                  <div key={category} className="category-section">
-                    <h4 className="category-title">{category}</h4>
-                    
-                    {sources.map((source, idx) => (
-                      <div key={idx} className="source-card">
-                        <div className="source-header">
-                          <a 
-                            href={source.sefaria_url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="source-ref"
-                          >
-                            {source.he_ref || source.ref}
-                          </a>
-                          <span className="source-ref-en">({source.ref})</span>
-                        </div>
-                        
-                        {source.he_text && (
-                          <div className="source-text he" dir="rtl">
-                            {source.he_text}
-                          </div>
-                        )}
-                        
-                        {source.en_text && (
-                          <div className="source-text en">
-                            {source.en_text}
-                          </div>
-                        )}
-
-                        {source.relevance && (
-                          <div className="source-relevance">
-                            <strong>Why relevant:</strong> {source.relevance}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )
-              })}
-            </div>
-          )}
-
-          <p className="source-count">
-            Found {results.sources.length} sources
-          </p>
-        </div>
-      )}
+      {/* Status indicator */}
+      {/* Footer removed per request */}
     </div>
   )
 }

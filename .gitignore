@@ -1,3 +1,7 @@
 backend/.env.example
 backend/.env
 backend/logs/marei_mekomos_20251126.log
+backend/__pycache__/
+backend/tools/__pycache__/
+backend/data/backups/
+backend/logs/
