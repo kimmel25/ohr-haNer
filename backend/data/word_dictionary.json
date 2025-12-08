@@ -685,29 +685,15 @@
     "source": "notes",
     "last_used": null
   },
-  "lika chzkh dmmvna": {
+  "lika chazakah dmamona": {
     "hebrew": "ליכא חזקה דממונא",
     "confidence": "medium",
     "usage_count": 0,
     "source": "notes",
     "last_used": null
   },
-  "bsr chzks hgvf": {
+  "basar chezkas haguf": {
     "hebrew": "בתר חזקת הגוף",
-    "confidence": "medium",
-    "usage_count": 0,
-    "source": "notes",
-    "last_used": null
-  },
-  "dbri hra": {
-    "hebrew": "דברי הרא",
-    "confidence": "medium",
-    "usage_count": 0,
-    "source": "notes",
-    "last_used": null
-  },
-  "lshvn hsvs": {
-    "hebrew": "לשון התוס",
     "confidence": "medium",
     "usage_count": 0,
     "source": "notes",
@@ -877,9 +863,9 @@
   "bari vishma": {
     "hebrew": "ברי ושמא",
     "confidence": "high",
-    "usage_count": 11,
+    "usage_count": 12,
     "source": "manual",
-    "last_used": "2025-12-07T21:19:31.031376"
+    "last_used": "2025-12-08T16:24:07.561927"
   },
   "bari vshma": {
     "hebrew": "ברי ושמא",
@@ -905,9 +891,9 @@
   "chezkas haguf": {
     "hebrew": "חזקת הגוף",
     "confidence": "high",
-    "usage_count": 15,
+    "usage_count": 18,
     "source": "manual",
-    "last_used": "2025-12-07T21:19:31.022229"
+    "last_used": "2025-12-08T17:19:51.817072"
   },
   "chezka haguf": {
     "hebrew": "חזקת הגוף",
@@ -1428,9 +1414,9 @@
   "migu": {
     "hebrew": "מיגו",
     "confidence": "high",
-    "usage_count": 4,
+    "usage_count": 9,
     "source": "sefaria",
-    "last_used": "2025-12-07T21:31:02.915372"
+    "last_used": "2025-12-08T17:13:18.033490"
   },
   "umdena": {
     "hebrew": "ומדנא",
@@ -1729,9 +1715,9 @@
   "chezkas mara kama": {
     "hebrew": "קמא",
     "confidence": "high",
-    "usage_count": 4,
+    "usage_count": 6,
     "source": "sefaria",
-    "last_used": "2025-12-07T22:40:14.334967"
+    "last_used": "2025-12-08T16:26:54.899954"
   },
   "bari veshema beisurin": {
     "hebrew": "ברי ושמא באיסורין",
@@ -1739,5 +1725,26 @@
     "usage_count": 1,
     "source": "user_confirmed",
     "last_used": "2025-12-07T22:42:42.656117"
+  },
+  "חזקת הגוף": {
+    "hebrew": "חזקת הגוף",
+    "confidence": "high",
+    "usage_count": 1,
+    "source": "sefaria",
+    "last_used": "2025-12-08T17:19:54.118189"
+  },
+  "chezkas haguf chezkas mamon": {
+    "hebrew": "ממון",
+    "confidence": "high",
+    "usage_count": 6,
+    "source": "sefaria",
+    "last_used": "2025-12-08T17:35:36.747211"
+  },
+  "ממון": {
+    "hebrew": "ממון",
+    "confidence": "high",
+    "usage_count": 3,
+    "source": "sefaria",
+    "last_used": "2025-12-08T17:35:36.762996"
   }
 }
