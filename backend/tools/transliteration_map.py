@@ -372,6 +372,32 @@ MINIMAL_EXCEPTIONS: Dict[str, List[str]] = {
     "im": ["אם"],           # "if" / "mother"
     "al": ["על"],           # "on" - has ayin
     "el": ["אל"],           # "to" / "God"
+    "shel": ["של"],         # "of"
+    "mi": ["מי"],           # "who"
+    "ma": ["מה"],           # "what"
+    "mah": ["מה"],
+    "ze": ["זה"],           # "this" (masc)
+    "zeh": ["זה"],
+    "zo": ["זו"],           # "this" (fem)
+    "zos": ["זאת"],         # "this" (fem)
+    "hu": ["הוא"],          # "he"
+    "hi": ["היא"],          # "she"
+    "hem": ["הם"],          # "they" (masc)
+    "hen": ["הן"],          # "they" (fem)
+    "ani": ["אני"],         # "I"
+    "ata": ["אתה"],         # "you" (masc)
+    "at": ["את"],           # "you" (fem)
+    "anachnu": ["אנחנו"],   # "we"
+    "atem": ["אתם"],        # "you" (pl masc)
+    "aten": ["אתן"],        # "you" (pl fem)
+    "asher": ["אשר"],       # "that/which"
+    "gam": ["גם"],          # "also"
+    "rak": ["רק"],          # "only"
+    "od": ["עוד"],          # "more/still"
+    "af": ["אף"],           # "even/also"
+    "ach": ["אך"],          # "but/only"
+    "o": ["או"],            # "or"
+    "v": ["ו"],             # short "and"
     
     # === Truly ambiguous consonants ===
     "kol": ["כל"],          # "all" - not קול
@@ -396,21 +422,48 @@ MINIMAL_EXCEPTIONS: Dict[str, List[str]] = {
     
     # === Common nouns ===
     "guf": ["גוף"],         # body
+    "haguf": ["הגוף"],      # the body (with prefix)
     "nefesh": ["נפש"],      # soul
     "ruach": ["רוח"],       # spirit
     "shor": ["שור"],        # ox
+    "hashor": ["השור"],     # the ox
     "parah": ["פרה"],       # cow (with h)
+    "para": ["פרה"],        # cow
+    "hapara": ["הפרה"],     # the cow (with prefix)
+    "haparah": ["הפרה"],
     "chamor": ["חמור"],     # donkey
     "kelev": ["כלב"],       # dog
     
     # === Common masechtos ===
     "bava": ["בבא"],
     "kesubos": ["כתובות"],
+    "kesuvos": ["כתובות"],
+    "kesubah": ["כתובה"],      # Single ketubah
+    "kesuba": ["כתובה"],
+    "kesuvah": ["כתובה"],
+    "gittin": ["גיטין"],
+    "kiddushin": ["קידושין"],
     "shabbos": ["שבת"],
     "brachos": ["ברכות"],
     "pesachim": ["פסחים"],
     "sheni": ["שני"],       # second
     "melech": ["מלך"],      # king
+    
+    # === Common halachic terms ===
+    "tosefes": ["תוספת"],   # addition (smichut)
+    "tosefet": ["תוספת"],
+    "tosefos": ["תוספות"],  # Tosafos commentary
+    "tosfos": ["תוספות"],
+    "chazakah": ["חזקה"],   # presumption/possession
+    "chazaka": ["חזקה"],
+    "tnai": ["תנאי"],       # condition
+    "tenai": ["תנאי"],
+    "tana": ["תנא"],        # Tanna (sage)
+    "tannaim": ["תנאים"],
+    "amora": ["אמורא"],     # Amora (sage)
+    "amoraim": ["אמוראים"],
+    "halacha": ["הלכה"],
+    "halachah": ["הלכה"],
     
     # === Common verb patterns (nif'al, hitpa'el - implicit vowels) ===
     "nishtanu": ["נשתנו"],
@@ -547,7 +600,7 @@ PREFIX_FALSE_POSITIVES = {
     "shevu", "shevuos", "shelishi", "sheni", "shelo",
     
     # "ha-" words
-    "halacha", "halach", "haver", "havi", "hacha", "hagada",
+    "halacha", "halach", "haver", "havi", "hacha", "hagada", "halachah",
     
     # "ba-" words  
     "baal", "bava", "bayis", "bais", "bar", "bas", "basar",
@@ -556,22 +609,27 @@ PREFIX_FALSE_POSITIVES = {
     "lechem", "lechatchila", "lev", "leida",
     
     # "be-" words
-    "beis", "beitza", "ben", "beracha", "bris", "bedieved",
+    "beis", "beitza", "ben", "beracha", "bris", "bedieved", "bealma",
     
-    # "ke-" words
-    "kesubos", "kesuvim", "kesef", "keren",
+    # "ke-" words - CRITICAL: these are NOT ke + something
+    "kesubos", "kesuvos", "kesubah", "kesuba", "kesuvah",  # Ketubah!
+    "kesuvim", "kesef", "keren", "kelev",
     
     # "me-" words
     "melech", "mezonos", "maaser", "maaseh", "mei", "meah", "meichaveiro",
+    "menorah", "menora", "megila", "megilah",
     
     # "mi-" words
-    "migu", "mikva", "mikdash", "mishna", "mitzva", "milah",
+    "migu", "mikva", "mikdash", "mishna", "mitzva", "milah", "mitzvah",
     
     # "de-" words
-    "derech", "davar", "devar", "din", "dina",
+    "derech", "davar", "devar", "din", "dina", "dovid",
     
     # "ve-" words that aren't "and + X"
     "veses", "vehevi",
+    
+    # "to-" words
+    "tosefes", "tosefet", "tosefos", "tosfos", "tora", "torah",
 }
 
 
@@ -706,7 +764,8 @@ def split_all_prefixes(word: str) -> Tuple[str, str]:
 # PRIORITY ORDER MATTERS - first option is tried first
 TRANSLIT_MAP: Dict[str, List[str]] = {
     # Multi-char consonants (check first - longest match wins)
-    "sch": ["ש"],
+    # Prefer preserving the "ch" sound after s for terms like "maschir" → משכיר
+    "sch": ["שכ", "ש"],
     "tch": ["צ", "טש"],
     "sh": ["ש"],
     "ch": ["ח", "כ"],
