@@ -26,9 +26,11 @@ import asyncio
 from pathlib import Path
 from typing import Dict, List, Optional
 
-# Add parent directory to path for imports
-sys.path.append(str(Path(__file__).parent.parent))
-sys.path.append(str(Path(__file__).parent))
+# Add current directory to path (for local imports)
+sys.path.insert(0, str(Path(__file__).parent))
+
+# Import Pydantic models (now works with local imports)
+from models import DecipherResult, ConfidenceLevel
 
 # Import our V3 modules
 try:
@@ -79,57 +81,49 @@ def normalize_hebrew(text: str) -> str:
 #  CONFIDENCE DETERMINATION
 # ==========================================
 
-def determine_confidence(hits: int, method: str) -> str:
+def determine_confidence(hits: int, method: str) -> ConfidenceLevel:
     """
     Determine confidence level based on hit count and method.
-    
+
     Args:
         hits: Number of Sefaria hits
         method: How the term was found ("dictionary", "sefaria", etc.)
-    
+
     Returns:
-        "high", "medium", or "low"
+        ConfidenceLevel enum
     """
     if method == "dictionary":
-        return "high"
-    
+        return ConfidenceLevel.HIGH
+
     # Sefaria-based confidence
     if hits >= 100:
-        return "high"
+        return ConfidenceLevel.HIGH
     elif hits >= 20:
-        return "medium"
+        return ConfidenceLevel.MEDIUM
     else:
-        return "low"
+        return ConfidenceLevel.LOW
 
 
 # ==========================================
 #  MAIN DECIPHER FUNCTION
 # ==========================================
 
-async def decipher(query: str) -> Dict:
+async def decipher(query: str) -> DecipherResult:
     """
     Turn user's transliteration into Hebrew.
-    
+
     V3 Flow:
     1. Normalize input (fix typos like lolam → leolam)
     2. Check dictionary (instant lookup)
     3. Generate variants (with prefix detection, in preference order)
     4. Validate with Sefaria (first valid wins)
     5. Return result
-    
+
     Args:
         query: User's input (transliteration or Hebrew)
-    
+
     Returns:
-        {
-            "success": True/False,
-            "hebrew_term": "מיגו",
-            "confidence": "high/medium/low",
-            "method": "dictionary/sefaria/transliteration",
-            "message": "...",
-            "alternatives": [...],
-            "needs_clarification": False
-        }
+        DecipherResult with hebrew_term, confidence, method, etc.
     """
     logger.info("=" * 80)
     logger.info("STEP 1: DECIPHER (V3)")
@@ -156,21 +150,21 @@ async def decipher(query: str) -> Dict:
     
     if dict_result and dict_result.get("confidence") in ["high", "medium"]:
         hebrew = dict_result["hebrew"]
-        confidence = dict_result["confidence"]
-        
+        confidence = ConfidenceLevel(dict_result["confidence"])
+
         logger.info(f"✓ DICTIONARY HIT! {hebrew}")
-        logger.info(f"  Confidence: {confidence}")
+        logger.info(f"  Confidence: {confidence.value}")
         logger.info(f"  Usage: {dict_result.get('usage_count', 0)} times")
-        
-        return {
-            "success": True,
-            "hebrew_term": hebrew,
-            "confidence": confidence,
-            "method": "dictionary",
-            "message": f"Found in dictionary: {hebrew}",
-            "alternatives": [],
-            "needs_clarification": False
-        }
+
+        return DecipherResult(
+            success=True,
+            hebrew_term=hebrew,
+            confidence=confidence,
+            method="dictionary",
+            message=f"Found in dictionary: {hebrew}",
+            alternatives=[],
+            needs_clarification=False
+        )
     
     logger.info("  → Dictionary miss, continuing to transliteration...")
     
@@ -188,15 +182,15 @@ async def decipher(query: str) -> Dict:
     
     if not variants:
         logger.warning("  ✗ Could not generate Hebrew variants")
-        return {
-            "success": False,
-            "needs_clarification": True,
-            "message": "Could not generate Hebrew spellings. Try different spelling?",
-            "hebrew_term": None,
-            "confidence": "low",
-            "method": "unknown",
-            "alternatives": []
-        }
+        return DecipherResult(
+            success=False,
+            needs_clarification=True,
+            message="Could not generate Hebrew spellings. Try different spelling?",
+            hebrew_term=None,
+            confidence=ConfidenceLevel.LOW,
+            method="unknown",
+            alternatives=[]
+        )
     
     # ==========================================
     # TOOL 3: Sefaria Validation (First Valid Wins)
@@ -225,21 +219,21 @@ async def decipher(query: str) -> Dict:
         dictionary.add_entry(
             transliteration=query_normalized,
             hebrew=hebrew,
-            confidence=confidence,
+            confidence=confidence.value,
             source="sefaria"
         )
         logger.info(f"  ✓ Added to dictionary for future lookups")
-        
-        return {
-            "success": True,
-            "hebrew_term": hebrew,
-            "confidence": confidence,
-            "method": "sefaria",
-            "message": f"Found in Sefaria: {hebrew} ({hits} occurrences)",
-            "alternatives": [v for v in variants if v != hebrew][:5],
-            "needs_clarification": False,
-            "sample_refs": sample_refs
-        }
+
+        return DecipherResult(
+            success=True,
+            hebrew_term=hebrew,
+            confidence=confidence,
+            method="sefaria",
+            message=f"Found in Sefaria: {hebrew} ({hits} occurrences)",
+            alternatives=[v for v in variants if v != hebrew][:5],
+            needs_clarification=False,
+            sample_refs=sample_refs
+        )
     
     # ==========================================
     # FALLBACK: Return best guess without validation
@@ -252,34 +246,34 @@ async def decipher(query: str) -> Dict:
     
     if best_guess:
         logger.info(f"  Returning best guess: '{best_guess}' (unvalidated)")
-        
-        return {
-            "success": True,
-            "hebrew_term": best_guess,
-            "confidence": "low",
-            "method": "transliteration",
-            "message": f"Best transliteration guess: {best_guess} (not found in Sefaria)",
-            "alternatives": variants[1:6],
-            "needs_clarification": True
-        }
-    
+
+        return DecipherResult(
+            success=True,
+            hebrew_term=best_guess,
+            confidence=ConfidenceLevel.LOW,
+            method="transliteration",
+            message=f"Best transliteration guess: {best_guess} (not found in Sefaria)",
+            alternatives=variants[1:6],
+            needs_clarification=True
+        )
+
     # Complete failure
-    return {
-        "success": False,
-        "needs_clarification": True,
-        "message": "Could not determine Hebrew spelling",
-        "hebrew_term": None,
-        "confidence": "low",
-        "method": "unknown",
-        "alternatives": variants[:5] if variants else []
-    }
+    return DecipherResult(
+        success=False,
+        needs_clarification=True,
+        message="Could not determine Hebrew spelling",
+        hebrew_term=None,
+        confidence=ConfidenceLevel.LOW,
+        method="unknown",
+        alternatives=variants[:5] if variants else []
+    )
 
 
 # ==========================================
 #  SYNC WRAPPER
 # ==========================================
 
-def decipher_sync(query: str) -> Dict:
+def decipher_sync(query: str) -> DecipherResult:
     """Synchronous wrapper for decipher."""
     return asyncio.run(decipher(query))
 
@@ -316,9 +310,9 @@ if __name__ == "__main__":
         for query, expected in test_cases:
             print(f"\n{'='*60}")
             result = await decipher(query)
-            
-            got = result.get("hebrew_term", "N/A")
-            success = (got == expected) or (expected in result.get("alternatives", []))
+
+            got = result.hebrew_term or "N/A"
+            success = (got == expected) or (expected in result.alternatives)
             
             if success:
                 passed += 1
@@ -330,8 +324,8 @@ if __name__ == "__main__":
             print(f"\n{status}: '{query}'")
             print(f"  Expected: {expected}")
             print(f"  Got: {got}")
-            print(f"  Method: {result.get('method')}")
-            print(f"  Confidence: {result.get('confidence')}")
+            print(f"  Method: {result.method}")
+            print(f"  Confidence: {result.confidence.value}")
         
         print(f"\n{'='*70}")
         print(f"RESULTS: {passed}/{passed + failed} passed")

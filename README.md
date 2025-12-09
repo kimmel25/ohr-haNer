@@ -1,203 +1,250 @@
-# Marei Mekomos - מראי מקומות
+# Marei Mekomos V7 - Torah Source Finder
 
-A tool that finds relevant Torah sources for any topic by combining Claude AI's knowledge with Sefaria's text database.
+**אור הנר** - Intelligent Hebrew transliteration and Torah source discovery
 
-## How It Works
+## 📚 What This Does
 
-1. **You enter a topic** (e.g., "kibud av v'em", "bedikas chometz", "tefilla b'tzibur")
-2. **Claude AI** suggests relevant source references (pesukim, gemaras, rishonim, etc.)
-3. **Sefaria API** fetches the actual Hebrew/English texts
-4. **You get organized marei mekomos** with real, verified sources
+Converts your transliteration queries (like "chezkas haguf") into Hebrew and finds relevant Torah sources across Gemara, Rishonim, and Acharonim.
 
-The key insight: Claude knows *where* to look, but Sefaria provides the *actual texts*. If Claude suggests a source that doesn't exist, Sefaria's API won't find it, so we filter it out. This prevents hallucinations!
-
----
-
-## Setup Instructions
-
-### Prerequisites
-- Python 3.9+ 
-- Node.js 18+
-- An Anthropic API key (see below)
-
-### Step 1: Get Your Anthropic API Key
-
-1. Go to https://console.anthropic.com/
-2. Create an account (or sign in)
-3. Go to "API Keys" and create a new key
-4. Copy the key - you'll need it in Step 3
-
-**Cost:** Claude Sonnet costs ~$3 per million input tokens. A typical search uses maybe 1,000-2,000 tokens, so each search costs about $0.01-0.02 (one to two cents).
-
-### Step 2: Set Up the Backend (Python)
-
-```bash
-# Navigate to backend folder
-cd backend
-
-# Create a virtual environment (recommended)
-python -m venv venv
-
-# Activate it:
-# On Mac/Linux:
-source venv/bin/activate
-# On Windows:
-venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
+**Example:**
+```
+Input: "migu lehotzi mamon"
+↓ Step 1: DECIPHER → מיגו להוצי ממון
+↓ Step 2: UNDERSTAND → "Legal concept: using one claim to support another"
+↓ Step 3: SEARCH → Organized sources from Gemara → Rishonim → Acharonim
 ```
 
-### Step 3: Set Your API Key
+## 🏗️ Architecture (3-Step Pipeline)
 
-**On Mac/Linux:**
-```bash
-export ANTHROPIC_API_KEY="your-api-key-here"
+```
+┌─────────────────────────────────────────────────────────────┐
+│  STEP 1: DECIPHER (Transliteration → Hebrew)                │
+│  • Dictionary lookup (instant cache)                        │
+│  • Transliteration map (prefix detection, variants)         │
+│  • Sefaria validation ("first valid wins")                  │
+│  ✓ NO Claude, NO vector search                              │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│  STEP 2: UNDERSTAND (Hebrew → Intent + Strategy)            │
+│  • Claude analyzes the term's meaning                       │
+│  • Determines query type (concept, reference, etc.)         │
+│  • Generates search strategy                                │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│  STEP 3: SEARCH (Strategy → Organized Sources)              │
+│  • Fetches from Sefaria based on strategy                   │
+│  • Organizes by level (Gemara → Rishonim → Acharonim)       │
+│  • Returns trickle-up presentation                          │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-**On Windows (Command Prompt):**
-```cmd
-set ANTHROPIC_API_KEY=your-api-key-here
-```
-
-**On Windows (PowerShell):**
-```powershell
-$env:ANTHROPIC_API_KEY="your-api-key-here"
-```
-
-### Step 4: Run the Backend
-
-```bash
-# Make sure you're in the backend folder with venv activated
-python main.py
-```
-
-You should see:
-```
-INFO:     Uvicorn running on http://0.0.0.0:8000
-```
-
-### Step 5: Set Up the Frontend (React)
-
-Open a **new terminal** and:
-
-```bash
-# Navigate to frontend folder
-cd frontend
-
-# Install dependencies
-npm install
-
-# Start the dev server
-npm run dev
-```
-
-You should see:
-```
-VITE v5.x.x ready in xxx ms
-➜ Local: http://localhost:5173/
-```
-
-### Step 6: Use It!
-
-1. Open http://localhost:5173 in your browser
-2. Enter a topic in Hebrew or English
-3. Select your level (beginner/intermediate/advanced)
-4. Click "Find Sources"
-
----
-
-## Project Structure
+## 📂 Project Structure
 
 ```
 marei-mekomos/
 ├── backend/
-│   ├── main.py           # FastAPI server with Claude + Sefaria integration
-│   └── requirements.txt  # Python dependencies
+│   ├── api_server_v7.py           # FastAPI server (entry point)
+│   ├── main_pipeline.py           # Orchestrates Steps 1→2→3
+│   │
+│   ├── step_one_decipher.py       # Transliteration → Hebrew
+│   ├── step_two_understand.py     # Hebrew → Intent + Strategy
+│   ├── step_three_search.py       # Strategy → Sources
+│   │
+│   ├── user_validation.py         # CLARIFY/CHOOSE/UNKNOWN prompts
+│   ├── logging_config.py          # Centralized logging
+│   │
+│   ├── tools/
+│   │   ├── word_dictionary.py     # Self-learning cache
+│   │   ├── transliteration_map.py # Core transliteration engine
+│   │   ├── sefaria_validator.py   # Validates against Sefaria corpus
+│   │   ├── sefaria_client.py      # Sefaria API wrapper
+│   │   └── clean_dictionary.py    # Maintenance utility
+│   │
+│   ├── tests/
+│   │   ├── test_confirm_selection.py
+│   │   ├── test_phrase_issue.py
+│   │   └── test_step_one_focused.py
+│   │
+│   ├── data/
+│   │   └── word_dictionary.json   # Runtime learning cache
+│   │
+│   ├── requirements.txt           # Python dependencies
+│   └── .env.example               # API key template
+│
 ├── frontend/
 │   ├── src/
-│   │   ├── App.jsx       # Main React component
-│   │   ├── App.css       # Styles
-│   │   └── main.jsx      # Entry point
-│   ├── index.html
-│   ├── package.json
-│   └── vite.config.js
-└── README.md
+│   │   ├── App.jsx                # Main application
+│   │   └── components/
+│   │       ├── SearchForm.jsx     # User input
+│   │       ├── SearchResults.jsx  # Display results
+│   │       ├── ValidationBox.jsx  # User validation UI
+│   │       ├── ResultBox.jsx      # Individual sources
+│   │       ├── ErrorBox.jsx       # Error handling
+│   │       ├── FeedbackBox.jsx    # User feedback
+│   │       └── Header.jsx         # UI header
+│   │
+│   ├── package.json               # Node dependencies
+│   └── vite.config.js             # Build configuration
+│
+└── README.md                      # This file
 ```
 
----
+## 🚀 Quick Start
 
-## API Endpoints
+### Backend Setup
 
-### POST /search
+1. **Install Python dependencies:**
+   ```bash
+   cd backend
+   pip install -r requirements.txt
+   ```
 
-Find sources for a topic.
+2. **Configure API key:**
+   ```bash
+   cp .env.example .env
+   # Edit .env and add your ANTHROPIC_API_KEY
+   ```
 
-**Request:**
-```json
-{
-  "topic": "kibud av v'em",
-  "level": "intermediate"
-}
+3. **Run the server:**
+   ```bash
+   python api_server_v7.py
+   ```
+   Server runs on http://localhost:8000
+
+### Frontend Setup
+
+1. **Install Node dependencies:**
+   ```bash
+   cd frontend
+   npm install
+   ```
+
+2. **Run development server:**
+   ```bash
+   npm run dev
+   ```
+   Frontend runs on http://localhost:5173
+
+## 🔧 API Endpoints
+
+### Full Search Pipeline
+```
+POST /search
+Body: {"query": "migu", "depth": "standard"}
+→ Returns: Complete pipeline result with organized sources
 ```
 
-**Response:**
-```json
-{
-  "topic": "kibud av v'em",
-  "summary": "The mitzvah to honor one's parents...",
-  "sources": [
-    {
-      "ref": "Shemot 20:12",
-      "category": "Chumash",
-      "he_text": "כַּבֵּד אֶת אָבִיךָ וְאֶת אִמֶּךָ...",
-      "en_text": "Honor your father and your mother...",
-      "he_ref": "שמות כ:יב",
-      "sefaria_url": "https://www.sefaria.org/Shemot.20.12",
-      "found": true
-    }
-  ]
-}
+### Step 1 Only (Transliteration)
+```
+POST /decipher
+Body: {"query": "chezkas haguf", "strict": false}
+→ Returns: Hebrew term + validation info
 ```
 
+### User Validation
+```
+POST /decipher/confirm
+Body: {"original_query": "...", "selection_index": 1}
+→ Confirms user's selection, learns for future
+
+POST /decipher/reject
+Body: {"original_query": "...", "incorrect_hebrew": "..."}
+→ Gets alternative suggestions
+```
+
+### Source Fetching
+```
+GET /sources/{ref}
+→ Returns full text for a Sefaria reference
+
+GET /related/{ref}
+→ Returns commentaries and cross-references
+```
+
+## 🧪 Testing
+
+```bash
+cd backend
+
+# Run all tests
+pytest tests/
+
+# Run specific test file
+pytest tests/test_step_one_focused.py
+
+# Run with verbose output
+pytest -v tests/
+```
+
+## 📝 Development Notes
+
+### Key Design Decisions
+
+1. **Dictionary-First Approach**: Step 1 checks dictionary before transliteration to maximize speed and accuracy
+
+2. **No Vector Search**: V7 removed hybrid vector search due to complexity. Pure dictionary + transliteration + Sefaria validation is faster and more reliable.
+
+3. **Word Validation**: `user_validation.py` provides CLARIFY/CHOOSE/UNKNOWN prompts when uncertain, following the principle "better annoy with asking than getting it wrong"
+
+4. **Self-Learning Dictionary**: Every confirmed transliteration is added to `word_dictionary.json` for future instant lookups
+
+5. **Trickle-Up Presentation**: Sources organized Gemara → Rishonim → Acharonim for pedagogical clarity
+
+### Environment Variables
+
+```bash
+# Required
+ANTHROPIC_API_KEY=sk-...     # Claude API key
+
+# Optional
+USE_CACHE=true               # Enable caching (default: true)
+TEST_MODE=true               # Testing mode for test suite
+```
+
+## 🐛 Troubleshooting
+
+### Backend won't start
+- Check `ANTHROPIC_API_KEY` is set in `.env`
+- Verify all dependencies: `pip install -r requirements.txt`
+- Check port 8000 is available
+
+### Frontend can't connect to backend
+- Verify backend is running on http://localhost:8000
+- Check CORS settings in `api_server_v7.py`
+- Try clearing browser cache
+
+### Transliteration not working
+- Check Sefaria API is accessible
+- Review logs in `backend/logs/`
+- Test Step 1 directly: `POST /decipher`
+
+### Tests failing
+- Ensure `TEST_MODE=true` in environment
+- Check test data in `word_dictionary.json`
+- Run individual tests: `pytest tests/test_step_one_focused.py -v`
+
+## 📊 Code Statistics
+
+- **Backend**: ~3,500 lines (7 core files + 5 tools)
+- **Frontend**: ~350 lines (9 components)
+- **Tests**: 3 test files
+- **Total Active Code**: ~4,000 lines
+
+## 🔄 Recent Cleanup (2025-12-08)
+
+Removed dead code and improved organization:
+- ✅ Deleted `hybrid_resolver.py` (348 lines, unused)
+- ✅ Deleted `vector_search.py` (267 lines, unused)
+- ✅ Deleted `cache_manager.py` (111 lines, unused)
+- ✅ Removed legacy `resources/` directory
+- ✅ Organized test files into `backend/tests/`
+- ✅ Updated `.gitignore` for node_modules, cache, embeddings
+- ✅ Added `requirements.txt` for Python dependencies
+
+**Saved:** ~730 lines of dead code removed
+
 ---
 
-## Troubleshooting
-
-**"Error connecting to server"**
-- Make sure the backend is running on port 8000
-- Check that you set the ANTHROPIC_API_KEY
-
-**"No sources found"**
-- Try different spelling or wording
-- Try Hebrew or English
-- The topic might be too obscure
-
-**Sources missing texts**
-- Some sources on Sefaria don't have English translations
-- The source reference format might not match exactly
-
----
-
-## Future Ideas
-
-- [ ] Save favorite searches
-- [ ] Export as PDF/Word for printing
-- [ ] Add more source categories (Midrash, Zohar, etc.)
-- [ ] User accounts
-- [ ] Payment/subscription system
-- [ ] Mobile app
-
----
-
-## Tech Stack
-
-- **Backend:** Python, FastAPI, Anthropic SDK
-- **Frontend:** React, Vite
-- **APIs:** Claude AI (Anthropic), Sefaria
-
----
-
-## License
-
-MIT - Use it however you want!
+**Built with:** Python (FastAPI), React (Vite), Claude API, Sefaria API

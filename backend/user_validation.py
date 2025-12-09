@@ -132,7 +132,7 @@ class ValidationResult:
 
 # Import transliteration functions
 try:
-    from transliteration_map_v5 import (
+    from .tools.transliteration_map import (
         generate_smart_variants,
         generate_word_variants,
         normalize_input,
