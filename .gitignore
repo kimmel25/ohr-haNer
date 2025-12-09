@@ -1,7 +1,59 @@
-backend/.env.example
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
 backend/.env
-backend/logs/marei_mekomos_20251126.log
+backend/.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Backend - Runtime & Cache
+backend/logs/
+backend/cache/
 backend/__pycache__/
 backend/tools/__pycache__/
+backend/.pytest_cache/
 backend/data/backups/
-backend/logs/
+
+# Backend - Embeddings (large binary files - can regenerate)
+backend/embeddings/*.npy
+backend/embeddings/*.pkl
+
+# Frontend - Dependencies & Build
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.env.local
+
+# Legacy Code (archived)
+resources/
+
+# IDE & OS
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Test Coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Temporary
+*.tmp
+*.bak
+*.log

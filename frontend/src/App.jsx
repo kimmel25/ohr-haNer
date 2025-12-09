@@ -21,6 +21,7 @@ import ErrorBox from './components/ErrorBox';
 import ResultBox from './components/ResultBox';
 import ValidationBox from './components/ValidationBox';
 import FeedbackBox from './components/FeedbackBox'
+import SearchResults from './components/SearchResults';
 
 // API base URL - change for production
 const API_BASE = 'http://localhost:8000';
@@ -80,11 +81,11 @@ function App() {
 
       // If high confidence, no validation needed
       if (!data.needs_validation && data.hebrew_term) {
-        // For multi-word queries, build complete Hebrew from word_validations
-        const completeHebrew = data.word_validations?.length > 1
-          ? data.word_validations.map(wv => wv.best_match).join(' ')
-          : data.hebrew_term;
+        // Use the hebrew_term directly - it's the complete phrase from the dictionary
+        // Don't reconstruct from word_validations as that can break multi-word phrases
+        const completeHebrew = data.hebrew_term;
         setConfirmedHebrew(completeHebrew);
+        console.log('[callDecipher] High-confidence result:', completeHebrew);
         // Auto-trigger Steps 2 & 3
         callSearch(completeHebrew);
       } else if (data.needs_validation) {
@@ -287,14 +288,25 @@ function App() {
         handleNoneOfThese={handleNoneOfThese} 
         loading={loading} 
       />
-      <FeedbackBox 
-        decipherResult={decipherResult} 
-        feedbackText={feedbackText} 
-        setFeedbackText={setFeedbackText} 
-        handleFeedbackSubmit={handleFeedbackSubmit} 
-        handleTryDifferentSpelling={handleTryDifferentSpelling} 
-        loading={loading} 
-      />
+      {showFeedback && decipherResult && (
+        <FeedbackBox 
+          decipherResult={decipherResult} 
+          feedbackText={feedbackText} 
+          setFeedbackText={setFeedbackText} 
+          handleFeedbackSubmit={handleFeedbackSubmit} 
+          handleTryDifferentSpelling={handleTryDifferentSpelling} 
+          loading={loading} 
+        />
+      )}
+      {/* Search Results */}
+      <SearchResults searchResult={searchResult} />
+      {/* Search Loading Indicator */}
+      {searchLoading && (
+        <div className="loading-box">
+          <div className="loading-spinner"></div>
+          <p>Searching for sources...</p>
+        </div>
+      )}
     </div>
   )
 }

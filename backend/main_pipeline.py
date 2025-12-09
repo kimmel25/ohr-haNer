@@ -10,6 +10,12 @@ The complete flow:
 This file orchestrates the entire process.
 """
 
+import sys
+from pathlib import Path
+
+# Add backend/ to path for local imports
+sys.path.insert(0, str(Path(__file__).parent))
+
 import asyncio
 import logging
 from typing import Dict, Optional
@@ -127,14 +133,15 @@ async def search_sources(query: str) -> MareiMekomosResult:
         logger.warning("step_one_decipher not found, checking if query is Hebrew")
         step1_result = _fallback_step1(query)
     
-    if not step1_result.get("success") and not step1_result.get("hebrew_term"):
+    # Step 1 now returns DecipherResult (Pydantic model), not dict
+    if not step1_result.success and not step1_result.hebrew_term:
         # Step 1 failed - can't proceed
         logger.warning("Step 1 failed - returning early")
         return MareiMekomosResult(
             original_query=query,
             hebrew_term=None,
-            transliteration_confidence="low",
-            transliteration_method="failed",
+            transliteration_confidence=step1_result.confidence.value,
+            transliteration_method=step1_result.method,
             query_type="unknown",
             primary_source=None,
             primary_source_he=None,
@@ -145,13 +152,13 @@ async def search_sources(query: str) -> MareiMekomosResult:
             total_sources=0,
             levels_included=[],
             success=False,
-            confidence="low",
+            confidence=step1_result.confidence.value,
             needs_clarification=True,
-            clarification_prompt=step1_result.get("message", "Please try a different spelling"),
+            clarification_prompt=step1_result.message or "Please try a different spelling",
             message="Could not understand the query"
         )
-    
-    hebrew_term = step1_result.get("hebrew_term", query)
+
+    hebrew_term = step1_result.hebrew_term or query
     logger.info(f"Step 1 complete: '{query}' → '{hebrew_term}'")
     
     # ========================================
@@ -196,8 +203,8 @@ async def search_sources(query: str) -> MareiMekomosResult:
     result = MareiMekomosResult(
         original_query=query,
         hebrew_term=hebrew_term,
-        transliteration_confidence=step1_result.get("confidence", "medium"),
-        transliteration_method=step1_result.get("method", "unknown"),
+        transliteration_confidence=step1_result.confidence.value,
+        transliteration_method=step1_result.method,
         query_type=strategy.query_type.value,
         primary_source=strategy.primary_source,
         primary_source_he=strategy.primary_source_he,
@@ -226,30 +233,32 @@ async def search_sources(query: str) -> MareiMekomosResult:
 #  FALLBACK FUNCTIONS
 # ==========================================
 
-def _fallback_step1(query: str) -> Dict:
+def _fallback_step1(query: str):
     """Fallback when Step 1 module not available."""
     import re
-    
+    from models import DecipherResult, ConfidenceLevel
+
     # Check if query is already Hebrew
     hebrew_chars = sum(1 for c in query if '\u0590' <= c <= '\u05FF')
     total_chars = sum(1 for c in query if c.isalpha())
-    
+
     if total_chars > 0 and hebrew_chars / total_chars > 0.5:
         # Already Hebrew
-        return {
-            "success": True,
-            "hebrew_term": query,
-            "confidence": "high",
-            "method": "passthrough"
-        }
-    
-    return {
-        "success": False,
-        "hebrew_term": None,
-        "confidence": "low",
-        "method": "failed",
-        "message": "Step 1 module not available and query is not Hebrew"
-    }
+        return DecipherResult(
+            success=True,
+            hebrew_term=query,
+            confidence=ConfidenceLevel.HIGH,
+            method="passthrough",
+            message="Query is already in Hebrew"
+        )
+
+    return DecipherResult(
+        success=False,
+        hebrew_term=None,
+        confidence=ConfidenceLevel.LOW,
+        method="failed",
+        message="Step 1 module not available and query is not Hebrew"
+    )
 
 
 def _fallback_step2(hebrew_term: str):

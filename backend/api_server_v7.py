@@ -24,10 +24,21 @@ from datetime import datetime
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 
 # Add parent directory for imports
 sys.path.insert(0, str(Path(__file__).parent))
+
+# Import centralized models and config
+from models import (
+    DecipherResult,
+    SearchRequest,
+    DecipherRequest,
+    ConfirmRequest,
+    RejectRequest,
+    MareiMekomosResult,
+    ConfidenceLevel
+)
+from config import get_settings
 
 # Setup logging
 logging.basicConfig(
@@ -38,118 +49,27 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-# ==========================================
-#  PYDANTIC MODELS
-# ==========================================
-
-class SearchRequest(BaseModel):
-    """Request for full search."""
-    query: str
-    depth: str = "standard"  # basic, standard, expanded, full
-
-
-class DecipherRequest(BaseModel):
-    """Request for Step 1 only."""
-    query: str
-    strict: bool = False
-
-
-class ConfirmRequest(BaseModel):
-    """Confirm user's transliteration selection."""
-    original_query: str
-    selection_index: int
-    selected_hebrew: Optional[str] = None
-
-
-class RejectRequest(BaseModel):
-    """Reject a transliteration."""
-    original_query: str
-    incorrect_hebrew: str
-    user_feedback: Optional[str] = None
-
-
-class SourceResponse(BaseModel):
-    """A single source in the response."""
-    ref: str
-    he_ref: str
-    level: str
-    level_order: int
-    level_hebrew: str
-    hebrew_text: str
-    english_text: str
-    author: str
-    is_primary: bool
-
-
-class RelatedSugyaResponse(BaseModel):
-    """A related sugya."""
-    ref: str
-    he_ref: str
-    connection: str
-    importance: str
-    preview_text: str
-
-
-class SearchResponse(BaseModel):
-    """Full response from search."""
-    # Status
-    success: bool
-    message: str
-    
-    # Query info
-    original_query: str
-    hebrew_term: Optional[str]
-    
-    # Interpretation
-    query_type: str
-    primary_source: Optional[str]
-    primary_source_he: Optional[str]
-    interpretation: str
-    
-    # Sources (trickle-up order)
-    sources: List[Dict[str, Any]]
-    sources_by_level: Dict[str, List[Dict[str, Any]]]
-    
-    # Related
-    related_sugyos: List[Dict[str, Any]]
-    
-    # Metadata
-    total_sources: int
-    levels_included: List[str]
-    confidence: str
-    
-    # Clarification (if needed)
-    needs_clarification: bool
-    clarification_prompt: Optional[str]
-
-
-class DecipherResponse(BaseModel):
-    """Response from Step 1."""
-    success: bool
-    original_query: str
-    hebrew_term: Optional[str]
-    confidence: str
-    method: str
-    needs_validation: bool
-    validation_type: str
-    choose_options: List[str]
-    message: str
+# Note: Models are now imported from models.py
+# Configuration loaded from config.py
 
 
 # ==========================================
 #  FASTAPI APP
 # ==========================================
 
+# Load settings
+settings = get_settings()
+
 app = FastAPI(
-    title="אור הנר - Marei Mekomos V7",
+    title=f"אור הנר - {settings.app_name}",
     description="Torah source finder with intelligent understanding",
-    version="7.0.0"
+    version=settings.app_version
 )
 
 # CORS for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173"],
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -165,7 +85,8 @@ async def health_check():
     """Health check endpoint."""
     return {
         "status": "healthy",
-        "version": "7.0.0",
+        "version": settings.app_version,
+        "environment": settings.environment,
         "pipeline": {
             "step_1": "active",
             "step_2": "active",
@@ -179,57 +100,28 @@ async def health_check():
 #  FULL SEARCH ENDPOINT
 # ==========================================
 
-@app.post("/search", response_model=SearchResponse)
-async def search_endpoint(request: SearchRequest):
+@app.post("/search")
+async def search_endpoint(request: SearchRequest) -> Dict[str, Any]:
     """
     Full search pipeline: Steps 1 → 2 → 3
-    
+
     Takes a query and returns organized Torah sources.
     """
     logger.info(f"[/search] Query: '{request.query}'")
-    
-    if not request.query.strip():
-        raise HTTPException(status_code=400, detail="Query cannot be empty")
-    
+
     try:
         from main_pipeline import search_sources
-        
-        result = await search_sources(request.query)
-        
-        # Convert to response format
-        response = SearchResponse(
-            success=result.success,
-            message=result.message,
-            original_query=result.original_query,
-            hebrew_term=result.hebrew_term,
-            query_type=result.query_type,
-            primary_source=result.primary_source,
-            primary_source_he=result.primary_source_he,
-            interpretation=result.interpretation,
-            sources=[
-                s.to_dict() if hasattr(s, 'to_dict') else s 
-                for s in result.sources
-            ],
-            sources_by_level={
-                level: [s.to_dict() if hasattr(s, 'to_dict') else s for s in sources]
-                for level, sources in result.sources_by_level.items()
-            },
-            related_sugyos=[
-                s.to_dict() if hasattr(s, 'to_dict') else s
-                for s in result.related_sugyos
-            ],
-            total_sources=result.total_sources,
-            levels_included=result.levels_included,
-            confidence=result.confidence,
-            needs_clarification=result.needs_clarification,
-            clarification_prompt=result.clarification_prompt
-        )
-        
+
+        result: MareiMekomosResult = await search_sources(request.query)
+
+        # Convert Pydantic model to dict for JSON response
+        response = result.model_dump()
+
         logger.info(f"[/search] Result: {result.total_sources} sources, "
-                   f"confidence={result.confidence}")
-        
+                   f"confidence={result.confidence.value}")
+
         return response
-        
+
     except Exception as e:
         logger.error(f"[/search] Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
@@ -239,53 +131,99 @@ async def search_endpoint(request: SearchRequest):
 #  DECIPHER ENDPOINT (Step 1 only)
 # ==========================================
 
-@app.post("/decipher", response_model=DecipherResponse)
-async def decipher_endpoint(request: DecipherRequest):
+@app.post("/decipher")
+async def decipher_endpoint(request: DecipherRequest) -> Dict[str, Any]:
     """
     Step 1 only: transliteration → Hebrew
-    
+
     For when you just need to validate the transliteration.
     """
     logger.info(f"[/decipher] Query: '{request.query}'")
-    
-    if not request.query.strip():
-        raise HTTPException(status_code=400, detail="Query cannot be empty")
-    
+
     try:
         from step_one_decipher import decipher
         from user_validation import analyze_query
-        
-        # Run Step 1
-        result = await decipher(request.query)
-        
+
+        # Run Step 1 - now returns DecipherResult (Pydantic model)
+        result: DecipherResult = await decipher(request.query)
+
+        # Skip validation if confidence is high
+        if result.confidence == ConfidenceLevel.HIGH and result.hebrew_term:
+            # Use the dictionary result directly for complete phrases
+            # Don't re-analyze word-by-word as that breaks multi-word phrases
+            complete_hebrew = result.hebrew_term
+
+            # Still get validation to extract word_validations for display purposes only
+            validation = analyze_query(request.query, strict=False)
+
+            response = result.model_copy(update={
+                "hebrew_term": complete_hebrew,
+                "needs_validation": False,
+                "validation_type": "NONE",
+                "choose_options": [],
+                "word_validations": [
+                    {
+                        "original": wv.original,
+                        "best_match": wv.best_match,
+                        "alternatives": wv.alternatives,
+                        "confidence": wv.confidence,
+                        "needs_validation": wv.needs_validation,
+                        "validation_type": wv.validation_type.value,
+                    }
+                    for wv in validation.word_validations
+                ],
+                "message": "High-confidence dictionary hit. No validation needed."
+            })
+
+            return response.model_dump()
+
         # Get validation info
         validation = analyze_query(request.query, strict=request.strict)
-        
-        return DecipherResponse(
-            success=result.get("success", False),
-            original_query=request.query,
-            hebrew_term=result.get("hebrew_term"),
-            confidence=result.get("confidence", "medium"),
-            method=result.get("method", "unknown"),
-            needs_validation=validation.needs_validation,
-            validation_type=validation.validation_type.value,
-            choose_options=validation.choose_options,
-            message=result.get("message", "")
-        )
-        
+
+        # If Step 1 found a complete result, use it; otherwise reconstruct from words
+        if result.hebrew_term and result.method == "dictionary":
+            # Dictionary has the complete phrase, don't reconstruct word-by-word
+            complete_hebrew = result.hebrew_term
+        elif validation.word_validations:
+            # Build from word validations
+            complete_hebrew = " ".join(wv.best_match for wv in validation.word_validations)
+        else:
+            complete_hebrew = result.hebrew_term
+
+        response = result.model_copy(update={
+            "hebrew_term": complete_hebrew,
+            "needs_validation": validation.needs_validation,
+            "validation_type": validation.validation_type.value,
+            "choose_options": validation.choose_options,
+            "word_validations": [
+                {
+                    "original": wv.original,
+                    "best_match": wv.best_match,
+                    "alternatives": wv.alternatives,
+                    "confidence": wv.confidence,
+                    "needs_validation": wv.needs_validation,
+                    "validation_type": wv.validation_type.value,
+                }
+                for wv in validation.word_validations
+            ]
+        })
+
+        return response.model_dump()
+
     except ImportError as e:
         logger.warning(f"Step 1 module not available: {e}")
-        return DecipherResponse(
+        error_result = DecipherResult(
             success=False,
-            original_query=request.query,
             hebrew_term=None,
-            confidence="low",
+            confidence=ConfidenceLevel.LOW,
             method="unavailable",
             needs_validation=True,
             validation_type="UNKNOWN",
             choose_options=[],
             message="Transliteration service not available"
         )
+        return error_result.model_dump()
+
     except Exception as e:
         logger.error(f"[/decipher] Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
@@ -323,12 +261,44 @@ async def confirm_selection(request: ConfirmRequest):
                 source="user_confirmed"
             )
 
-            # Reconstruct the full Hebrew phrase
-            full_hebrew_phrase = validation.reconstruct_phrase(selected)
+            # Reconstruct the full Hebrew phrase from word_validations
+            # Replace uncertain word(s) with the user's selection
+            updated_word_validations = []
+            if validation.word_validations:
+                hebrew_words = []
+                for i, word_val in enumerate(validation.word_validations):
+                    if i in validation.uncertain_word_indices:
+                        # This word was uncertain, use the selected Hebrew
+                        hebrew_words.append(selected)
+                        # Update the word validation to reflect the user's selection
+                        updated_word_validations.append({
+                            "original": word_val.original,
+                            "best_match": selected,
+                            "alternatives": word_val.alternatives,
+                            "confidence": 1.0,  # User confirmed, so high confidence
+                            "needs_validation": False,
+                            "validation_type": "NONE",
+                        })
+                    else:
+                        # This word was certain, use its best match
+                        hebrew_words.append(word_val.best_match)
+                        updated_word_validations.append({
+                            "original": word_val.original,
+                            "best_match": word_val.best_match,
+                            "alternatives": word_val.alternatives,
+                            "confidence": word_val.confidence,
+                            "needs_validation": word_val.needs_validation,
+                            "validation_type": word_val.validation_type.value,
+                        })
+                full_hebrew_phrase = " ".join(hebrew_words)
+            else:
+                # Single word or no word validations
+                full_hebrew_phrase = selected
 
             return {
                 "success": True,
                 "hebrew_term": full_hebrew_phrase,
+                "word_validations": updated_word_validations,
                 "message": f"Got it! Using: {full_hebrew_phrase}",
                 "learned": True
             }
