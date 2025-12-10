@@ -117,8 +117,10 @@ async def search_endpoint(request: SearchRequest) -> Dict[str, Any]:
         # Convert Pydantic model to dict for JSON response
         response = result.model_dump()
 
+        # Get confidence value (may be enum or string depending on Pydantic config)
+        conf = result.confidence.value if hasattr(result.confidence, 'value') else result.confidence
         logger.info(f"[/search] Result: {result.total_sources} sources, "
-                   f"confidence={result.confidence.value}")
+                   f"confidence={conf}")
 
         return response
 
@@ -175,7 +177,10 @@ async def decipher_endpoint(request: DecipherRequest) -> Dict[str, Any]:
                 "message": "High-confidence dictionary hit. No validation needed."
             })
 
-            return response.model_dump()
+            # Add original_query to the response
+            response_dict = response.model_dump()
+            response_dict["original_query"] = request.query
+            return response_dict
 
         # Get validation info
         validation = analyze_query(request.query, strict=request.strict)
@@ -208,7 +213,10 @@ async def decipher_endpoint(request: DecipherRequest) -> Dict[str, Any]:
             ]
         })
 
-        return response.model_dump()
+        # Add original_query to the response
+        response_dict = response.model_dump()
+        response_dict["original_query"] = request.query
+        return response_dict
 
     except ImportError as e:
         logger.warning(f"Step 1 module not available: {e}")

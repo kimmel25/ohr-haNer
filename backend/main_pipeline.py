@@ -18,80 +18,13 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 import asyncio
 import logging
-from typing import Dict, Optional
-from dataclasses import dataclass
+from dataclasses import asdict, is_dataclass
+from enum import Enum
+
+# Import Pydantic models
+from models import MareiMekomosResult
 
 logger = logging.getLogger(__name__)
-
-
-# ==========================================
-#  COMPLETE RESULT
-# ==========================================
-
-@dataclass
-class MareiMekomosResult:
-    """Complete result from the full pipeline."""
-    
-    # Input
-    original_query: str
-    
-    # Step 1 results
-    hebrew_term: Optional[str]
-    transliteration_confidence: str
-    transliteration_method: str
-    
-    # Step 2 results  
-    query_type: str
-    primary_source: Optional[str]
-    primary_source_he: Optional[str]
-    interpretation: str
-    
-    # Step 3 results (the actual sources)
-    sources: list
-    sources_by_level: dict
-    related_sugyos: list
-    total_sources: int
-    levels_included: list
-    
-    # Overall status
-    success: bool
-    confidence: str
-    needs_clarification: bool
-    clarification_prompt: Optional[str]
-    message: str
-    
-    def to_dict(self) -> Dict:
-        """Convert to dictionary for JSON/API response."""
-        return {
-            "original_query": self.original_query,
-            "hebrew_term": self.hebrew_term,
-            "transliteration": {
-                "confidence": self.transliteration_confidence,
-                "method": self.transliteration_method
-            },
-            "interpretation": {
-                "query_type": self.query_type,
-                "primary_source": self.primary_source,
-                "primary_source_he": self.primary_source_he,
-                "reasoning": self.interpretation
-            },
-            "sources": [s.to_dict() if hasattr(s, 'to_dict') else s for s in self.sources],
-            "sources_by_level": {
-                level: [s.to_dict() if hasattr(s, 'to_dict') else s for s in sources]
-                for level, sources in self.sources_by_level.items()
-            },
-            "related_sugyos": [
-                s.to_dict() if hasattr(s, 'to_dict') else s 
-                for s in self.related_sugyos
-            ],
-            "total_sources": self.total_sources,
-            "levels_included": self.levels_included,
-            "success": self.success,
-            "confidence": self.confidence,
-            "needs_clarification": self.needs_clarification,
-            "clarification_prompt": self.clarification_prompt,
-            "message": self.message
-        }
 
 
 # ==========================================
@@ -133,6 +66,10 @@ async def search_sources(query: str) -> MareiMekomosResult:
         logger.warning("step_one_decipher not found, checking if query is Hebrew")
         step1_result = _fallback_step1(query)
     
+    # Helper to safely extract enum values (handles both enum and string)
+    def get_enum_value(val):
+        return val.value if hasattr(val, 'value') else val
+
     # Step 1 now returns DecipherResult (Pydantic model), not dict
     if not step1_result.success and not step1_result.hebrew_term:
         # Step 1 failed - can't proceed
@@ -140,7 +77,7 @@ async def search_sources(query: str) -> MareiMekomosResult:
         return MareiMekomosResult(
             original_query=query,
             hebrew_term=None,
-            transliteration_confidence=step1_result.confidence.value,
+            transliteration_confidence=get_enum_value(step1_result.confidence),
             transliteration_method=step1_result.method,
             query_type="unknown",
             primary_source=None,
@@ -152,7 +89,7 @@ async def search_sources(query: str) -> MareiMekomosResult:
             total_sources=0,
             levels_included=[],
             success=False,
-            confidence=step1_result.confidence.value,
+            confidence=get_enum_value(step1_result.confidence),
             needs_clarification=True,
             clarification_prompt=step1_result.message or "Please try a different spelling",
             message="Could not understand the query"
@@ -199,23 +136,49 @@ async def search_sources(query: str) -> MareiMekomosResult:
     logger.info("\n" + "=" * 100)
     logger.info("PIPELINE COMPLETE")
     logger.info("=" * 100)
-    
+
+    # Convert nested models (dataclasses or Pydantic) to dicts for proper validation
+    def enum_dict_factory(items):
+        """Convert enums to their values when creating dict from dataclass."""
+        result = {}
+        for key, value in items:
+            if isinstance(value, Enum):
+                result[key] = value.value
+            else:
+                result[key] = value
+        return result
+
+    def to_dict(obj):
+        """Convert dataclass or Pydantic model to dict."""
+        if is_dataclass(obj):
+            return asdict(obj, dict_factory=enum_dict_factory)
+        elif hasattr(obj, 'model_dump'):
+            return obj.model_dump()
+        return obj
+
+    sources_dict = [to_dict(s) for s in search_result.sources]
+    sources_by_level_dict = {
+        level: [to_dict(s) for s in sources]
+        for level, sources in search_result.sources_by_level.items()
+    }
+    related_sugyos_dict = [to_dict(s) for s in search_result.related_sugyos]
+
     result = MareiMekomosResult(
         original_query=query,
         hebrew_term=hebrew_term,
-        transliteration_confidence=step1_result.confidence.value,
+        transliteration_confidence=get_enum_value(step1_result.confidence),
         transliteration_method=step1_result.method,
-        query_type=strategy.query_type.value,
+        query_type=get_enum_value(strategy.query_type),
         primary_source=strategy.primary_source,
         primary_source_he=strategy.primary_source_he,
         interpretation=strategy.reasoning,
-        sources=search_result.sources,
-        sources_by_level=search_result.sources_by_level,
-        related_sugyos=search_result.related_sugyos,
+        sources=sources_dict,
+        sources_by_level=sources_by_level_dict,
+        related_sugyos=related_sugyos_dict,
         total_sources=search_result.total_sources,
         levels_included=search_result.levels_included,
         success=True,
-        confidence=search_result.confidence,
+        confidence=get_enum_value(search_result.confidence),
         needs_clarification=search_result.needs_clarification,
         clarification_prompt=search_result.clarification_prompt,
         message=f"Found {search_result.total_sources} sources for {hebrew_term}"

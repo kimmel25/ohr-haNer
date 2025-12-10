@@ -21,8 +21,6 @@ TRICKLE-UP ORDER (from Architecture.md):
 import asyncio
 import logging
 from typing import Dict, List, Optional, Tuple
-from dataclasses import dataclass, field
-from enum import Enum
 
 logger = logging.getLogger(__name__)
 
@@ -34,154 +32,57 @@ from step_two_understand import (
     RelatedSugya
 )
 
+# Import centralized Pydantic models from models.py
+from models import (
+    SourceLevel,
+    Source,
+    RelatedSugyaResult,
+    SearchResult,
+    ConfidenceLevel
+)
+
 
 # ==========================================
-#  DATA STRUCTURES
+#  HEBREW NAMES AND HELPERS
 # ==========================================
 
-class SourceLevel(Enum):
-    """
-    Levels in the trickle-up hierarchy.
-    Numbers determine display order.
-    """
-    CHUMASH = 1       # פסוק
-    MISHNA = 2        # משנה
-    GEMARA = 3        # גמרא
-    RASHI = 4         # רש"י
-    TOSFOS = 5        # תוספות
-    RISHONIM = 6      # ראשונים
-    RAMBAM = 7        # רמב"ם (both rishon and posek)
-    TUR = 8           # טור
-    SHULCHAN_ARUCH = 9    # שולחן ערוך
-    NOSEI_KEILIM = 10     # נושאי כלים
-    ACHARONIM = 11        # אחרונים
-    OTHER = 99
-
-
-# Hebrew names for display
+# Hebrew names for display (using string enum values as keys)
 LEVEL_HEBREW_NAMES = {
-    SourceLevel.CHUMASH: "חומש",
-    SourceLevel.MISHNA: "משנה",
-    SourceLevel.GEMARA: "גמרא",
-    SourceLevel.RASHI: "רש\"י",
-    SourceLevel.TOSFOS: "תוספות",
-    SourceLevel.RISHONIM: "ראשונים",
-    SourceLevel.RAMBAM: "רמב\"ם",
-    SourceLevel.TUR: "טור",
-    SourceLevel.SHULCHAN_ARUCH: "שולחן ערוך",
-    SourceLevel.NOSEI_KEILIM: "נושאי כלים",
-    SourceLevel.ACHARONIM: "אחרונים",
-    SourceLevel.OTHER: "אחר"
+    "chumash": "חומש",
+    "mishna": "משנה",
+    "gemara": "גמרא",
+    "rashi": 'רש"י',
+    "tosfos": "תוספות",
+    "rishonim": "ראשונים",
+    "rambam": 'רמב"ם',
+    "tur": "טור",
+    "shulchan_aruch": "שולחן ערוך",
+    "nosei_keilim": "נושאי כלים",
+    "acharonim": "אחרונים",
+    "other": "אחר"
 }
 
 
-@dataclass
-class Source:
-    """A single source text."""
-    ref: str                    # Sefaria reference
-    he_ref: str                 # Hebrew reference
-    level: SourceLevel          # Where it fits in hierarchy
-    hebrew_text: str            # The actual Hebrew text
-    english_text: str           # English translation (if available)
-    author: str                 # Author/commentator name
-    categories: List[str]       # Sefaria categories
-    
-    # Display helpers
-    level_hebrew: str = ""      # Hebrew name for the level
-    is_primary: bool = False    # Is this the main source?
-    relevance_note: str = ""    # Why this source is included
-    
-    def __post_init__(self):
-        if not self.level_hebrew:
-            self.level_hebrew = LEVEL_HEBREW_NAMES.get(self.level, "")
-    
-    def to_dict(self) -> Dict:
-        return {
-            "ref": self.ref,
-            "he_ref": self.he_ref,
-            "level": self.level.name,
-            "level_order": self.level.value,
-            "level_hebrew": self.level_hebrew,
-            "hebrew_text": self.hebrew_text,
-            "english_text": self.english_text,
-            "author": self.author,
-            "categories": self.categories,
-            "is_primary": self.is_primary,
-            "relevance_note": self.relevance_note
-        }
-
-
-@dataclass
-class RelatedSugyaResult:
-    """A related sugya with brief info (not full sources)."""
-    ref: str
-    he_ref: str
-    connection: str         # How it relates to main sugya
-    importance: str         # primary/secondary/tangential
-    preview_text: str       # Brief snippet to show what it's about
-    
-    def to_dict(self) -> Dict:
-        return {
-            "ref": self.ref,
-            "he_ref": self.he_ref,
-            "connection": self.connection,
-            "importance": self.importance,
-            "preview_text": self.preview_text
-        }
-
-
-@dataclass 
-class SearchResult:
+def get_level_order(level: SourceLevel) -> int:
     """
-    Complete output from Step 3.
-    This is what the frontend receives.
+    Get the numeric order for a SourceLevel.
+    This preserves the trickle-up hierarchy for sorting.
     """
-    # The query info
-    original_query: str
-    hebrew_term: str
-    
-    # What we found
-    primary_source: Optional[str]       # Main Gemara reference
-    primary_source_he: Optional[str]
-    
-    # Sources organized by level (trickle-up)
-    sources: List[Source]               # All sources in display order
-    sources_by_level: Dict[str, List[Source]]  # Grouped by level
-    
-    # Related sugyos (per user preference - show if important)
-    related_sugyos: List[RelatedSugyaResult]
-    
-    # Metadata
-    total_sources: int
-    levels_included: List[str]
-    
-    # Claude's reasoning
-    interpretation: str                 # What we think user wanted
-    confidence: str                     # high/medium/low
-    
-    # If we're uncertain
-    needs_clarification: bool
-    clarification_prompt: Optional[str]
-    
-    def to_dict(self) -> Dict:
-        return {
-            "original_query": self.original_query,
-            "hebrew_term": self.hebrew_term,
-            "primary_source": self.primary_source,
-            "primary_source_he": self.primary_source_he,
-            "sources": [s.to_dict() for s in self.sources],
-            "sources_by_level": {
-                level: [s.to_dict() for s in sources]
-                for level, sources in self.sources_by_level.items()
-            },
-            "related_sugyos": [s.to_dict() for s in self.related_sugyos],
-            "total_sources": self.total_sources,
-            "levels_included": self.levels_included,
-            "interpretation": self.interpretation,
-            "confidence": self.confidence,
-            "needs_clarification": self.needs_clarification,
-            "clarification_prompt": self.clarification_prompt
-        }
+    order_map = {
+        SourceLevel.CHUMASH: 1,
+        SourceLevel.MISHNA: 2,
+        SourceLevel.GEMARA: 3,
+        SourceLevel.RASHI: 4,
+        SourceLevel.TOSFOS: 5,
+        SourceLevel.RISHONIM: 6,
+        SourceLevel.RAMBAM: 7,
+        SourceLevel.TUR: 8,
+        SourceLevel.SHULCHAN_ARUCH: 9,
+        SourceLevel.NOSEI_KEILIM: 10,
+        SourceLevel.ACHARONIM: 11,
+        SourceLevel.OTHER: 99
+    }
+    return order_map.get(level, 99)
 
 
 # ==========================================
@@ -201,7 +102,7 @@ async def fetch_sources(strategy: SearchStrategy) -> List[Source]:
         return sources
     
     try:
-        from tools.sefaria_client import get_sefaria_client, SourceLevel as ClientSourceLevel
+        from tools.sefaria_client import get_sefaria_client
         client = get_sefaria_client()
         
         # Get the primary Gemara text
@@ -213,7 +114,9 @@ async def fetch_sources(strategy: SearchStrategy) -> List[Source]:
                 ref=gemara.ref,
                 he_ref=gemara.he_ref,
                 level=SourceLevel.GEMARA,
-                hebrew_text=gemara.hebrew[:2000] if gemara.hebrew else "",  # Limit length
+                level_hebrew=LEVEL_HEBREW_NAMES.get(SourceLevel.GEMARA.value, ""),
+                level_order=get_level_order(SourceLevel.GEMARA),
+                hebrew_text=gemara.hebrew[:2000] if gemara.hebrew else "",
                 english_text=gemara.english[:2000] if gemara.english else "",
                 author="",
                 categories=gemara.categories,
@@ -243,6 +146,8 @@ async def fetch_sources(strategy: SearchStrategy) -> List[Source]:
                     ref=comm_text.ref,
                     he_ref=comm_text.he_ref,
                     level=level,
+                    level_hebrew=LEVEL_HEBREW_NAMES.get(level.value, ""),
+                    level_order=get_level_order(level),
                     hebrew_text=comm_text.hebrew[:1500] if comm_text.hebrew else "",
                     english_text=comm_text.english[:1500] if comm_text.english else "",
                     author=_extract_author(commentary.category, comm_text.categories),
@@ -261,7 +166,6 @@ async def fetch_sources(strategy: SearchStrategy) -> List[Source]:
 
 def _get_levels_for_depth(depth: str) -> set:
     """Determine which source levels to include based on depth setting."""
-    
     # Always include Gemara
     levels = {SourceLevel.GEMARA}
     
@@ -295,28 +199,52 @@ def _get_levels_for_depth(depth: str) -> set:
 
 def _map_client_level(client_level) -> SourceLevel:
     """Map Sefaria client's SourceLevel to our SourceLevel."""
-    # The client uses similar enum values, but we need to map them
+    # Handle various input types
     try:
-        return SourceLevel[client_level.name]
-    except (KeyError, AttributeError):
-        return SourceLevel.OTHER
+        # If it's already our SourceLevel enum, return it
+        if isinstance(client_level, SourceLevel):
+            return client_level
+        
+        # If it's a string, try to match it
+        if isinstance(client_level, str):
+            # Try lowercase match first
+            try:
+                return SourceLevel(client_level.lower())
+            except ValueError:
+                # Try as enum name (uppercase)
+                try:
+                    return SourceLevel[client_level.upper()]
+                except KeyError:
+                    pass
+        
+        # If it has a name attribute (another enum type)
+        if hasattr(client_level, 'name'):
+            try:
+                return SourceLevel[client_level.name.upper()]
+            except (KeyError, AttributeError):
+                pass
+                
+    except Exception:
+        pass
+    
+    return SourceLevel.OTHER
 
 
 def _extract_author(category: str, categories: List[str]) -> str:
     """Extract author name from category info."""
     
-    # Common author patterns
+    # Common author patterns (using yeshivish spelling with sav)
     author_map = {
-        "rashi": "רש\"י",
+        "rashi": 'רש"י',
         "tosafot": "תוספות",
         "tosafos": "תוספות",
-        "ramban": "רמב\"ן",
-        "rashba": "רשב\"א",
-        "ritva": "ריטב\"א",
-        "ran": "ר\"ן",
-        "rosh": "רא\"ש",
-        "rambam": "רמב\"ם",
-        "maharsha": "מהרש\"א",
+        "ramban": 'רמב"ן',
+        "rashba": 'רשב"א',
+        "ritva": 'ריטב"א',
+        "ran": 'ר"ן',
+        "rosh": 'רא"ש',
+        "rambam": 'רמב"ם',
+        "maharsha": 'מהרש"א',
         "pnei yehoshua": "פני יהושע",
         "shita mekubetzet": "שיטה מקובצת",
     }
@@ -342,16 +270,21 @@ def organize_sources(sources: List[Source]) -> Tuple[List[Source], Dict[str, Lis
     """
     logger.info(f"[ORGANIZE] Organizing {len(sources)} sources")
     
-    # Sort by level (trickle-up order: Chumash → Mishna → Gemara → ...)
-    sorted_sources = sorted(sources, key=lambda s: s.level.value)
+    # Sort by level_order (numeric ordering)
+    sorted_sources = sorted(sources, key=lambda s: s.level_order)
     
     # Group by level
     by_level: Dict[str, List[Source]] = {}
     for source in sorted_sources:
-        level_name = source.level.name
-        if level_name not in by_level:
-            by_level[level_name] = []
-        by_level[level_name].append(source)
+        # Use uppercase level name as key (e.g., "GEMARA")
+        # Handle both enum and string types
+        if hasattr(source.level, 'name'):
+            level_key = source.level.name.upper()
+        else:
+            level_key = str(source.level).upper()
+        if level_key not in by_level:
+            by_level[level_key] = []
+        by_level[level_key].append(source)
     
     # Log what we have
     for level_name, level_sources in by_level.items():
@@ -446,7 +379,7 @@ async def search(
     logger.info("\n[Phase 3: FORMAT]")
     
     levels_included = [
-        LEVEL_HEBREW_NAMES.get(SourceLevel[level], level)
+        LEVEL_HEBREW_NAMES.get(level.lower(), level)
         for level in sources_by_level.keys()
     ]
     
@@ -462,7 +395,7 @@ async def search(
         levels_included=levels_included,
         interpretation=strategy.reasoning,
         confidence=strategy.confidence,
-        needs_clarification=(strategy.confidence == "low"),
+        needs_clarification=(strategy.confidence == ConfidenceLevel.LOW),
         clarification_prompt=strategy.clarification_prompt
     )
     
@@ -490,7 +423,9 @@ def create_mock_result(hebrew_term: str, original_query: str) -> SearchResult:
             ref="Ketubot 9a",
             he_ref="כתובות ט׳ א",
             level=SourceLevel.GEMARA,
-            hebrew_text="ת\"ר הנושא את האשה ולא מצא לה בתולים היא אומרת משארסתני נאנסתי והוא אומר לא כי אלא עד שלא ארסתיך והיה מקחי מקח טעות...",
+            level_hebrew=LEVEL_HEBREW_NAMES.get(SourceLevel.GEMARA.value, ""),
+            level_order=get_level_order(SourceLevel.GEMARA),
+            hebrew_text='ת"ר הנושא את האשה ולא מצא לה בתולים היא אומרת משארסתני נאנסתי והוא אומר לא כי אלא עד שלא ארסתיך והיה מקחי מקח טעות...',
             english_text="The Sages taught: One who marries a woman and did not find her a virgin...",
             author="",
             categories=["Talmud", "Bavli", "Seder Nashim", "Ketubot"],
@@ -499,11 +434,13 @@ def create_mock_result(hebrew_term: str, original_query: str) -> SearchResult:
         ),
         Source(
             ref="Rashi on Ketubot 9a:1",
-            he_ref="רש״י על כתובות ט׳ א:א",
+            he_ref='רש"י על כתובות ט׳ א:א',
             level=SourceLevel.RASHI,
+            level_hebrew=LEVEL_HEBREW_NAMES.get(SourceLevel.RASHI.value, ""),
+            level_order=get_level_order(SourceLevel.RASHI),
             hebrew_text="משארסתני נאנסתי - ולא נבעלתי ברצון ולא פקע קדושין...",
             english_text="",
-            author="רש\"י",
+            author='רש"י',
             categories=["Commentary", "Talmud", "Rashi"],
             is_primary=False,
             relevance_note=""
@@ -512,6 +449,8 @@ def create_mock_result(hebrew_term: str, original_query: str) -> SearchResult:
             ref="Tosafot on Ketubot 9a:1:1",
             he_ref="תוספות על כתובות ט׳ א:א:א",
             level=SourceLevel.TOSFOS,
+            level_hebrew=LEVEL_HEBREW_NAMES.get(SourceLevel.TOSFOS.value, ""),
+            level_order=get_level_order(SourceLevel.TOSFOS),
             hebrew_text="העמד אשה על חזקתה - וא\"ת והא חזקה דגופא עדיפא מחזקת ממון...",
             english_text="",
             author="תוספות",
@@ -542,9 +481,9 @@ def create_mock_result(hebrew_term: str, original_query: str) -> SearchResult:
         sources_by_level=by_level,
         related_sugyos=mock_related,
         total_sources=len(sorted_sources),
-        levels_included=["גמרא", "רש\"י", "תוספות"],
+        levels_included=["גמרא", 'רש"י', "תוספות"],
         interpretation="The user is looking for the sugya of חזקת הגוף, which is primarily discussed in Kesubos 9a regarding a case where a woman claims she was violated after erusin.",
-        confidence="high",
+        confidence=ConfidenceLevel.HIGH,
         needs_clarification=False,
         clarification_prompt=None
     )
@@ -579,7 +518,7 @@ async def test_search():
         ],
         fetch_strategy=FetchStrategy.TRICKLE_UP,
         depth="standard",
-        confidence="high"
+        confidence=ConfidenceLevel.HIGH
     )
     
     result = await search(strategy, "chezkas haguf", "חזקת הגוף")

@@ -31,29 +31,39 @@ from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
+# Import centralized SourceLevel definition from models.py
+from models import SourceLevel
+
+
+# ==========================================
+#  LEVEL ORDERING HELPER
+# ==========================================
+
+def get_level_order(level: SourceLevel) -> int:
+    """
+    Get the numeric order for a SourceLevel.
+    This preserves the trickle-up hierarchy for sorting.
+    """
+    order_map = {
+        SourceLevel.CHUMASH: 1,
+        SourceLevel.MISHNA: 2,
+        SourceLevel.GEMARA: 3,
+        SourceLevel.RASHI: 4,
+        SourceLevel.TOSFOS: 5,
+        SourceLevel.RISHONIM: 6,
+        SourceLevel.RAMBAM: 7,
+        SourceLevel.TUR: 8,
+        SourceLevel.SHULCHAN_ARUCH: 9,
+        SourceLevel.NOSEI_KEILIM: 10,
+        SourceLevel.ACHARONIM: 11,
+        SourceLevel.OTHER: 99
+    }
+    return order_map.get(level, 99)
+
 
 # ==========================================
 #  DATA STRUCTURES
 # ==========================================
-
-class SourceLevel(Enum):
-    """
-    Levels in the trickle-up hierarchy.
-    Order matters - lower numbers come first in presentation.
-    """
-    CHUMASH = 1       # פסוק
-    MISHNA = 2        # משנה
-    GEMARA = 3        # גמרא
-    RASHI = 4         # רש"י
-    TOSFOS = 5        # תוספות
-    RISHONIM = 6      # ראשונים (רמב"ם, רשב"א, ריטב"א, ר"ן, etc.)
-    RAMBAM = 7        # רמב"ם (special category - both rishon and posek)
-    TUR = 8           # טור
-    SHULCHAN_ARUCH = 9  # שולחן ערוך
-    NOSEI_KEILIM = 10   # נושאי כלים (ש"ך, ט"ז, etc.)
-    ACHARONIM = 11      # אחרונים
-    OTHER = 99          # Catch-all
-
 
 @dataclass
 class SearchHit:
@@ -437,59 +447,38 @@ class SefariaClient:
         Uses Sefaria's ElasticSearch proxy.
         
         Args:
-            query: Hebrew term to search for
-            size: Number of results to return
-            filters: Category filters (e.g., ["Talmud"])
+            query: Hebrew or English term to search for
+            size: Number of results to return (max 100)
+            filters: Category filters (e.g., ["Talmud", "Midrash"])
         
         Returns:
             SearchResults with hits and aggregations
         """
         logger.info(f"Searching Sefaria for: '{query}'")
         
-        cache_key = f"search:{query}:{size}:{filters}"
-        
         # Build ElasticSearch query
         es_query = {
             "size": size,
-            "highlight": {
-                "pre_tags": ["<b>"],
-                "post_tags": ["</b>"],
-                "fields": {
-                    "exact": {"fragment_size": 200}
-                }
-            },
-            "sort": [
-                {"comp_date": {}},
-                {"order": {}}
-            ],
-            "aggs": {
-                "category": {
-                    "terms": {
-                        "field": "path",
-                        "size": 10000
-                    }
-                }
-            },
             "query": {
-                "match_phrase": {
-                    "exact": {
-                        "query": query,
-                        "slop": 2
-                    }
+                "query_string": {
+                    "query": query,
+                    "default_operator": "AND"
                 }
-            }
+            },
+            "sort": [{"_score": {"order": "desc"}}]
         }
         
-        # Add filters if specified
         if filters:
             es_query["query"] = {
                 "bool": {
                     "must": es_query["query"],
-                    "filter": [
-                        {"terms": {"path": filters}}
-                    ]
+                    "filter": {
+                        "terms": {"categories": filters}
+                    }
                 }
             }
+        
+        cache_key = f"search:{query}:{size}:{filters}"
         
         response = await self._request(
             "POST",
@@ -540,6 +529,7 @@ class SefariaClient:
                 category=path[0] if path else "",
                 path=path
             )
+            
             hits.append(search_hit)
             
             # Aggregate by category
@@ -749,7 +739,7 @@ class SefariaClient:
                 links.append(related_text)
         
         # Sort commentaries by level (Rashi before Tosfos, etc.)
-        commentaries.sort(key=lambda x: x.level.value)
+        commentaries.sort(key=lambda x: get_level_order(x.level))
         
         sheets_count = len(response.get("sheets", []))
         
