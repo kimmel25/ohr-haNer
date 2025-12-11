@@ -8,6 +8,8 @@ Using Pydantic instead of dataclasses provides:
 - Automatic type coercion
 - JSON serialization
 - Better IDE support
+
+V4 UPDATE: Added mixed query support fields to DecipherResult
 """
 
 from typing import Optional, List, Dict, Any
@@ -31,6 +33,8 @@ class QueryType(str, Enum):
     KLAL = "klal"
     AMBIGUOUS = "ambiguous"
     UNKNOWN = "unknown"
+    # V4: Added for mixed queries with comparisons
+    COMPARISON = "comparison"
 
 
 class FetchStrategy(str, Enum):
@@ -39,6 +43,8 @@ class FetchStrategy(str, Enum):
     TRICKLE_DOWN = "trickle_down"
     DIRECT = "direct"
     SURVEY = "survey"
+    # V4: Added for multi-term queries
+    MULTI_TERM = "multi_term"
 
 
 class SourceLevel(str, Enum):
@@ -89,16 +95,32 @@ class WordValidation(BaseModel):
 
 
 class DecipherResult(BaseModel):
-    """Result from Step 1: Transliteration → Hebrew"""
+    """
+    Result from Step 1: Transliteration → Hebrew
+    
+    V4 UPDATE: Added mixed query support fields:
+    - hebrew_terms: List of all extracted Hebrew terms (for mixed queries)
+    - is_mixed_query: Whether the input was a mixed English/Hebrew query
+    - original_query: The original query string (for Step 2 context)
+    - extraction_confident: Whether Step 1 is confident in its extraction
+    """
 
     # Core result
     success: bool
     hebrew_term: Optional[str] = None
+    
+    # V4: Multiple Hebrew terms for mixed queries
+    hebrew_terms: List[str] = []
 
     # Metadata
     confidence: ConfidenceLevel
-    method: str  # "dictionary", "sefaria", "transliteration", etc.
+    method: str  # "dictionary", "sefaria", "transliteration", "mixed_extraction", etc.
     message: str = ""
+    
+    # V4: Mixed query support
+    is_mixed_query: bool = False
+    original_query: str = ""
+    extraction_confident: bool = True
 
     # Alternatives and validation
     alternatives: List[str] = []
@@ -135,6 +157,8 @@ class SearchStrategy(BaseModel):
     """
     Result from Step 2: Understanding the query.
     Tells Step 3 what to do.
+    
+    V4 UPDATE: Added multi-term support fields
     """
 
     # Query classification
@@ -143,6 +167,10 @@ class SearchStrategy(BaseModel):
     # Primary source
     primary_source: Optional[str] = None
     primary_source_he: Optional[str] = None
+    
+    # V4: Multiple primary sources for multi-term queries
+    primary_sources: List[str] = []
+    primary_sources_he: List[str] = []
 
     # Analysis
     reasoning: str = ""
@@ -161,6 +189,10 @@ class SearchStrategy(BaseModel):
     # Metadata
     sefaria_hits: int = 0
     hits_by_masechta: Dict[str, int] = {}
+    
+    # V4: For mixed query handling
+    is_comparison_query: bool = False
+    comparison_terms: List[str] = []
 
     class Config:
         use_enum_values = True
@@ -193,6 +225,9 @@ class Source(BaseModel):
     # Display
     is_primary: bool = False
     relevance_note: str = ""
+    
+    # V4: For multi-term queries, which term this source relates to
+    related_term: Optional[str] = None
 
     class Config:
         use_enum_values = True
@@ -215,6 +250,9 @@ class SearchResult(BaseModel):
     # Query info
     original_query: str
     hebrew_term: str
+    
+    # V4: Multiple Hebrew terms
+    hebrew_terms: List[str] = []
 
     # Primary source
     primary_source: Optional[str] = None
@@ -224,6 +262,9 @@ class SearchResult(BaseModel):
     sources: List[Source] = []
     sources_by_level: Dict[str, List[Source]] = {}
     related_sugyos: List[RelatedSugyaResult] = []
+    
+    # V4: Sources organized by term (for multi-term queries)
+    sources_by_term: Dict[str, List[Source]] = {}
 
     # Metadata
     total_sources: int = 0
@@ -256,18 +297,22 @@ class MareiMekomosResult(BaseModel):
 
     # Step 1: Transliteration
     hebrew_term: Optional[str] = None
+    hebrew_terms: List[str] = []  # V4: Multiple terms
     transliteration_confidence: ConfidenceLevel
     transliteration_method: str
+    is_mixed_query: bool = False  # V4
 
     # Step 2: Understanding
     query_type: QueryType
     primary_source: Optional[str] = None
     primary_source_he: Optional[str] = None
+    primary_sources: List[str] = []  # V4
     interpretation: str = ""
 
     # Step 3: Sources
     sources: List[Source] = []
     sources_by_level: Dict[str, List[Source]] = {}
+    sources_by_term: Dict[str, List[Source]] = {}  # V4
     related_sugyos: List[RelatedSugyaResult] = []
 
     # Metadata
@@ -320,75 +365,11 @@ class DecipherRequest(BaseModel):
 class ConfirmRequest(BaseModel):
     """Confirm user's transliteration selection."""
     original_query: str
-    selection_index: int = Field(..., ge=0)
-    selected_hebrew: Optional[str] = None
+    selected_hebrew: str
+    word_index: Optional[int] = None  # For multi-word selections
 
 
 class RejectRequest(BaseModel):
-    """Reject a transliteration."""
+    """User rejected all options."""
     original_query: str
-    incorrect_hebrew: str
-    user_feedback: Optional[str] = None
-
-
-# ==========================================
-#  DICTIONARY ENTRY MODEL
-# ==========================================
-
-class DictionaryEntry(BaseModel):
-    """Entry in the word dictionary."""
-    hebrew: str
-    confidence: ConfidenceLevel
-    usage_count: int = 0
-    source: str = "manual"  # manual, sefaria, user_confirmed, etc.
-    last_used: Optional[str] = None
-
-    class Config:
-        use_enum_values = True
-
-
-# ==========================================
-#  SEFARIA API MODELS
-# ==========================================
-
-class SefariaText(BaseModel):
-    """A text fetched from Sefaria."""
-    ref: str
-    he_ref: str
-    hebrew: str = ""
-    english: str = ""
-    categories: List[str] = []
-    author: str = ""
-
-    # Metadata
-    level: Optional[SourceLevel] = None
-    text_type: str = ""
-
-
-class SefariaSearchResult(BaseModel):
-    """Result from Sefaria search."""
-    query: str
-    total_hits: int = 0
-    results: List[Dict[str, Any]] = []
-
-    # Aggregations
-    hits_by_category: Dict[str, int] = {}
-    hits_by_masechta: Dict[str, int] = {}
-
-    # Top result
-    top_ref: Optional[str] = None
-    top_ref_he: Optional[str] = None
-
-
-# ==========================================
-#  UTILITY FUNCTIONS
-# ==========================================
-
-def confidence_to_enum(value: Any) -> ConfidenceLevel:
-    """Convert any confidence value to ConfidenceLevel enum."""
-    if isinstance(value, ConfidenceLevel):
-        return value
-    if isinstance(value, str):
-        return ConfidenceLevel(value.lower())
-    # Default for unknown types
-    return ConfidenceLevel.MEDIUM
+    feedback: Optional[str] = None

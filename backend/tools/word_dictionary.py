@@ -319,12 +319,25 @@ class WordDictionary:
         
         return None
     
+    def _confidence_from_hits(self, hits: Optional[int]) -> str:
+        """Map Sefaria hit counts to a confidence string."""
+        if hits is None:
+            return "high"
+        if hits >= 100:
+            return "high"
+        if hits >= 10:
+            return "medium"
+        if hits >= 1:
+            return "low"
+        return "low"
+    
     def add_entry(
         self, 
         transliteration: str, 
         hebrew: str, 
         confidence: str = "high",
-        source: str = "runtime"
+        source: str = "runtime",
+        hits: Optional[int] = None
     ):
         """
         Add or update dictionary entry.
@@ -342,18 +355,50 @@ class WordDictionary:
             entry["confidence"] = confidence
             entry["usage_count"] += 1
             entry["last_used"] = self._get_timestamp()
+            if hits is not None:
+                entry["hits"] = hits
         else:
             # Add new entry
-            self.dictionary[transliteration] = {
+            entry = {
                 "hebrew": hebrew,
                 "confidence": confidence,
                 "usage_count": 1,
                 "source": source,
                 "last_used": self._get_timestamp()
             }
+            if hits is not None:
+                entry["hits"] = hits
+            self.dictionary[transliteration] = entry
         
         self._save()
         print(f"✓ Dictionary learned: '{transliteration}' → '{hebrew}'")
+    
+    def add(
+        self,
+        transliteration: str,
+        hebrew: str,
+        hits: Optional[int] = None,
+        confidence: Optional[str] = None,
+        source: str = "runtime",
+    ):
+        """
+        Backwards-compatible helper used by Step 1 and console tools.
+        
+        Args:
+            transliteration: English/transliterated term
+            hebrew: Resolved Hebrew term
+            hits: Optional Sefaria hit count for context
+            confidence: Optional confidence string; derived from hits if missing
+            source: Where the learning came from (runtime/user/sefaria/etc.)
+        """
+        resolved_confidence = confidence or self._confidence_from_hits(hits)
+        self.add_entry(
+            transliteration=transliteration,
+            hebrew=hebrew,
+            confidence=resolved_confidence,
+            source=source,
+            hits=hits,
+        )
     
     def get_stats(self) -> Dict:
         """Get dictionary statistics"""

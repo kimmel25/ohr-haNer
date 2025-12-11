@@ -1,7 +1,13 @@
 # step_two_understand.py
 """
-Step 2: UNDERSTAND - Query Analysis & Strategy (UPDATED)
-==============================================
+Step 2: UNDERSTAND - Query Analysis & Strategy (V4 Mixed Query Support)
+=======================================================================
+
+V4 UPDATE - DOUBLE DEFENSE:
+- Receives step1_result with is_mixed_query flag
+- If mixed: Claude sees BOTH extracted Hebrew terms AND original query
+- Claude verifies/corrects Step 1's extraction
+- Builds appropriate strategy for multi-term or comparison queries
 
 This version improves Step 2 by:
  - Adding contextual depth mapping
@@ -11,12 +17,13 @@ This version improves Step 2 by:
  - Hardened JSON parsing / repair logic for LLM output
  - Hail-Mary mode: controlled, schema-constrained fallback when analysis is uncertain
  - Minimal changes to external interfaces (SearchStrategy.to_dict remains)
+ - V4: Mixed query handling with extraction verification
 """
 import asyncio
 import json
 import os
 import re
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
 from dataclasses import dataclass, field
 from enum import Enum
 import logging
@@ -24,6 +31,10 @@ from datetime import datetime, timedelta
 
 # Claude client (Anthropic)
 from anthropic import Anthropic
+
+# Type hint for DecipherResult without circular import
+if TYPE_CHECKING:
+    from models import DecipherResult
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +67,9 @@ class QueryType(Enum):
     # Flexible / catch-all types
     SUGYA_CROSS_REFERENCE = "sugya_cross_reference"
     FREEFORM_TORAH_QUERY = "freeform_torah_query"
+    
+    # V4: New type for comparison queries
+    COMPARISON = "comparison"
 
 
 class FetchStrategy(Enum):
@@ -66,6 +80,8 @@ class FetchStrategy(Enum):
     SURVEY = "survey"
     HYBRID = "hybrid"
     HAIL_MARY = "hail_mary"
+    # V4: Multi-term fetch
+    MULTI_TERM = "multi_term"
 
 
 @dataclass
@@ -81,6 +97,7 @@ class RelatedSugya:
 class SearchStrategy:
     """
     The output of Step 2 - tells Step 3 what to do.
+    V4: Added comparison_terms and is_comparison_query fields.
     """
     # What type of query is this?
     query_type: QueryType
@@ -118,6 +135,10 @@ class SearchStrategy:
     intent_score: float = 0.0               # 0..1 how confident our heuristic+LLM are
     preferred_domains: List[str] = field(default_factory=list)  # e.g., ["gemara","shulchan_aruch"]
     generated_at: Optional[str] = None
+    
+    # V4: Comparison query fields
+    is_comparison_query: bool = False
+    comparison_terms: List[str] = field(default_factory=list)
 
     def to_dict(self) -> Dict:
         """Convert to dictionary for JSON serialization (backwards compatible)."""
@@ -146,6 +167,8 @@ class SearchStrategy:
             "intent_score": self.intent_score,
             "preferred_domains": self.preferred_domains,
             "generated_at": self.generated_at,
+            "is_comparison_query": self.is_comparison_query,
+            "comparison_terms": self.comparison_terms,
         }
 
 
@@ -170,6 +193,13 @@ DEPTH_MAP = {
         "standard": ["Closest canonical sources"],
         "expanded": ["Survey across Shas"],
         "full": ["Comprehensive multi-source research"]
+    },
+    # V4: Comparison queries need sources for all terms
+    QueryType.COMPARISON: {
+        "basic": ["Primary sugya for each term"],
+        "standard": ["Primary + key Rishonim for each term"],
+        "expanded": ["Full analysis of each term"],
+        "full": ["Comprehensive comparison across all sources"]
     }
 }
 
@@ -220,6 +250,17 @@ async def gather_sefaria_data(hebrew_term: str) -> Dict:
             "sample_hits": [],
             "error": str(e)
         }
+
+
+async def gather_sefaria_data_multi(hebrew_terms: List[str]) -> Dict[str, Dict]:
+    """
+    V4: Gather Sefaria data for multiple Hebrew terms.
+    Returns a dict mapping each term to its Sefaria data.
+    """
+    results = {}
+    for term in hebrew_terms:
+        results[term] = await gather_sefaria_data(term)
+    return results
 
 
 # ==========================================
@@ -288,6 +329,11 @@ IMPORTANT PRINCIPLES:
 - If multiple reasonable interpretations exist, pick the most common and explain
 - If you're unsure, respond with confidence: "low" and provide a clarification_prompt
 - Return well-formed JSON only
+
+CRITICAL JSON FORMATTING:
+- Use ONLY straight ASCII double quotes (") in your JSON, never smart/curly quotes
+- If you need quotes inside a string value, use single quotes or apostrophes
+- Example: "reasoning": "Step 1 extracted 'term' correctly" (NOT "Step 1 extracted "term" correctly")
 """
 
 ANALYSIS_USER_TEMPLATE = """The user searched for: "{hebrew_term}"
@@ -322,13 +368,66 @@ Return JSON with keys:
 """
 
 
+# V4: New prompt for mixed/comparison queries
+MIXED_QUERY_SYSTEM_PROMPT = """You are a Torah scholar assistant analyzing a MIXED query that contains both English and transliterated Hebrew.
+
+Your job is to:
+1. VERIFY the Hebrew term extraction from Step 1
+2. Understand what the user is actually asking
+3. Build an appropriate search strategy
+
+CRITICAL: Step 1 already attempted to extract Hebrew terms. You must:
+- Verify these extractions are correct
+- Correct any mistakes (e.g., "good" in English context vs "גוד" the Torah concept)
+- Identify if this is a COMPARISON query (asking about relationship between terms)
+
+Return well-formed JSON only.
+
+CRITICAL JSON FORMATTING:
+- Use ONLY straight ASCII double quotes (") in your JSON, never smart/curly quotes
+- If you need quotes inside a string value, use single quotes or apostrophes
+- Example: "reasoning": "The user asked about 'term'" (NOT "The user asked about "term"")
+"""
+
+MIXED_QUERY_USER_TEMPLATE = """The user asked: "{original_query}"
+
+Step 1 extracted these Hebrew terms: {hebrew_terms}
+Step 1 confidence in extraction: {extraction_confidence}
+
+Here's what Sefaria found for each term:
+{sefaria_data_summary}
+
+Please analyze:
+1. Are the Hebrew extractions correct? If not, what should they be?
+2. Is this a COMPARISON query (comparing two concepts)?
+3. What is the user actually asking?
+4. What are the primary sources for each term?
+5. How should we organize the results?
+
+Return JSON with keys:
+ - extractions_verified: boolean (true if Step 1 got it right)
+ - corrected_terms: list of Hebrew terms (if corrections needed, else same as input)
+ - query_type: "comparison" if comparing, else appropriate type
+ - is_comparison: boolean
+ - primary_sources: list of refs for main term (or first term if comparison)
+ - comparison_sources: list of refs for second term (if comparison, else empty)
+ - reasoning: string explaining your analysis
+ - depth: "basic"/"standard"/"expanded"/"full"
+ - confidence: "high"/"medium"/"low"
+ - clarification_prompt: string or null
+ - intent_score: 0..1
+"""
+
+
 # ==========================================
 #  JSON PARSING / REPAIR
 # ==========================================
 def _repair_and_parse_json(text: str) -> Dict:
     """
     Attempt robust extraction and minor repairs to parse JSON from LLM output.
-    Handles markdown fences, incomplete responses, and common JSON issues.
+    Handles markdown fences, incomplete responses, smart quotes, and common JSON issues.
+    
+    V4.1 FIX: Better handling of smart quotes inside string values + partial extraction fallback.
     """
     original = text
     original_length = len(text)
@@ -356,13 +455,32 @@ def _repair_and_parse_json(text: str) -> Dict:
         candidate = text[first:last+1]
         logger.debug(f"[PARSE] Extracted JSON candidate ({len(candidate)} chars)")
 
-        # Step 3: Quick fixes for common issues
-        # Replace smart quotes & single quotes
-        candidate = candidate.replace("\u201c", '"').replace("\u201d", '"')
-        candidate = candidate.replace("\u2018", "'").replace("\u2019", "'")
-        candidate = candidate.replace("'", '"')  # Replace single quotes with double
+        # Step 3: Smart quote normalization
+        # V4.1 FIX: More comprehensive quote handling
+        # Replace all Unicode quote variants with ASCII
+        quote_map = {
+            '\u201c': '"',  # "
+            '\u201d': '"',  # "
+            '\u2018': "'",  # '
+            '\u2019': "'",  # '
+            '\u201e': '"',  # „
+            '\u201f': '"',  # ‟
+            '\u2032': "'",  # ′
+            '\u2033': '"',  # ″
+            '\u2035': "'",  # ‵
+            '\u2036': '"',  # ‶
+            '\u2037': '"',  # ‴
+            '\u301d': '"',  # 〝
+            '\u301e': '"',  # 〞
+            '\u301f': '"',  # 〟
+            '\uff02': '"',  # ＂
+            '\uff07': "'",  # ＇
+        }
         
-        # Remove trailing commas before closing brackets/braces
+        for unicode_quote, ascii_quote in quote_map.items():
+            candidate = candidate.replace(unicode_quote, ascii_quote)
+        
+        # Additional cleanup: remove trailing commas before closing brackets/braces
         candidate = re.sub(r",\s*([\]}])", r"\1", candidate)
 
         # Step 4: Try to parse
@@ -372,7 +490,7 @@ def _repair_and_parse_json(text: str) -> Dict:
             return parsed
         except json.JSONDecodeError as e:
             logger.warning(f"[PARSE] Initial JSON parse failed: {e}")
-            logger.debug(f"[PARSE] Failed candidate:\n{candidate}")
+            logger.debug(f"[PARSE] Failed candidate:\n{candidate[:500]}...")
             
             # Step 5: Progressive trimming attempts (handle truncated responses)
             for i in range(1, 6):
@@ -393,7 +511,15 @@ def _repair_and_parse_json(text: str) -> Dict:
                 except json.JSONDecodeError:
                     continue
             
-            # Step 6: Failed all attempts
+            # Step 6: Partial extraction fallback (NEW)
+            # Even if full JSON fails, try to extract key fields
+            logger.warning("[PARSE] Attempting partial field extraction from failed JSON...")
+            partial = _extract_partial_json_fields(candidate, original)
+            if partial:
+                logger.warning(f"[PARSE] Partial extraction succeeded with {len(partial)} fields")
+                return partial
+            
+            # Step 7: Failed all attempts
             logger.error("[PARSE] All JSON parse attempts failed")
             logger.error(f"[PARSE] Original response ({original_length} chars):\n{original}")
             logger.error(f"[PARSE] Extracted candidate ({len(candidate)} chars):\n{candidate[:500]}...")
@@ -402,6 +528,78 @@ def _repair_and_parse_json(text: str) -> Dict:
     except Exception as e:
         logger.error(f"[PARSE] Unexpected error parsing JSON: {e}", exc_info=True)
         logger.error(f"[PARSE] Original text:\n{original}")
+        return {}
+
+
+def _extract_partial_json_fields(broken_json: str, original_text: str) -> Dict:
+    """
+    When JSON parsing fails completely, attempt to extract individual fields.
+    This saves Claude's analysis even when formatting is broken.
+    
+    V4.1: NEW function to salvage useful data from failed parses.
+    """
+    result = {}
+    
+    try:
+        # Try to extract common fields using regex
+        # This is a last resort, so we're lenient
+        
+        # Extract corrected_terms array (for mixed queries)
+        terms_match = re.search(r'"corrected_terms"\s*:\s*\[(.*?)\]', broken_json, re.DOTALL)
+        if terms_match:
+            terms_str = terms_match.group(1)
+            # Extract Hebrew terms (looking for text in quotes)
+            terms = re.findall(r'"([^"]+)"', terms_str)
+            if terms:
+                result['corrected_terms'] = terms
+                logger.debug(f"[PARTIAL] Extracted corrected_terms: {terms}")
+        
+        # Extract query_type
+        qtype_match = re.search(r'"query_type"\s*:\s*"([^"]+)"', broken_json)
+        if qtype_match:
+            result['query_type'] = qtype_match.group(1)
+            logger.debug(f"[PARTIAL] Extracted query_type: {result['query_type']}")
+        
+        # Extract is_comparison
+        comp_match = re.search(r'"is_comparison"\s*:\s*(true|false)', broken_json)
+        if comp_match:
+            result['is_comparison'] = comp_match.group(1) == 'true'
+            logger.debug(f"[PARTIAL] Extracted is_comparison: {result['is_comparison']}")
+        
+        # Extract extractions_verified
+        verify_match = re.search(r'"extractions_verified"\s*:\s*(true|false)', broken_json)
+        if verify_match:
+            result['extractions_verified'] = verify_match.group(1) == 'true'
+            logger.debug(f"[PARTIAL] Extracted extractions_verified: {result['extractions_verified']}")
+        
+        # Extract reasoning (this is what usually breaks JSON)
+        reasoning_match = re.search(r'"reasoning"\s*:\s*"(.*?)"(?=\s*[,}])', broken_json, re.DOTALL)
+        if reasoning_match:
+            reasoning = reasoning_match.group(1)
+            # Clean up escaped chars
+            reasoning = reasoning.replace('\\"', '"').replace('\\n', ' ')
+            result['reasoning'] = reasoning[:500]  # Truncate if too long
+            logger.debug(f"[PARTIAL] Extracted reasoning: {reasoning[:100]}...")
+        
+        # Extract confidence
+        conf_match = re.search(r'"confidence"\s*:\s*"([^"]+)"', broken_json)
+        if conf_match:
+            result['confidence'] = conf_match.group(1)
+            logger.debug(f"[PARTIAL] Extracted confidence: {result['confidence']}")
+        
+        # Extract primary_sources array
+        sources_match = re.search(r'"primary_sources"\s*:\s*\[(.*?)\]', broken_json, re.DOTALL)
+        if sources_match:
+            sources_str = sources_match.group(1)
+            sources = re.findall(r'"([^"]+)"', sources_str)
+            if sources:
+                result['primary_sources'] = sources
+                logger.debug(f"[PARTIAL] Extracted primary_sources: {sources}")
+        
+        return result if result else {}
+        
+    except Exception as e:
+        logger.error(f"[PARTIAL] Error in partial extraction: {e}")
         return {}
 
 
@@ -580,6 +778,153 @@ async def analyze_with_claude(hebrew_term: str, sefaria_data: Dict) -> SearchStr
         logger.error(f"[ANALYZE] Claude error: {e}", exc_info=True)
         # On any error, return fallback strategy
         return _fallback_strategy(hebrew_term, sefaria_data)
+
+
+# ==========================================
+#  V4: MIXED QUERY ANALYSIS
+# ==========================================
+async def analyze_mixed_query_with_claude(
+    original_query: str,
+    hebrew_terms: List[str],
+    extraction_confident: bool,
+    sefaria_data_by_term: Dict[str, Dict]
+) -> SearchStrategy:
+    """
+    V4: Analyze a mixed query (English + Hebrew) with Claude.
+    
+    This is Defense Line 2: Claude verifies Step 1's extraction and
+    builds an appropriate strategy for comparison or multi-term queries.
+    """
+    logger.info(f"[ANALYZE-MIXED] Analyzing mixed query: '{original_query}'")
+    logger.info(f"[ANALYZE-MIXED] Hebrew terms from Step 1: {hebrew_terms}")
+    logger.info(f"[ANALYZE-MIXED] Extraction confident: {extraction_confident}")
+    
+    # If Claude disabled, use fallback
+    if not USE_CLAUDE:
+        logger.info("[ANALYZE-MIXED] USE_CLAUDE disabled - using fallback")
+        # Just use the first term's Sefaria data for fallback
+        first_term = hebrew_terms[0] if hebrew_terms else ""
+        first_data = sefaria_data_by_term.get(first_term, {})
+        return _fallback_strategy(first_term, first_data)
+    
+    # Build summary of Sefaria data for each term
+    sefaria_summary = ""
+    for term, data in sefaria_data_by_term.items():
+        sefaria_summary += f"\n--- {term} ---\n"
+        sefaria_summary += f"  Total hits: {data.get('total_hits', 0)}\n"
+        sefaria_summary += f"  Top refs: {data.get('top_refs', [])[:5]}\n"
+        hits_by_masechta = data.get('hits_by_masechta', {})
+        if hits_by_masechta:
+            top_masechta = max(hits_by_masechta.items(), key=lambda x: x[1]) if hits_by_masechta else ("", 0)
+            sefaria_summary += f"  Primary masechta: {top_masechta[0]} ({top_masechta[1]} hits)\n"
+    
+    user_message = MIXED_QUERY_USER_TEMPLATE.format(
+        original_query=original_query,
+        hebrew_terms=hebrew_terms,
+        extraction_confidence="HIGH" if extraction_confident else "LOW - needs verification",
+        sefaria_data_summary=sefaria_summary
+    )
+    
+    try:
+        client = get_claude_client()
+        
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=2500,
+            system=MIXED_QUERY_SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": user_message}]
+        )
+        
+        response_text = response.content[0].text
+        logger.info(f"[ANALYZE-MIXED] Claude response length: {len(response_text)} characters")
+        logger.debug(f"[ANALYZE-MIXED] Claude FULL response:\n{response_text}")
+        
+        parsed = _repair_and_parse_json(response_text)
+        
+        if not parsed:
+            logger.warning("[ANALYZE-MIXED] Claude parse returned empty - falling back")
+            first_term = hebrew_terms[0] if hebrew_terms else ""
+            first_data = sefaria_data_by_term.get(first_term, {})
+            return _fallback_strategy(first_term, first_data)
+        
+        # Build strategy from mixed query analysis
+        return _make_strategy_from_mixed_analysis(parsed, hebrew_terms, sefaria_data_by_term)
+        
+    except Exception as e:
+        logger.error(f"[ANALYZE-MIXED] Claude error: {e}", exc_info=True)
+        first_term = hebrew_terms[0] if hebrew_terms else ""
+        first_data = sefaria_data_by_term.get(first_term, {})
+        return _fallback_strategy(first_term, first_data)
+
+
+def _make_strategy_from_mixed_analysis(
+    analysis: Dict, 
+    original_terms: List[str],
+    sefaria_data_by_term: Dict[str, Dict]
+) -> SearchStrategy:
+    """
+    V4: Convert parsed JSON from mixed query analysis into SearchStrategy.
+    """
+    # Check if Claude corrected the terms
+    corrected_terms = analysis.get("corrected_terms", original_terms)
+    extractions_verified = analysis.get("extractions_verified", True)
+    
+    if not extractions_verified:
+        logger.info(f"[ANALYZE-MIXED] Claude corrected terms: {original_terms} → {corrected_terms}")
+    
+    # Determine query type
+    is_comparison = analysis.get("is_comparison", False)
+    qtype_raw = analysis.get("query_type", "").lower()
+    
+    if is_comparison or qtype_raw == "comparison":
+        query_type = QueryType.COMPARISON
+    else:
+        # Try to match other query types
+        query_type = QueryType.SUGYA_CONCEPT  # default
+        for qt in QueryType:
+            if qt.value == qtype_raw:
+                query_type = qt
+                break
+    
+    # Build primary sources list
+    primary_sources = analysis.get("primary_sources", [])
+    if isinstance(primary_sources, str):
+        primary_sources = [primary_sources]
+    
+    comparison_sources = analysis.get("comparison_sources", [])
+    if isinstance(comparison_sources, str):
+        comparison_sources = [comparison_sources]
+    
+    # Combine all primary sources
+    all_primary = primary_sources + comparison_sources
+    
+    # Calculate total hits across all terms
+    total_hits = sum(d.get("total_hits", 0) for d in sefaria_data_by_term.values())
+    
+    # Merge hits_by_masechta
+    merged_hits = {}
+    for data in sefaria_data_by_term.values():
+        for m, h in data.get("hits_by_masechta", {}).items():
+            merged_hits[m] = merged_hits.get(m, 0) + h
+    
+    strategy = SearchStrategy(
+        query_type=query_type,
+        primary_source=all_primary[0] if all_primary else None,
+        primary_sources=all_primary,
+        reasoning=analysis.get("reasoning", "Mixed query analysis"),
+        fetch_strategy=FetchStrategy.MULTI_TERM if is_comparison else FetchStrategy.TRICKLE_UP,
+        depth=analysis.get("depth", "standard"),
+        confidence=analysis.get("confidence", "medium"),
+        clarification_prompt=analysis.get("clarification_prompt"),
+        sefaria_hits=total_hits,
+        hits_by_masechta=merged_hits,
+        intent_score=float(analysis.get("intent_score", 0.7)),
+        generated_at=datetime.utcnow().isoformat(),
+        is_comparison_query=is_comparison,
+        comparison_terms=corrected_terms if is_comparison else []
+    )
+    
+    return strategy
 
 
 def _make_strategy_from_parsed_analysis(analysis: Dict, sefaria_data: Dict) -> SearchStrategy:
@@ -772,29 +1117,59 @@ def _fallback_strategy(hebrew_term: str, sefaria_data: Dict) -> SearchStrategy:
 # ==========================================
 #  MAIN STEP 2 FUNCTION
 # ==========================================
-async def understand(hebrew_term: str, original_query: str = None) -> SearchStrategy:
+async def understand(
+    hebrew_term: str, 
+    original_query: str = None,
+    step1_result: "DecipherResult" = None
+) -> SearchStrategy:
     """
     Main entry point for Step 2: UNDERSTAND
+    
+    V4: Now accepts step1_result for mixed query handling.
+    If step1_result indicates a mixed query, uses enhanced analysis.
     """
     logger.info("=" * 80)
-    logger.info("STEP 2: UNDERSTAND")
+    logger.info("STEP 2: UNDERSTAND (V4)")
     logger.info("=" * 80)
     logger.info(f"  Hebrew term: {hebrew_term}")
     if original_query:
         logger.info(f"  Original query: {original_query}")
+    
+    # V4: Check if this is a mixed query
+    is_mixed = step1_result and getattr(step1_result, 'is_mixed_query', False)
+    
+    if is_mixed:
+        logger.info("  ⚡ MIXED QUERY detected - using enhanced analysis")
+        hebrew_terms = getattr(step1_result, 'hebrew_terms', [hebrew_term])
+        extraction_confident = getattr(step1_result, 'extraction_confident', True)
+        
+        # Gather Sefaria data for ALL terms
+        logger.info(f"  Gathering Sefaria data for terms: {hebrew_terms}")
+        sefaria_data_by_term = await gather_sefaria_data_multi(hebrew_terms)
+        
+        for term, data in sefaria_data_by_term.items():
+            logger.info(f"    {term}: {data.get('total_hits', 0)} hits")
+        
+        # Use mixed query analysis with Claude
+        strategy = await analyze_mixed_query_with_claude(
+            original_query=original_query or "",
+            hebrew_terms=hebrew_terms,
+            extraction_confident=extraction_confident,
+            sefaria_data_by_term=sefaria_data_by_term
+        )
+    else:
+        # Standard single-term analysis
+        logger.info("\n[Phase 1: GATHER]")
+        sefaria_data = await gather_sefaria_data(hebrew_term)
 
-    # Phase 1: GATHER - Get Sefaria data
-    logger.info("\n[Phase 1: GATHER]")
-    sefaria_data = await gather_sefaria_data(hebrew_term)
+        logger.info(f"  Sefaria hits: {sefaria_data.get('total_hits', 0)}")
+        logger.info(f"  By masechta: {sefaria_data.get('hits_by_masechta', {})}")
 
-    logger.info(f"  Sefaria hits: {sefaria_data.get('total_hits', 0)}")
-    logger.info(f"  By masechta: {sefaria_data.get('hits_by_masechta', {})}")
+        # Phase 2: ANALYZE - deterministic shortcut + Claude
+        logger.info("\n[Phase 2: ANALYZE]")
+        strategy = await analyze_with_claude(hebrew_term, sefaria_data)
 
-    # Phase 2: ANALYZE - deterministic shortcut + Claude
-    logger.info("\n[Phase 2: ANALYZE]")
-    strategy = await analyze_with_claude(hebrew_term, sefaria_data)
-
-    # Phase 3: DECIDE (implicit in strategy creation)
+    # Log results
     logger.info("\n[Phase 3: DECIDE]")
     logger.info(f"  Query type: {strategy.query_type.value}")
     logger.info(f"  Primary sources: {strategy.primary_sources or strategy.primary_source}")
@@ -802,6 +1177,10 @@ async def understand(hebrew_term: str, original_query: str = None) -> SearchStra
     logger.info(f"  Depth: {strategy.depth}")
     logger.info(f"  Confidence: {strategy.confidence}")
     logger.info(f"  Intent score: {strategy.intent_score}")
+    
+    if strategy.is_comparison_query:
+        logger.info(f"  Is comparison: True")
+        logger.info(f"  Comparison terms: {strategy.comparison_terms}")
 
     if strategy.related_sugyos:
         logger.info(f"  Related sugyos: {len(strategy.related_sugyos)}")
@@ -821,26 +1200,62 @@ async def understand(hebrew_term: str, original_query: str = None) -> SearchStra
 async def test_understand():
     """Test the understand function (quick smoke tests)."""
     print("=" * 70)
-    print("STEP 2 TEST: UNDERSTAND")
+    print("STEP 2 TEST: UNDERSTAND (V4)")
     print("=" * 70)
 
+    # Import DecipherResult for testing
+    from models import DecipherResult, ConfidenceLevel
+
     test_cases = [
-        ("חזקת הגוף", "chezkas haguf"),
-        ("מיגו", "migu"),
-        ("ברי ושמא", "bari vishma"),
-        ("כתובות ט", "kesubos 9"),
+        # Standard single-term tests
+        ("חזקת הגוף", "chezkas haguf", None),
+        ("מיגו", "migu", None),
+        
+        # V4: Mixed query tests
+        ("חזקת הגוף", "what is chezkas haguf", 
+         DecipherResult(
+             success=True,
+             hebrew_term="חזקת הגוף",
+             hebrew_terms=["חזקת הגוף"],
+             confidence=ConfidenceLevel.HIGH,
+             method="mixed_extraction",
+             is_mixed_query=True,
+             original_query="what is chezkas haguf",
+             extraction_confident=True,
+             message="Extracted 1 Hebrew term"
+         )),
+        
+        # V4: Comparison query test
+        ("חזקת הגוף", "what is stronger, chezkas haguf or chezkas mamon",
+         DecipherResult(
+             success=True,
+             hebrew_term="חזקת הגוף",
+             hebrew_terms=["חזקת הגוף", "חזקת ממון"],
+             confidence=ConfidenceLevel.HIGH,
+             method="mixed_extraction",
+             is_mixed_query=True,
+             original_query="what is stronger, chezkas haguf or chezkas mamon",
+             extraction_confident=True,
+             message="Extracted 2 Hebrew terms"
+         )),
     ]
 
-    for hebrew, original in test_cases:
+    for hebrew, original, step1_result in test_cases:
         print(f"\n{'='*60}")
         print(f"Testing: {hebrew} ({original})")
+        if step1_result:
+            print(f"  Is mixed: {step1_result.is_mixed_query}")
+            print(f"  Hebrew terms: {step1_result.hebrew_terms}")
         print("=" * 60)
 
-        strategy = await understand(hebrew, original)
+        strategy = await understand(hebrew, original, step1_result)
 
         print(f"\nResult:")
         print(f"  Type: {strategy.query_type.value}")
         print(f"  Primary(s): {strategy.primary_sources or strategy.primary_source}")
+        print(f"  Is comparison: {strategy.is_comparison_query}")
+        if strategy.comparison_terms:
+            print(f"  Comparison terms: {strategy.comparison_terms}")
         print(f"  Reasoning: {strategy.reasoning[:100]}...")
         print(f"  Confidence: {strategy.confidence}")
 

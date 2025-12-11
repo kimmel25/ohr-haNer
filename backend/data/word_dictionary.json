@@ -877,9 +877,9 @@
   "chezkas haguf": {
     "hebrew": "חזקת הגוף",
     "confidence": "high",
-    "usage_count": 19,
+    "usage_count": 21,
     "source": "manual",
-    "last_used": "2025-12-08T23:15:31.013507"
+    "last_used": "2025-12-10T23:27:38.763716"
   },
   "chezka haguf": {
     "hebrew": "חזקת הגוף",
@@ -891,9 +891,9 @@
   "chezkas mamon": {
     "hebrew": "ממון",
     "confidence": "high",
-    "usage_count": 2,
+    "usage_count": 3,
     "source": "manual",
-    "last_used": "2025-12-07T21:36:59.610578"
+    "last_used": "2025-12-10T23:27:38.769715"
   },
   "chezkas rav huna": {
     "hebrew": "חזקת רב הונא",
@@ -1652,9 +1652,9 @@
   "sugya": {
     "hebrew": "סוגיה",
     "confidence": "high",
-    "usage_count": 4,
+    "usage_count": 5,
     "source": "sefaria",
-    "last_used": "2025-12-07T17:32:42.560703"
+    "last_used": "2025-12-11T14:57:11.074390"
   },
   "chotzetz": {
     "hebrew": "חוצץ",
@@ -1760,5 +1760,20 @@
     "usage_count": 1,
     "source": "user_confirmed",
     "last_used": "2025-12-09T22:33:33.044783"
+  },
+  "bittul chometz": {
+    "hebrew": "ביטול חמץ",
+    "confidence": "medium",
+    "usage_count": 1,
+    "source": "sefaria",
+    "last_used": "2025-12-11T14:57:15.930849"
+  },
+  "rans": {
+    "hebrew": "רנס",
+    "confidence": "low",
+    "usage_count": 1,
+    "source": "sefaria",
+    "last_used": "2025-12-11T16:55:06.023661",
+    "hits": 2
   }
 }
