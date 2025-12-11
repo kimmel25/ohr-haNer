@@ -1,57 +1,71 @@
+# step_two_understand.py
 """
-Step 2: UNDERSTAND - Query Analysis & Strategy
+Step 2: UNDERSTAND - Query Analysis & Strategy (UPDATED)
 ==============================================
 
-This step takes the Hebrew term from Step 1 and:
-1. GATHER: Query Sefaria to see where it appears
-2. ANALYZE: Use Claude to understand what the user likely wants
-3. DECIDE: Create a search strategy
-
-Key principle: "Think first, ask later"
-- We make an intelligent guess based on Torah knowledge
-- User sees results immediately
-- They can refine if we guessed wrong
-
-NO upfront questions that might gaslight users into specific sugyos.
+This version improves Step 2 by:
+ - Adding contextual depth mapping
+ - Allowing multiple primary_sources (list) while keeping primary_source for backwards compatibility
+ - Adding deterministic shortcuts to avoid Claude where possible (saves cost)
+ - Adding a small in-memory cache for Claude outputs (fingerprinted by term + sefaria profile)
+ - Hardened JSON parsing / repair logic for LLM output
+ - Hail-Mary mode: controlled, schema-constrained fallback when analysis is uncertain
+ - Minimal changes to external interfaces (SearchStrategy.to_dict remains)
 """
-
 import asyncio
 import json
 import os
+import re
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
 import logging
+from datetime import datetime, timedelta
 
-# Claude client
+# Claude client (Anthropic)
 from anthropic import Anthropic
 
 logger = logging.getLogger(__name__)
 
+# ==========================================
+#  CONFIG & RUNTIME FLAGS
+# ==========================================
+USE_CLAUDE = os.environ.get("USE_CLAUDE", "1") not in ("0", "false", "False")
+# Cache TTL (seconds)
+_CLAUDE_CACHE_TTL = int(os.environ.get("CLAUDE_CACHE_TTL", "3600"))
+# Deterministic concentration threshold to skip Claude
+_SEFARIA_DOMINANT_THRESHOLD = float(os.environ.get("SEFARIA_DOMINANT_THRESHOLD", "0.7"))
 
 # ==========================================
 #  DATA STRUCTURES
 # ==========================================
 
+
 class QueryType(Enum):
     """Types of Torah queries we can handle."""
-    SUGYA_CONCEPT = "sugya_concept"      # A concept discussed in a specific sugya (חזקת הגוף)
-    HALACHA_TERM = "halacha_term"        # A halachic term (מיגו, ברירה)
-    DAF_REFERENCE = "daf_reference"       # Direct reference (כתובות ט)
-    MASECHTA = "masechta"                 # Just a masechta name (כתובות)
-    PERSON = "person"                      # A tanna/amora (רבא, רב הונא)
-    PASUK = "pasuk"                        # Torah verse reference
-    KLAL = "klal"                          # A כלל or principle (אין אדם מקנה...)
-    AMBIGUOUS = "ambiguous"                # Needs clarification
-    UNKNOWN = "unknown"                    # Couldn't determine
+    SUGYA_CONCEPT = "sugya_concept"
+    HALACHA_TERM = "halacha_term"
+    DAF_REFERENCE = "daf_reference"
+    MASECHTA = "masechta"
+    PERSON = "person"
+    PASUK = "pasuk"
+    KLAL = "klal"
+    AMBIGUOUS = "ambiguous"
+    UNKNOWN = "unknown"
+
+    # Flexible / catch-all types
+    SUGYA_CROSS_REFERENCE = "sugya_cross_reference"
+    FREEFORM_TORAH_QUERY = "freeform_torah_query"
 
 
 class FetchStrategy(Enum):
     """How to fetch and organize sources."""
-    TRICKLE_UP = "trickle_up"      # Start from primary source, go up through layers
-    TRICKLE_DOWN = "trickle_down"  # Start from halacha, trace back to source
-    DIRECT = "direct"              # Just fetch the specific reference
-    SURVEY = "survey"              # Show across multiple sugyos
+    TRICKLE_UP = "trickle_up"
+    TRICKLE_DOWN = "trickle_down"
+    DIRECT = "direct"
+    SURVEY = "survey"
+    HYBRID = "hybrid"
+    HAIL_MARY = "hail_mary"
 
 
 @dataclass
@@ -70,43 +84,49 @@ class SearchStrategy:
     """
     # What type of query is this?
     query_type: QueryType
-    
-    # The main source to focus on
-    primary_source: Optional[str] = None      # e.g., "Ketubot 9a"
-    primary_source_he: Optional[str] = None   # e.g., "כתובות ט׳ א"
-    
+
+    # The main source(s) to focus on
+    primary_source: Optional[str] = None      # legacy single primary
+    primary_sources: List[str] = field(default_factory=list)  # new list form
+    primary_source_he: Optional[str] = None   # legacy
+    primary_sources_he: List[str] = field(default_factory=list)
+
     # Why we chose this source
     reasoning: str = ""
-    
-    # Other relevant sugyos (per your request - include if Claude thinks important)
+
+    # Other relevant sugyos
     related_sugyos: List[RelatedSugya] = field(default_factory=list)
-    
+
     # How to fetch sources
     fetch_strategy: FetchStrategy = FetchStrategy.TRICKLE_UP
-    
+
     # How deep to go (Claude decides based on query)
-    # "basic" = Gemara only
-    # "standard" = + Rashi/Tosfos + Mishna/Chumash if applicable
-    # "expanded" = + key Rishonim
-    # "full" = everything available
+    # "basic" / "standard" / "expanded" / "full"
     depth: str = "standard"
-    
+
     # Confidence in our interpretation
     confidence: str = "high"  # "high", "medium", "low"
-    
+
     # If low confidence, what to ask the user
     clarification_prompt: Optional[str] = None
-    
+
     # Metadata
     sefaria_hits: int = 0
     hits_by_masechta: Dict[str, int] = field(default_factory=dict)
-    
+
+    # New metadata
+    intent_score: float = 0.0               # 0..1 how confident our heuristic+LLM are
+    preferred_domains: List[str] = field(default_factory=list)  # e.g., ["gemara","shulchan_aruch"]
+    generated_at: Optional[str] = None
+
     def to_dict(self) -> Dict:
-        """Convert to dictionary for JSON serialization."""
+        """Convert to dictionary for JSON serialization (backwards compatible)."""
         return {
             "query_type": self.query_type.value,
             "primary_source": self.primary_source,
+            "primary_sources": self.primary_sources,
             "primary_source_he": self.primary_source_he,
+            "primary_sources_he": self.primary_sources_he,
             "reasoning": self.reasoning,
             "related_sugyos": [
                 {
@@ -122,36 +142,63 @@ class SearchStrategy:
             "confidence": self.confidence,
             "clarification_prompt": self.clarification_prompt,
             "sefaria_hits": self.sefaria_hits,
-            "hits_by_masechta": self.hits_by_masechta
+            "hits_by_masechta": self.hits_by_masechta,
+            "intent_score": self.intent_score,
+            "preferred_domains": self.preferred_domains,
+            "generated_at": self.generated_at,
         }
+
+
+# ==========================================
+#  CONTEXTUAL DEPTH MAP (internal, used to interpret "basic"/etc)
+# ==========================================
+DEPTH_MAP = {
+    QueryType.SUGYA_CONCEPT: {
+        "basic": ["Gemara"],
+        "standard": ["Gemara", "Rashi", "Tosafot"],
+        "expanded": ["Rishonim", "Acharonim"],
+        "full": ["All available commentaries"]
+    },
+    QueryType.HALACHA_TERM: {
+        "basic": ["Shulchan Aruch"],
+        "standard": ["Shulchan Aruch", "Mishnah Berurah", "Rishonim"],
+        "expanded": ["Acharonim", "Teshuvot"],
+        "full": ["Comprehensive halachic survey"]
+    },
+    QueryType.FREEFORM_TORAH_QUERY: {
+        "basic": ["High-level sources"],
+        "standard": ["Closest canonical sources"],
+        "expanded": ["Survey across Shas"],
+        "full": ["Comprehensive multi-source research"]
+    }
+}
 
 
 # ==========================================
 #  SEFARIA DATA GATHERING
 # ==========================================
 
+
 async def gather_sefaria_data(hebrew_term: str) -> Dict:
     """
     Phase 1: GATHER - Query Sefaria to understand where term appears.
-    
     Returns raw data for Claude to analyze.
     """
     logger.info(f"[GATHER] Querying Sefaria for: {hebrew_term}")
-    
-    # Import here to avoid circular imports
+
     try:
         from tools.sefaria_client import get_sefaria_client, SearchResults
         client = get_sefaria_client()
-        
-        # Search for the term
+
+        # Search for the term (cap at reasonable size)
         results = await client.search(hebrew_term, size=100)
-        
+
         return {
             "query": hebrew_term,
             "total_hits": results.total_hits,
             "hits_by_category": results.hits_by_category,
             "hits_by_masechta": results.hits_by_masechta,
-            "top_refs": results.top_refs[:10],
+            "top_refs": results.top_refs[:20],
             "sample_hits": [
                 {
                     "ref": h.ref,
@@ -163,8 +210,7 @@ async def gather_sefaria_data(hebrew_term: str) -> Dict:
             ]
         }
     except Exception as e:
-        logger.error(f"[GATHER] Sefaria error: {e}")
-        # Return empty data - Claude will work with what we have
+        logger.error(f"[GATHER] Sefaria error: {e}", exc_info=True)
         return {
             "query": hebrew_term,
             "total_hits": 0,
@@ -177,14 +223,13 @@ async def gather_sefaria_data(hebrew_term: str) -> Dict:
 
 
 # ==========================================
-#  CLAUDE ANALYSIS
+#  CLAUDE CLIENT, CACHING, AND HELPERS
 # ==========================================
-
-# Initialize Claude client
 _claude_client = None
 
+
 def get_claude_client() -> Anthropic:
-    """Get Claude client instance."""
+    """Get/create Claude client instance."""
     global _claude_client
     if _claude_client is None:
         api_key = os.environ.get("ANTHROPIC_API_KEY")
@@ -192,40 +237,58 @@ def get_claude_client() -> Anthropic:
     return _claude_client
 
 
+# Simple in-memory cache for Claude outputs
+# key -> (timestamp, parsed_json)
+_claude_cache: Dict[str, Tuple[datetime, Dict]] = {}
+
+
+def _cache_get(key: str) -> Optional[Dict]:
+    entry = _claude_cache.get(key)
+    if not entry:
+        return None
+    ts, value = entry
+    if datetime.utcnow() - ts > timedelta(seconds=_CLAUDE_CACHE_TTL):
+        _claude_cache.pop(key, None)
+        return None
+    return value
+
+
+def _cache_set(key: str, value: Dict):
+    _claude_cache[key] = (datetime.utcnow(), value)
+
+
+def _sefaria_fingerprint(sefaria_data: Dict) -> str:
+    """
+    Create a simple fingerprint of Sefaria results to key the cache.
+    Uses top_refs & hits_by_masechta counts.
+    """
+    top = ",".join(sefaria_data.get("top_refs", [])[:6])
+    hits = json.dumps(sefaria_data.get("hits_by_masechta", {}), sort_keys=True, ensure_ascii=False)
+    return f"{top}|{hits}"
+
+
+def _make_cache_key(hebrew_term: str, sefaria_data: Dict) -> str:
+    fp = _sefaria_fingerprint(sefaria_data)
+    return f"{hebrew_term}::{fp}"
+
+
+# ==========================================
+#  CLAUDE PROMPTS
+# ==========================================
 ANALYSIS_SYSTEM_PROMPT = """You are a Torah scholar assistant helping to understand what a user is looking for when they search for a Hebrew term.
 
 Your job: Given a Hebrew term and data about where it appears in Sefaria's corpus, determine:
 1. What type of query is this?
 2. What is the user most likely looking for?
-3. What is the primary source (locus classicus) for this term?
+3. What are the primary_source(s) (if any)?
 4. Are there other important sugyos the user should know about?
 
 IMPORTANT PRINCIPLES:
 - Think like a chavrusa helping a fellow learner
-- When a bachur asks about "חזקת הגוף", 80% of the time he means the sugya in Kesubos 9a
-- Don't overthink - make a reasonable guess based on typical yeshiva learning
-- If there are multiple important sugyos, note them but pick the most common one as primary
-- Use yeshivish transliteration (sav not tav): Kesubos, Tosfos, etc.
-
-QUERY TYPES:
-- sugya_concept: A concept tied to a specific sugya (חזקת הגוף → Kesubos 9a)
-- halacha_term: A halachic mechanism used across sugyos (מיגו, ברירה)
-- daf_reference: User gave a specific daf (כתובות ט)
-- masechta: Just a masechta name
-- person: A tanna or amora
-- pasuk: A פסוק reference
-- klal: A broad principle (אין אדם מקנה דבר שלא בא לעולם)
-- ambiguous: Could mean multiple things, genuinely unclear
-- unknown: Can't determine
-
-DEPTH GUIDANCE:
-- "basic": Simple factual queries, just show the Gemara
-- "standard": Most queries - Gemara + Rashi + Tosfos + relevant Mishna/Chumash
-- "expanded": Complex concepts - add key Rishonim (Rambam, Rashba, Ritva)
-- "full": Comprehensive research - everything available
-
-Respond in JSON format only."""
-
+- If multiple reasonable interpretations exist, pick the most common and explain
+- If you're unsure, respond with confidence: "low" and provide a clarification_prompt
+- Return well-formed JSON only
+"""
 
 ANALYSIS_USER_TEMPLATE = """The user searched for: "{hebrew_term}"
 
@@ -240,53 +303,242 @@ Sample text snippets:
 
 Based on this, analyze:
 1. What is the user most likely looking for?
-2. What is the primary source for this term?
+2. What are the primary source(s) for this term (list if multiple)?
 3. Are there other important related sugyos?
 4. How deep should we go (basic/standard/expanded/full)?
 5. How confident are you in this interpretation?
 
-If you're not confident, suggest a brief clarifying question (but prefer making a reasonable guess).
-
-Respond with this exact JSON structure:
-{{
-    "query_type": "sugya_concept|halacha_term|daf_reference|masechta|person|pasuk|klal|ambiguous|unknown",
-    "primary_source": "The main Gemara reference (e.g., Kesubos 9a) or null if unclear",
-    "primary_source_he": "Hebrew reference (e.g., כתובות ט׳ א) or null",
-    "reasoning": "Brief explanation of why you chose this interpretation",
-    "related_sugyos": [
-        {{
-            "ref": "Another important reference",
-            "he_ref": "Hebrew version",
-            "connection": "How it relates to the primary",
-            "importance": "primary|secondary|tangential"
-        }}
-    ],
-    "depth": "basic|standard|expanded|full",
-    "confidence": "high|medium|low",
-    "clarification_prompt": "Optional question if confidence is low, otherwise null"
-}}"""
+If you're not confident, supply a short clarification prompt.
+Return JSON with keys:
+ - query_type (one of the known values)
+ - primary_sources (list of refs or empty list)
+ - primary_sources_he (optional list)
+ - reasoning
+ - related_sugyos (list of objects)
+ - depth
+ - confidence
+ - clarification_prompt (or null)
+ - intent_score (0..1)
+"""
 
 
+# ==========================================
+#  JSON PARSING / REPAIR
+# ==========================================
+def _repair_and_parse_json(text: str) -> Dict:
+    """
+    Attempt robust extraction and minor repairs to parse JSON from LLM output.
+    Handles markdown fences, incomplete responses, and common JSON issues.
+    """
+    original = text
+    original_length = len(text)
+    
+    try:
+        # Step 1: Remove common markdown fences
+        if "```json" in text:
+            parts = text.split("```json", 1)
+            if len(parts) > 1:
+                text = parts[1].split("```", 1)[0]
+        elif "```" in text:
+            parts = text.split("```", 1)
+            if len(parts) > 1:
+                text = parts[1].split("```", 1)[0]
+
+        # Step 2: Find the first { and last } to extract JSON block
+        first = text.find("{")
+        last = text.rfind("}")
+        
+        if first == -1 or last == -1 or last <= first:
+            logger.error(f"[PARSE] No valid JSON braces found in response")
+            logger.debug(f"[PARSE] Original text ({original_length} chars):\n{original}")
+            return {}
+            
+        candidate = text[first:last+1]
+        logger.debug(f"[PARSE] Extracted JSON candidate ({len(candidate)} chars)")
+
+        # Step 3: Quick fixes for common issues
+        # Replace smart quotes & single quotes
+        candidate = candidate.replace("\u201c", '"').replace("\u201d", '"')
+        candidate = candidate.replace("\u2018", "'").replace("\u2019", "'")
+        candidate = candidate.replace("'", '"')  # Replace single quotes with double
+        
+        # Remove trailing commas before closing brackets/braces
+        candidate = re.sub(r",\s*([\]}])", r"\1", candidate)
+
+        # Step 4: Try to parse
+        try:
+            parsed = json.loads(candidate)
+            logger.info(f"[PARSE] Successfully parsed JSON on first attempt")
+            return parsed
+        except json.JSONDecodeError as e:
+            logger.warning(f"[PARSE] Initial JSON parse failed: {e}")
+            logger.debug(f"[PARSE] Failed candidate:\n{candidate}")
+            
+            # Step 5: Progressive trimming attempts (handle truncated responses)
+            for i in range(1, 6):
+                trim_length = i * 10  # Try trimming 10, 20, 30, 40, 50 chars
+                if len(candidate) <= trim_length:
+                    break
+                    
+                trimmed = candidate[:-trim_length]
+                # Try to close any unclosed braces
+                open_count = trimmed.count("{") - trimmed.count("}")
+                if open_count > 0:
+                    trimmed += "}" * open_count
+                    
+                try:
+                    parsed = json.loads(trimmed)
+                    logger.warning(f"[PARSE] Succeeded after trimming {trim_length} chars")
+                    return parsed
+                except json.JSONDecodeError:
+                    continue
+            
+            # Step 6: Failed all attempts
+            logger.error("[PARSE] All JSON parse attempts failed")
+            logger.error(f"[PARSE] Original response ({original_length} chars):\n{original}")
+            logger.error(f"[PARSE] Extracted candidate ({len(candidate)} chars):\n{candidate[:500]}...")
+            return {}
+            
+    except Exception as e:
+        logger.error(f"[PARSE] Unexpected error parsing JSON: {e}", exc_info=True)
+        logger.error(f"[PARSE] Original text:\n{original}")
+        return {}
+
+
+# ==========================================
+#  DETERMINISTIC SHORT-CIRCUIT (skip Claude where possible)
+# ==========================================
+def _detect_explicit_daf(hebrew_term: str, sefaria_data: Dict) -> Optional[str]:
+    """
+    Detect explicit daf-like references in the user term or in top_refs.
+    Returns a single top ref (string) if found.
+    """
+    # crude regex for "מקום שם 9א" or "כתובות ט" or "kesubos 9a"
+    # We check both the hebrew_term and the top_refs list
+    daf_pattern = re.compile(r"\b\d+[אב]\b|\b\d+[ab]\b", re.IGNORECASE)
+    # check top_refs first
+    top_refs = sefaria_data.get("top_refs", [])
+    if len(top_refs) == 1:
+        return top_refs[0]
+    # check hebrew_term for digits with hebrew/english amud letter
+    if daf_pattern.search(hebrew_term):
+        # If term contains a daf token, return it as directive (let analyze decide exact ref)
+        return hebrew_term
+    return None
+
+
+def deterministic_strategy_from_sefaria(hebrew_term: str, sefaria_data: Dict) -> Optional[SearchStrategy]:
+    """
+    When Sefaria signals a dominant primary, create a deterministic strategy and skip Claude.
+    Rules:
+      - If total_hits == 1 -> deterministic
+      - If one masechta contains > _SEFARIA_DOMINANT_THRESHOLD fraction -> deterministic
+      - If explicit daf detected -> deterministic (DIRECT)
+    """
+    total = sefaria_data.get("total_hits", 0)
+    hits_by_masechta = sefaria_data.get("hits_by_masechta", {}) or {}
+    top_refs = sefaria_data.get("top_refs", []) or []
+
+    # 1) single hit
+    if total == 1 and top_refs:
+        primary = top_refs[0]
+        s = SearchStrategy(
+            query_type=QueryType.SUGYA_CONCEPT,
+            primary_source=primary,
+            primary_sources=[primary],
+            reasoning="Deterministic: single Sefaria hit",
+            fetch_strategy=FetchStrategy.DIRECT,
+            depth="standard",
+            confidence="high",
+            sefaria_hits=total,
+            hits_by_masechta=hits_by_masechta,
+            intent_score=0.95,
+            generated_at=datetime.utcnow().isoformat()
+        )
+        return s
+
+    # 2) dominant masechta
+    if total > 0 and hits_by_masechta:
+        max_masechta, max_hits = max(hits_by_masechta.items(), key=lambda x: x[1])
+        if (max_hits / total) >= _SEFARIA_DOMINANT_THRESHOLD and top_refs:
+            primary = top_refs[0]
+            s = SearchStrategy(
+                query_type=QueryType.SUGYA_CONCEPT,
+                primary_source=primary,
+                primary_sources=[primary],
+                reasoning=f"Deterministic: {max_masechta} contains {(max_hits/total):.0%} of hits",
+                fetch_strategy=FetchStrategy.TRICKLE_UP,
+                depth="standard",
+                confidence="high",
+                sefaria_hits=total,
+                hits_by_masechta=hits_by_masechta,
+                intent_score=0.9,
+                generated_at=datetime.utcnow().isoformat()
+            )
+            return s
+
+    # 3) explicit daf
+    explicit = _detect_explicit_daf(hebrew_term, sefaria_data)
+    if explicit:
+        # We treat as a direct fetch but still let Step 3 parse exact ref
+        s = SearchStrategy(
+            query_type=QueryType.DAF_REFERENCE,
+            primary_source=explicit,
+            primary_sources=[explicit],
+            reasoning="Deterministic: explicit daf detected",
+            fetch_strategy=FetchStrategy.DIRECT,
+            depth="basic",
+            confidence="high",
+            sefaria_hits=total,
+            hits_by_masechta=hits_by_masechta,
+            intent_score=0.95,
+            generated_at=datetime.utcnow().isoformat()
+        )
+        return s
+
+    return None
+
+
+# ==========================================
+#  CLAUDE ANALYSIS (main)
+# ==========================================
 async def analyze_with_claude(hebrew_term: str, sefaria_data: Dict) -> SearchStrategy:
     """
     Phase 2: ANALYZE - Have Claude interpret the query.
-    
-    Claude looks at the Sefaria data and uses Torah knowledge to determine
-    what the user is most likely looking for.
+    Uses caching and deterministic shortcuts to minimize API calls.
     """
-    logger.info(f"[ANALYZE] Claude analyzing: {hebrew_term}")
-    
+    logger.info(f"[ANALYZE] Starting analysis for: {hebrew_term}")
+
+    # 0) Quick deterministic short-circuit
+    try:
+        deterministic = deterministic_strategy_from_sefaria(hebrew_term, sefaria_data)
+        if deterministic:
+            logger.info("[ANALYZE] Deterministic strategy decided - skipping Claude.")
+            return deterministic
+    except Exception as e:
+        logger.warning(f"[ANALYZE] deterministic shortcut failed: {e}", exc_info=True)
+
+    # 1) Check cache
+    cache_key = _make_cache_key(hebrew_term, sefaria_data)
+    cached = _cache_get(cache_key)
+    if cached:
+        logger.info("[ANALYZE] Using cached Claude analysis.")
+        return _make_strategy_from_parsed_analysis(cached, sefaria_data)
+
+    # 2) If Claude disabled by env, fallback
+    if not USE_CLAUDE:
+        logger.info("[ANALYZE] USE_CLAUDE disabled - using fallback strategy.")
+        return _fallback_strategy(hebrew_term, sefaria_data)
+
+    # 3) Build prompt and call Claude
     client = get_claude_client()
-    
-    # Format sample snippets
+
     sample_snippets = ""
     for i, hit in enumerate(sefaria_data.get("sample_hits", [])[:8], 1):
         sample_snippets += f"{i}. {hit['ref']}: {hit['snippet'][:150]}...\n"
-    
     if not sample_snippets:
         sample_snippets = "(No sample text available)"
-    
-    # Build the prompt
+
     user_message = ANALYSIS_USER_TEMPLATE.format(
         hebrew_term=hebrew_term,
         total_hits=sefaria_data.get("total_hits", 0),
@@ -295,136 +547,234 @@ async def analyze_with_claude(hebrew_term: str, sefaria_data: Dict) -> SearchStr
         top_refs=sefaria_data.get("top_refs", [])[:10],
         sample_snippets=sample_snippets
     )
-    
+
     try:
         response = client.messages.create(
             model="claude-sonnet-4-20250514",
-            max_tokens=1500,
+            max_tokens=2500,
             system=ANALYSIS_SYSTEM_PROMPT,
             messages=[{"role": "user", "content": user_message}]
         )
-        
+
+        # The SDK returns content in that path
         response_text = response.content[0].text
-        logger.debug(f"[ANALYZE] Claude response: {response_text[:300]}...")
-        
-        # Parse JSON response
-        analysis = _parse_claude_response(response_text)
-        
-        # Build SearchStrategy from analysis
-        strategy = SearchStrategy(
-            query_type=QueryType(analysis.get("query_type", "unknown")),
-            primary_source=analysis.get("primary_source"),
-            primary_source_he=analysis.get("primary_source_he"),
-            reasoning=analysis.get("reasoning", ""),
-            fetch_strategy=FetchStrategy.TRICKLE_UP,  # Default for most queries
-            depth=analysis.get("depth", "standard"),
-            confidence=analysis.get("confidence", "medium"),
-            clarification_prompt=analysis.get("clarification_prompt"),
-            sefaria_hits=sefaria_data.get("total_hits", 0),
-            hits_by_masechta=sefaria_data.get("hits_by_masechta", {})
-        )
-        
-        # Add related sugyos
-        for sugya in analysis.get("related_sugyos", []):
-            strategy.related_sugyos.append(RelatedSugya(
-                ref=sugya.get("ref", ""),
-                he_ref=sugya.get("he_ref", ""),
-                connection=sugya.get("connection", ""),
-                importance=sugya.get("importance", "secondary")
-            ))
-        
-        # Adjust fetch strategy based on query type
-        if strategy.query_type == QueryType.DAF_REFERENCE:
-            strategy.fetch_strategy = FetchStrategy.DIRECT
-        elif strategy.query_type == QueryType.HALACHA_TERM:
-            strategy.fetch_strategy = FetchStrategy.SURVEY
-        elif strategy.query_type == QueryType.KLAL:
-            strategy.fetch_strategy = FetchStrategy.TRICKLE_UP
-            strategy.depth = "expanded"  # Klals usually need more context
-        
-        logger.info(f"[ANALYZE] Result: type={strategy.query_type.value}, "
-                   f"primary={strategy.primary_source}, confidence={strategy.confidence}")
-        
-        return strategy
-        
+        # CRITICAL: Log FULL response for debugging parse failures
+        logger.info(f"[ANALYZE] Claude response length: {len(response_text)} characters")
+        logger.debug(f"[ANALYZE] Claude FULL response:\n{response_text}")
+
+        # Parse with robust repair
+        parsed = _repair_and_parse_json(response_text)
+
+        # If parsed empty, try fallback
+        if not parsed:
+            logger.warning("[ANALYZE] Claude parse returned empty - falling back.")
+            return _fallback_strategy(hebrew_term, sefaria_data)
+
+        # Cache parsed analysis
+        _cache_set(cache_key, parsed)
+
+        # Convert parsed analysis into SearchStrategy
+        return _make_strategy_from_parsed_analysis(parsed, sefaria_data)
+
     except Exception as e:
         logger.error(f"[ANALYZE] Claude error: {e}", exc_info=True)
-        
-        # Return a basic strategy based on Sefaria data alone
+        # On any error, return fallback strategy
         return _fallback_strategy(hebrew_term, sefaria_data)
 
 
-def _parse_claude_response(response_text: str) -> Dict:
-    """Parse JSON from Claude's response."""
-    try:
-        # Handle markdown code fences
-        if "```json" in response_text:
-            response_text = response_text.split("```json")[1].split("```")[0]
-        elif "```" in response_text:
-            response_text = response_text.split("```")[1].split("```")[0]
-        
-        response_text = response_text.strip()
-        
-        # Find JSON object
-        if not response_text.startswith("{"):
-            brace_index = response_text.find("{")
-            if brace_index != -1:
-                response_text = response_text[brace_index:]
-        
-        return json.loads(response_text)
-        
-    except json.JSONDecodeError as e:
-        logger.error(f"Failed to parse Claude JSON: {e}")
-        logger.error(f"Response: {response_text[:500]}")
-        return {}
+def _make_strategy_from_parsed_analysis(analysis: Dict, sefaria_data: Dict) -> SearchStrategy:
+    """
+    Convert parsed JSON (from Claude or cache) to SearchStrategy with validation.
+    """
+    # Validate & normalize query_type
+    qtype_raw = (analysis.get("query_type") or "").lower()
+    qtype = QueryType.UNKNOWN
+    for qt in QueryType:
+        if qt.value == qtype_raw:
+            qtype = qt
+            break
+    # If unknown but there are many top_refs, treat as cross reference
+    if qtype == QueryType.UNKNOWN and len(sefaria_data.get("top_refs", [])) > 3:
+        qtype = QueryType.SUGYA_CROSS_REFERENCE
+
+    primary_sources = analysis.get("primary_sources") or []
+    if isinstance(primary_sources, str):
+        primary_sources = [primary_sources]
+    primary_sources_he = analysis.get("primary_sources_he") or []
+    if isinstance(primary_sources_he, str):
+        primary_sources_he = [primary_sources_he]
+
+    # Build strategy
+    strategy = SearchStrategy(
+        query_type=qtype,
+        primary_source=analysis.get("primary_source") or (primary_sources[0] if primary_sources else None),
+        primary_sources=primary_sources,
+        primary_source_he=analysis.get("primary_source_he"),
+        primary_sources_he=primary_sources_he,
+        reasoning=analysis.get("reasoning", ""),
+        depth=analysis.get("depth", "standard"),
+        confidence=analysis.get("confidence", "medium"),
+        clarification_prompt=analysis.get("clarification_prompt"),
+        sefaria_hits=sefaria_data.get("total_hits", 0),
+        hits_by_masechta=sefaria_data.get("hits_by_masechta", {}),
+        intent_score=float(analysis.get("intent_score", 0.0)),
+        preferred_domains=analysis.get("preferred_domains", []),
+        generated_at=datetime.utcnow().isoformat()
+    )
+
+    # Related sugyos
+    for sug in analysis.get("related_sugyos", []):
+        try:
+            strategy.related_sugyos.append(RelatedSugya(
+                ref=sug.get("ref", ""),
+                he_ref=sug.get("he_ref", ""),
+                connection=sug.get("connection", ""),
+                importance=sug.get("importance", "secondary")
+            ))
+        except Exception:
+            continue
+
+    # Map some query types to fetch strategy defaults
+    if strategy.query_type == QueryType.DAF_REFERENCE:
+        strategy.fetch_strategy = FetchStrategy.DIRECT
+        strategy.depth = strategy.depth or "basic"
+    elif strategy.query_type == QueryType.HALACHA_TERM:
+        strategy.fetch_strategy = FetchStrategy.SURVEY
+    elif strategy.query_type == QueryType.KLAL:
+        strategy.fetch_strategy = FetchStrategy.TRICKLE_UP
+        strategy.depth = strategy.depth or "expanded"
+    else:
+        # default mapping
+        if strategy.depth == "full":
+            strategy.fetch_strategy = FetchStrategy.HYBRID
+
+    # Hail-Mary check: if confidence low and no primaries found -> tag HAIL_MARY
+    if strategy.confidence == "low" and not strategy.primary_sources:
+        strategy.fetch_strategy = FetchStrategy.HAIL_MARY
+
+    return strategy
 
 
+# ==========================================
+#  FALLBACK STRATEGY
+# ==========================================
 def _fallback_strategy(hebrew_term: str, sefaria_data: Dict) -> SearchStrategy:
     """
-    Create a basic strategy when Claude analysis fails.
-    Uses Sefaria data to make reasonable guesses.
+    Create an intelligent fallback strategy when Claude analysis fails.
+    Uses Torah scholarship principles to identify Gemara sources vs commentaries.
     """
-    logger.info("[ANALYZE] Using fallback strategy")
+    logger.info("[ANALYZE] Using intelligent fallback strategy")
     
-    # Find the masechta with most hits
-    hits_by_masechta = sefaria_data.get("hits_by_masechta", {})
+    total_hits = sefaria_data.get("total_hits", 0)
+    hits_by_masechta = sefaria_data.get("hits_by_masechta", {}) or {}
+    hits_by_category = sefaria_data.get("hits_by_category", {}) or {}
+    top_refs = sefaria_data.get("top_refs", []) or []
+    
+    # Identify primary masechta
     primary_masechta = None
+    masechta_hits = 0
     if hits_by_masechta:
-        primary_masechta = max(hits_by_masechta.items(), key=lambda x: x[1])[0]
+        primary_masechta, masechta_hits = max(hits_by_masechta.items(), key=lambda x: x[1])
     
-    # Use top ref if available
-    top_refs = sefaria_data.get("top_refs", [])
-    primary_source = top_refs[0] if top_refs else None
+    # CRITICAL: Prefer Gemara sources over commentaries
+    # A yeshiva bochur wants the Gemara, not R' Akiva Eiger's commentary
+    gemara_source = None
+    commentary_source = None
     
-    return SearchStrategy(
-        query_type=QueryType.SUGYA_CONCEPT,
+    # Categories that indicate actual Gemara text
+    gemara_categories = {"Talmud", "Mishnah", "Tosefta"}
+    # Categories that are commentaries
+    commentary_categories = {"Talmud Commentary", "Mishnah Commentary", "Rishonim", "Acharonim", "Halakhah", "Responsa"}
+    
+    for ref in top_refs:
+        ref_lower = ref.lower()
+        
+        # Check if it's actual Gemara/Mishnah
+        # Gemara refs typically look like: "Ketubot 9a" or "Pesachim 10a"
+        # Commentary refs look like: "Rashi on Ketubot 9a" or "Tosafot on Pesachim 10a"
+        is_gemara = False
+        is_commentary = False
+        
+        # Simple heuristic: if ref contains " on " it's a commentary
+        if " on " in ref or "Chiddushei" in ref or "Commentary" in ref:
+            is_commentary = True
+            if not commentary_source:
+                commentary_source = ref
+        else:
+            # Check if it matches a direct masechta reference pattern
+            # Look for masechtot names without commentary markers
+            masechtot = ["Pesachim", "Ketubot", "Niddah", "Kiddushin", "Chullin", "Bava Kamma", 
+                        "Bava Metzia", "Bava Batra", "Sanhedrin", "Shabbat", "Eruvin", "Gittin"]
+            for masechta in masechtot:
+                if masechta in ref and not any(x in ref for x in ["Rashi", "Tosafot", "Chiddushei", "Commentary"]):
+                    is_gemara = True
+                    break
+        
+        if is_gemara and not gemara_source:
+            gemara_source = ref
+        
+        # If we have both, we can stop looking
+        if gemara_source and commentary_source:
+            break
+    
+    # Choose primary source: Gemara first, then commentary, then first result
+    primary_source = gemara_source or commentary_source or (top_refs[0] if top_refs else None)
+    
+    # Determine confidence based on hit patterns
+    confidence = "low"
+    reasoning_parts = []
+    
+    if total_hits == 0:
+        confidence = "very_low"
+        reasoning_parts.append("No Sefaria hits found")
+    elif gemara_source:
+        confidence = "medium"
+        reasoning_parts.append(f"Identified Gemara source: {gemara_source}")
+    elif primary_masechta and masechta_hits > 5:
+        confidence = "medium"
+        reasoning_parts.append(f"Strong concentration in {primary_masechta} ({masechta_hits} hits)")
+    else:
+        reasoning_parts.append(f"Found {total_hits} hits across multiple sources")
+    
+    if primary_masechta:
+        reasoning_parts.append(f"Primary masechta: {primary_masechta}")
+    
+    reasoning = " | ".join(reasoning_parts) + " | (Fallback: Claude failed)"
+    
+    # Determine query type based on hit distribution
+    query_type = QueryType.SUGYA_CONCEPT
+    if "Halakhah" in hits_by_category and hits_by_category.get("Halakhah", 0) > total_hits * 0.5:
+        query_type = QueryType.HALACHA_TERM
+    elif len(hits_by_masechta) == 1:
+        query_type = QueryType.SUGYA_CONCEPT
+    else:
+        query_type = QueryType.FREEFORM_TORAH_QUERY
+    
+    logger.info(f"[FALLBACK] Selected {query_type.value}, primary: {primary_source}, confidence: {confidence}")
+    
+    s = SearchStrategy(
+        query_type=query_type,
         primary_source=primary_source,
-        reasoning="Based on Sefaria search results (Claude analysis unavailable)",
+        primary_sources=[primary_source] if primary_source else [],
+        reasoning=reasoning,
         fetch_strategy=FetchStrategy.TRICKLE_UP,
         depth="standard",
-        confidence="low",
-        clarification_prompt=f"I found this term in multiple places. Could you tell me more about what you're looking for?",
-        sefaria_hits=sefaria_data.get("total_hits", 0),
-        hits_by_masechta=hits_by_masechta
+        confidence=confidence,
+        clarification_prompt=f"I found {total_hits} references. Could you tell me more about what you're looking for?",
+        sefaria_hits=total_hits,
+        hits_by_masechta=hits_by_masechta,
+        intent_score=0.4 if confidence == "medium" else 0.2,
+        generated_at=datetime.utcnow().isoformat()
     )
+    return s
 
 
 # ==========================================
 #  MAIN STEP 2 FUNCTION
 # ==========================================
-
 async def understand(hebrew_term: str, original_query: str = None) -> SearchStrategy:
     """
     Main entry point for Step 2: UNDERSTAND
-    
-    Takes the Hebrew term from Step 1 and figures out what the user wants.
-    
-    Args:
-        hebrew_term: Hebrew term from Step 1 (e.g., "חזקת הגוף")
-        original_query: Original transliteration (e.g., "chezkas haguf") for context
-    
-    Returns:
-        SearchStrategy telling Step 3 what to do
     """
     logger.info("=" * 80)
     logger.info("STEP 2: UNDERSTAND")
@@ -432,75 +782,67 @@ async def understand(hebrew_term: str, original_query: str = None) -> SearchStra
     logger.info(f"  Hebrew term: {hebrew_term}")
     if original_query:
         logger.info(f"  Original query: {original_query}")
-    
+
     # Phase 1: GATHER - Get Sefaria data
     logger.info("\n[Phase 1: GATHER]")
     sefaria_data = await gather_sefaria_data(hebrew_term)
-    
+
     logger.info(f"  Sefaria hits: {sefaria_data.get('total_hits', 0)}")
     logger.info(f"  By masechta: {sefaria_data.get('hits_by_masechta', {})}")
-    
-    # Phase 2: ANALYZE - Have Claude interpret
+
+    # Phase 2: ANALYZE - deterministic shortcut + Claude
     logger.info("\n[Phase 2: ANALYZE]")
     strategy = await analyze_with_claude(hebrew_term, sefaria_data)
-    
+
     # Phase 3: DECIDE (implicit in strategy creation)
     logger.info("\n[Phase 3: DECIDE]")
     logger.info(f"  Query type: {strategy.query_type.value}")
-    logger.info(f"  Primary source: {strategy.primary_source}")
+    logger.info(f"  Primary sources: {strategy.primary_sources or strategy.primary_source}")
     logger.info(f"  Fetch strategy: {strategy.fetch_strategy.value}")
     logger.info(f"  Depth: {strategy.depth}")
     logger.info(f"  Confidence: {strategy.confidence}")
-    
+    logger.info(f"  Intent score: {strategy.intent_score}")
+
     if strategy.related_sugyos:
         logger.info(f"  Related sugyos: {len(strategy.related_sugyos)}")
         for s in strategy.related_sugyos:
             logger.info(f"    - {s.ref} ({s.importance}): {s.connection}")
-    
+
     if strategy.clarification_prompt:
         logger.info(f"  Clarification needed: {strategy.clarification_prompt}")
-    
+
     logger.info("=" * 80)
-    
     return strategy
 
 
 # ==========================================
 #  TESTING
 # ==========================================
-
 async def test_understand():
-    """Test the understand function."""
-    
+    """Test the understand function (quick smoke tests)."""
     print("=" * 70)
     print("STEP 2 TEST: UNDERSTAND")
     print("=" * 70)
-    
+
     test_cases = [
         ("חזקת הגוף", "chezkas haguf"),
         ("מיגו", "migu"),
         ("ברי ושמא", "bari vishma"),
         ("כתובות ט", "kesubos 9"),
     ]
-    
+
     for hebrew, original in test_cases:
         print(f"\n{'='*60}")
         print(f"Testing: {hebrew} ({original})")
         print("=" * 60)
-        
+
         strategy = await understand(hebrew, original)
-        
+
         print(f"\nResult:")
         print(f"  Type: {strategy.query_type.value}")
-        print(f"  Primary: {strategy.primary_source}")
+        print(f"  Primary(s): {strategy.primary_sources or strategy.primary_source}")
         print(f"  Reasoning: {strategy.reasoning[:100]}...")
         print(f"  Confidence: {strategy.confidence}")
-        
-        if strategy.related_sugyos:
-            print(f"  Related:")
-            for s in strategy.related_sugyos[:3]:
-                print(f"    - {s.ref}: {s.connection}")
-
 
 if __name__ == "__main__":
     logging.basicConfig(
@@ -508,5 +850,5 @@ if __name__ == "__main__":
         format='%(asctime)s | %(levelname)-8s | %(message)s',
         datefmt='%H:%M:%S'
     )
-    
+
     asyncio.run(test_understand())
