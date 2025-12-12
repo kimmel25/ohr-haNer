@@ -38,6 +38,25 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
+# Logging helpers to keep console output readable
+def log_section(title: str) -> None:
+    line = "=" * 90
+    logger.info("\n%s\n%s\n%s", line, title, line)
+
+
+def log_subsection(title: str) -> None:
+    line = "-" * 70
+    logger.info("\n%s\n%s\n%s", line, title, line)
+
+
+def log_list(label: str, items: List[str]) -> None:
+    if not items:
+        return
+    logger.info("%s:", label)
+    for item in items:
+        logger.info("  - %s", item)
+
 # ==========================================
 #  CONFIG & RUNTIME FLAGS
 # ==========================================
@@ -214,7 +233,7 @@ async def gather_sefaria_data(hebrew_term: str) -> Dict:
     Phase 1: GATHER - Query Sefaria to understand where term appears.
     Returns raw data for Claude to analyze.
     """
-    logger.info(f"[GATHER] Querying Sefaria for: {hebrew_term}")
+    logger.info("\n[GATHER] Querying Sefaria for: %s", hebrew_term)
 
     try:
         from tools.sefaria_client import get_sefaria_client, SearchResults
@@ -1128,29 +1147,32 @@ async def understand(
     V4: Now accepts step1_result for mixed query handling.
     If step1_result indicates a mixed query, uses enhanced analysis.
     """
-    logger.info("=" * 80)
-    logger.info("STEP 2: UNDERSTAND (V4)")
-    logger.info("=" * 80)
-    logger.info(f"  Hebrew term: {hebrew_term}")
+    log_section("STEP 2: UNDERSTAND (V4) - Query Analysis & Strategy")
+    logger.info("Hebrew term: %s", hebrew_term)
     if original_query:
-        logger.info(f"  Original query: {original_query}")
+        logger.info("Original query: %s", original_query)
     
     # V4: Check if this is a mixed query
     is_mixed = step1_result and getattr(step1_result, 'is_mixed_query', False)
     
     if is_mixed:
-        logger.info("  ⚡ MIXED QUERY detected - using enhanced analysis")
+        log_subsection("Mixed Query Path")
+        logger.info("Step 1 flagged a mixed English/Hebrew query; verifying extractions and planning across terms")
         hebrew_terms = getattr(step1_result, 'hebrew_terms', [hebrew_term])
         extraction_confident = getattr(step1_result, 'extraction_confident', True)
         
+        log_list("Hebrew terms from Step 1", hebrew_terms)
+        
         # Gather Sefaria data for ALL terms
-        logger.info(f"  Gathering Sefaria data for terms: {hebrew_terms}")
+        log_subsection("Gathering Sefaria Data (All Terms)")
+        logger.info("Pulling Sefaria hit profiles for each extracted term")
         sefaria_data_by_term = await gather_sefaria_data_multi(hebrew_terms)
         
         for term, data in sefaria_data_by_term.items():
-            logger.info(f"    {term}: {data.get('total_hits', 0)} hits")
+            logger.info("  %s: %s hits", term, data.get('total_hits', 0))
         
         # Use mixed query analysis with Claude
+        log_subsection("Analyzing Mixed Query")
         strategy = await analyze_mixed_query_with_claude(
             original_query=original_query or "",
             hebrew_terms=hebrew_terms,
@@ -1159,38 +1181,40 @@ async def understand(
         )
     else:
         # Standard single-term analysis
-        logger.info("\n[Phase 1: GATHER]")
+        log_subsection("Phase 1: Gather")
         sefaria_data = await gather_sefaria_data(hebrew_term)
 
-        logger.info(f"  Sefaria hits: {sefaria_data.get('total_hits', 0)}")
-        logger.info(f"  By masechta: {sefaria_data.get('hits_by_masechta', {})}")
+        logger.info("  Sefaria hits: %s", sefaria_data.get('total_hits', 0))
+        logger.info("  By masechta: %s", sefaria_data.get('hits_by_masechta', {}))
 
         # Phase 2: ANALYZE - deterministic shortcut + Claude
-        logger.info("\n[Phase 2: ANALYZE]")
+        log_subsection("Phase 2: Analyze")
         strategy = await analyze_with_claude(hebrew_term, sefaria_data)
 
     # Log results
-    logger.info("\n[Phase 3: DECIDE]")
-    logger.info(f"  Query type: {strategy.query_type.value}")
-    logger.info(f"  Primary sources: {strategy.primary_sources or strategy.primary_source}")
-    logger.info(f"  Fetch strategy: {strategy.fetch_strategy.value}")
-    logger.info(f"  Depth: {strategy.depth}")
-    logger.info(f"  Confidence: {strategy.confidence}")
-    logger.info(f"  Intent score: {strategy.intent_score}")
+    log_subsection("Phase 3: Decide & Plan")
+    primary_sources_display = strategy.primary_sources or ([strategy.primary_source] if strategy.primary_source else [])
+    log_list("Primary sources", primary_sources_display)
+    logger.info("  Query type: %s", strategy.query_type.value)
+    logger.info("  Fetch strategy: %s", strategy.fetch_strategy.value)
+    logger.info("  Depth: %s", strategy.depth)
+    logger.info("  Confidence: %s", strategy.confidence)
+    logger.info("  Intent score: %s", strategy.intent_score)
     
     if strategy.is_comparison_query:
-        logger.info(f"  Is comparison: True")
-        logger.info(f"  Comparison terms: {strategy.comparison_terms}")
+        logger.info("  Is comparison: True")
+        log_list("Comparison terms", strategy.comparison_terms)
 
     if strategy.related_sugyos:
-        logger.info(f"  Related sugyos: {len(strategy.related_sugyos)}")
-        for s in strategy.related_sugyos:
-            logger.info(f"    - {s.ref} ({s.importance}): {s.connection}")
+        log_list(
+            f"Related sugyos ({len(strategy.related_sugyos)})",
+            [f"{s.ref} ({s.importance}): {s.connection}" for s in strategy.related_sugyos]
+        )
 
     if strategy.clarification_prompt:
-        logger.info(f"  Clarification needed: {strategy.clarification_prompt}")
+        logger.info("  Clarification needed: %s", strategy.clarification_prompt)
 
-    logger.info("=" * 80)
+    logger.info("\n%s", "=" * 90)
     return strategy
 
 
