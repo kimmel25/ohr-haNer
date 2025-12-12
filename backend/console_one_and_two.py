@@ -92,7 +92,7 @@ def print_step1_result(result):
 
 def print_step2_result(strategy):
     """Pretty print Step 2 result."""
-    logger.info(f"Step 2 complete - Type: {strategy.query_type.value}, "
+    logger.info(f"Step 2 complete - Type: {strategy.query_type}, "
                 f"Primary: {strategy.primary_source}, Confidence: {strategy.confidence}")
     
     print(f"\n{'─' * 50}")
@@ -213,7 +213,7 @@ async def run_pipeline(query: str):
     print(f"  Hebrew:   {hebrew_term}")
     if hasattr(step1_result, 'hebrew_terms') and len(step1_result.hebrew_terms) > 1:
         print(f"  All:      {step1_result.hebrew_terms}")
-    print(f"  Type:     {strategy.query_type.value}")
+    print(f"  Type:     {strategy.query_type}")
     print(f"  Primary:  {strategy.primary_source}")
     
     logger.info("=" * 80)
