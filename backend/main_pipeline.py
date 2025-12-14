@@ -134,8 +134,8 @@ async def search_sources(query: str) -> MareiMekomosResult:
     except Exception as e:
         logger.error(f"Step 2 error: {e}", exc_info=True)
         strategy = _fallback_step2(hebrew_term)
-    
-    logger.info(f"Step 2 complete: type={strategy.query_type.value}, primary={strategy.primary_source}")
+        
+    logger.info(f"Step 2 complete: type={get_enum_value(strategy.query_type)}, primary={strategy.primary_source}")
     if step1_result.is_mixed_query:
         logger.info(f"  Comparison terms: {getattr(strategy, 'comparison_terms', [])}")
     

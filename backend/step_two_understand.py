@@ -57,18 +57,22 @@ async def gather_sefaria_data(term: str) -> Dict:
     """
     try:
         client = get_sefaria_client()
-        result = await client.search(term, max_results=100)
+        # sefaria_client.search() returns a SearchResults dataclass, NOT a dict
+        result = await client.search(term, size=100)
         
-        total_hits = result.get('total', 0)
-        hits = result.get('hits', [])
+        # FIX: Use attribute access instead of .get() - SearchResults is a dataclass
+        total_hits = result.total_hits
+        hits = result.hits  # List of SearchHit dataclass objects
         
         # Extract top refs
-        top_refs = [hit.get('ref', '') for hit in hits[:20]]
+        # FIX: SearchHit is a dataclass, use attribute access
+        top_refs = [hit.ref for hit in hits[:20]]
         
         # Extract categories
         categories = {}
         for hit in hits:
-            cat = hit.get('category', 'Unknown')
+            # FIX: Use attribute access - SearchHit is a dataclass
+            cat = hit.category
             categories[cat] = categories.get(cat, 0) + 1
         
         return {
@@ -179,10 +183,10 @@ Return ONLY valid JSON, no preamble or markdown.
 
     try:
         # Call Claude
-        client = Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+        client = Anthropic(api_key=settings.anthropic_api_key)
         
         response = client.messages.create(
-            model=settings.CLAUDE_MODEL,
+            model=settings.claude_model,
             max_tokens=2000,
             temperature=0,
             system=system_prompt,

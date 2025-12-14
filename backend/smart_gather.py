@@ -290,22 +290,27 @@ async def gather_sefaria_data_smart(
         logger.info(f"[SMART-GATHER] Searching concept: '{concept}'")
         
         try:
-            result = await sefaria_client.search(concept, max_results=100)
+            # sefaria_client.search() returns a SearchResults dataclass, NOT a dict
+            result = await sefaria_client.search(concept, size=100)
             
-            total_hits = result.get('total', 0)
-            top_refs = [hit.get('ref', '') for hit in result.get('hits', [])][:20]
+            # FIX: Use attribute access instead of .get() - SearchResults is a dataclass
+            total_hits = result.total_hits
+            top_refs = [hit.ref for hit in result.hits][:20]
             
             # Extract categories and masechtot
+            # NOTE: SearchResults already has hits_by_category and hits_by_masechta
+            # but we'll compute masechtot ourselves for filtering
             categories = {}
             masechtot = {}
             
-            for hit in result.get('hits', [])[:100]:
-                # Categories
-                cat = hit.get('category', 'Unknown')
+            # FIX: result.hits is a list of SearchHit dataclass objects
+            for hit in result.hits[:100]:
+                # FIX: Use attribute access - SearchHit is a dataclass
+                cat = hit.category
                 categories[cat] = categories.get(cat, 0) + 1
                 
                 # Masechtot (from ref)
-                ref = hit.get('ref', '')
+                ref = hit.ref
                 masechta = extract_masechta_from_ref(ref)
                 if masechta:
                     masechtot[masechta] = masechtot.get(masechta, 0) + 1
