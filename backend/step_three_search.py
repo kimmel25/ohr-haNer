@@ -24,20 +24,16 @@ from typing import Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
-# Import from Step 2
-from step_two_understand import (
-    SearchStrategy, 
-    QueryType, 
-    FetchStrategy,
-    RelatedSugya
-)
-
 # Import centralized Pydantic models from models.py
 from models import (
     SourceLevel,
     Source,
+    RelatedSugya,
     RelatedSugyaResult,
     SearchResult,
+    SearchStrategy,
+    QueryType,
+    FetchStrategy,
     ConfidenceLevel
 )
 
@@ -358,7 +354,7 @@ async def search(
     logger.info("=" * 80)
     logger.info("STEP 3: SEARCH")
     logger.info("=" * 80)
-    logger.info(f"  Strategy: {strategy.fetch_strategy.value}")
+    logger.info(f"  Strategy: {strategy.fetch_strategy}")
     logger.info(f"  Primary: {strategy.primary_source}")
     logger.info(f"  Depth: {strategy.depth}")
     
@@ -501,7 +497,7 @@ async def test_search():
     print("=" * 70)
     
     # Create a mock strategy (as if from Step 2)
-    from step_two_understand import SearchStrategy, QueryType, FetchStrategy, RelatedSugya
+    # (Using models imported at top of file)
     
     strategy = SearchStrategy(
         query_type=QueryType.SUGYA_CONCEPT,

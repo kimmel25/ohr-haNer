@@ -1764,9 +1764,9 @@
   "bittul chometz": {
     "hebrew": "ביטול חמץ",
     "confidence": "medium",
-    "usage_count": 17,
+    "usage_count": 20,
     "source": "sefaria",
-    "last_used": "2025-12-13T23:07:48.363542"
+    "last_used": "2025-12-13T23:23:52.022401"
   },
   "rans": {
     "hebrew": "רנס",
@@ -1779,9 +1779,9 @@
   "shittah": {
     "hebrew": "שיטה",
     "confidence": "high",
-    "usage_count": 17,
+    "usage_count": 20,
     "source": "sefaria",
-    "last_used": "2025-12-13T23:07:48.357594",
+    "last_used": "2025-12-13T23:23:52.017861",
     "hits": 105
   },
   "bittul": {
@@ -1795,33 +1795,33 @@
   "tosfos": {
     "hebrew": "תוספות",
     "confidence": "high",
-    "usage_count": 17,
+    "usage_count": 20,
     "source": "sefaria",
-    "last_used": "2025-12-13T23:07:48.369221",
+    "last_used": "2025-12-13T23:23:52.027754",
     "hits": 10000
   },
   "rashi": {
     "hebrew": "רשי",
     "confidence": "high",
-    "usage_count": 17,
+    "usage_count": 20,
     "source": "sefaria",
-    "last_used": "2025-12-13T23:07:48.376237",
+    "last_used": "2025-12-13T23:23:52.034499",
     "hits": 133
   },
   "ran": {
     "hebrew": "רן",
     "confidence": "medium",
-    "usage_count": 19,
+    "usage_count": 22,
     "source": "runtime",
-    "last_used": "2025-12-13T23:07:48.349048",
+    "last_used": "2025-12-13T23:23:52.011246",
     "hits": 51
   },
   "רן": {
     "hebrew": "רן",
     "confidence": "medium",
-    "usage_count": 2,
+    "usage_count": 3,
     "source": "runtime",
-    "last_used": "2025-12-13T23:07:48.421336",
+    "last_used": "2025-12-13T23:13:51.741873",
     "hits": 51
   }
 }
