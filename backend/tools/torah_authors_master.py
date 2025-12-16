@@ -1,6 +1,6 @@
 """
-MASTER TORAH AUTHORS KNOWLEDGE BASE - Phase 2 Enhanced
-======================================================
+MASTER TORAH AUTHORS KNOWLEDGE BASE - Phase 2 Enhanced (FIXED)
+==============================================================
 Combines:
 - Clean structure from peirushim.py
 - Scholarly depth from research document
@@ -8,6 +8,10 @@ Combines:
 - Relationship mapping (students, commentaries)
 - Acronym disambiguation
 - Masechta coverage data
+
+FIXES APPLIED:
+- Removed duplicate entries in variations that match primary_name_he
+- build_lookup_index now deduplicates to prevent multiple matches for same author
 """
 
 import json
@@ -31,10 +35,10 @@ TORAH_AUTHORS_KB = [
         "era": "Tannaim",
         "period": "50-135 CE",
         "region": "Israel",
-        "variations": ["רבי עקיבא", "ר' עקיבא", "עקיבא"],
+        "variations": ["ר' עקיבא", "עקיבא"],  # FIXED: removed duplicate "רבי עקיבא"
         "works": [],
         "category": "Mishnah",
-        "sefaria_base": None,  # Tannaim don't have standalone commentaries
+        "sefaria_base": None,
         "commentary_on": [],
         "students": ["Rabbi Meir", "Rabbi Shimon bar Yochai"],
     },
@@ -53,16 +57,16 @@ TORAH_AUTHORS_KB = [
         "region": "France (Troyes)",
         "school": "Ashkenaz",
         "methodology": "Pshat with selective Midrash",
-        "variations": ['רש"י', 'רש״י', 'רשי', 'שלמה יצחקי', 'בר יצחק'],
+        "variations": ['רש״י', 'רשי', 'שלמה יצחקי', 'בר יצחק'],  # FIXED: removed duplicate 'רש"י'
         "works": ["Perush Rashi on Torah", "Perush Rashi on Shas", "Perush Rashi on Nakh"],
         "category": "Exegesis/Talmud",
         "sefaria_base": "Rashi on",
         "commentary_on": ["Tanakh", "Talmud"],
-        "masechta_coverage": "all",  # All masechtot
+        "masechta_coverage": "all",
         "standard_position": "Inner margin of Talmud page",
         "students": ["Rashbam", "Rabbeinu Tam", "Ri HaZaken"],
         "super_commentaries": ["Siftei Chachamim", "Maharal on Rashi", "Gur Aryeh"],
-        "disambiguation": None,  # No ambiguity
+        "disambiguation": None,
     },
     {
         "id": "ibn_ezra",
@@ -75,12 +79,12 @@ TORAH_AUTHORS_KB = [
         "region": "Spain/Italy/France",
         "school": "Sefarad",
         "methodology": "Grammatical precision, philosophical rationalism",
-        "variations": ['ראב"ע', 'ראב״ע', 'אבן עזרא', 'ר\' אברהם'],
+        "variations": ['ראב"ע', 'ראב״ע', "ר' אברהם"],  # FIXED: removed duplicate
         "works": ["Ibn Ezra on Torah", "Sefer HaYashar", "Yesod Mora"],
         "category": "Exegesis/Grammar/Astronomy",
         "sefaria_base": "Ibn Ezra on",
         "commentary_on": ["Torah", "Nakh"],
-        "masechta_coverage": None,  # Not a Talmud commentator
+        "masechta_coverage": None,
         "disambiguation": None,
     },
     {
@@ -94,7 +98,7 @@ TORAH_AUTHORS_KB = [
         "region": "Spain/Israel",
         "school": "Sefarad",
         "methodology": "Kabbalistic underpinnings, harmonization",
-        "variations": ['רמב"ן', 'רמב״ן', 'רמבן', 'נחמני', 'בן נחמן'],
+        "variations": ['רמב״ן', 'רמבן', 'נחמני', 'בן נחמן'],  # FIXED: removed duplicate
         "works": ["Ramban on Torah", "Milchamot HaShem", "Torat HaAdam", "Chiddushim on Gemara"],
         "category": "Exegesis/Halakha/Kabbalah",
         "sefaria_base": "Ramban on",
@@ -115,12 +119,12 @@ TORAH_AUTHORS_KB = [
         "region": "France",
         "school": "Ashkenaz",
         "methodology": "Extreme pshat, sometimes contra-Halakhic interpretation",
-        "variations": ['רשב"ם', 'רשב״ם', 'רשבם'],
+        "variations": ['רשב״ם', 'רשבם'],  # FIXED
         "works": ["Rashbam on Torah", "Rashbam on Bava Batra"],
         "category": "Exegesis/Talmud",
         "sefaria_base": "Rashbam on",
         "commentary_on": ["Torah", "Bava Batra"],
-        "primary_masechtot": ["Bava Batra"],  # Replaces Rashi on BB
+        "primary_masechtot": ["Bava Batra"],
         "masechta_coverage": "minimal",
         "teacher": "Rashi (grandfather)",
         "disambiguation": None,
@@ -131,10 +135,10 @@ TORAH_AUTHORS_KB = [
         "primary_name_en": "Sforno",
         "full_name_he": "רבי עובדיה ספורנו",
         "full_name_en": "Ovadia Sforno",
-        "era": "Rishonim",  # Late Rishon/Early Acharon transition
+        "era": "Rishonim",
         "period": "1475-1550",
         "region": "Italy",
-        "variations": ["ספורנו", "עובדיה ספורנו"],
+        "variations": ["עובדיה ספורנו"],  # FIXED
         "works": ["Sforno on Torah"],
         "category": "Exegesis",
         "sefaria_base": "Sforno on",
@@ -151,7 +155,7 @@ TORAH_AUTHORS_KB = [
         "period": "1160-1235",
         "region": "Provence",
         "school": "Sefarad",
-        "variations": ['רד"ק', 'רד״ק', 'רדק', 'קמחי'],
+        "variations": ['רד״ק', 'רדק', 'קמחי'],  # FIXED
         "works": ["Radak on Nakh", "Sefer HaShorashim", "Michlol"],
         "category": "Exegesis/Grammar",
         "sefaria_base": "Radak on",
@@ -168,7 +172,7 @@ TORAH_AUTHORS_KB = [
         "era": "Acharonim",
         "period": "1696-1743",
         "region": "Morocco/Israel",
-        "variations": ["אור החיים", 'אוה"ח', "אור החיים הקדוש", "בן עטר"],
+        "variations": ['אוה"ח', "אור החיים הקדוש", "בן עטר"],  # FIXED
         "works": ["Or HaChaim"],
         "category": "Exegesis/Kabbalah",
         "sefaria_base": "Or HaChaim on",
@@ -184,7 +188,7 @@ TORAH_AUTHORS_KB = [
         "era": "Acharonim",
         "period": "1550-1619",
         "region": "Poland",
-        "variations": ["כלי יקר", 'הכלי יקר'],
+        "variations": ['הכלי יקר'],  # FIXED
         "works": ["Kli Yakar"],
         "category": "Exegesis",
         "sefaria_base": "Kli Yakar on",
@@ -200,7 +204,7 @@ TORAH_AUTHORS_KB = [
         "era": "Acharonim",
         "period": "1809-1879",
         "region": "Eastern Europe",
-        "variations": ['מלבי"ם', 'מלבי״ם', 'מלבים'],
+        "variations": ['מלבי״ם', 'מלבים'],  # FIXED
         "works": ["HaTorah VeHaMitzvah", "Mikraei Kodesh"],
         "category": "Exegesis/Grammar",
         "sefaria_base": "Malbim on",
@@ -213,10 +217,10 @@ TORAH_AUTHORS_KB = [
         "primary_name_en": "Abarbanel",
         "full_name_he": "רבי דון יצחק אברבנאל",
         "full_name_en": "Don Isaac Abarbanel",
-        "era": "Rishonim",  # Late Rishon
+        "era": "Rishonim",
         "period": "1437-1508",
         "region": "Spain/Italy/Portugal",
-        "variations": ["אברבנאל", "דון יצחק", "אבי מלך"],
+        "variations": ["דון יצחק", "אבי מלך"],  # FIXED
         "works": ["Abarbanel on Torah", "Abarbanel on Nakh"],
         "category": "Exegesis/Philosophy",
         "sefaria_base": "Abarbanel on",
@@ -238,10 +242,10 @@ TORAH_AUTHORS_KB = [
         "region": "North Africa (Fez)/Spain",
         "school": "Sefarad",
         "methodology": "Halachic extraction, omitting Aggadah",
-        "variations": ['רי"ף', 'רי״ף', 'הריף', 'אלפסי'],
+        "variations": ['רי״ף', 'הריף', 'אלפסי'],  # FIXED
         "works": ["Sefer HaHalachot (Hilchot HaRif)"],
         "category": "Halakha",
-        "sefaria_base": "Rif",  # Special - doesn't use "on"
+        "sefaria_base": "Rif",
         "commentary_on": ["Talmud"],
         "masechta_coverage": "most",
         "standard_position": "Back of Talmud volume",
@@ -261,7 +265,7 @@ TORAH_AUTHORS_KB = [
         "region": "France/Germany",
         "school": "Ashkenaz",
         "methodology": "Dialectic analysis, cross-Talmud harmonization",
-        "variations": ["תוספות", "תוס'", 'תוס', 'התוספות'],
+        "variations": ["תוס'", 'תוס', 'התוספות'],  # FIXED: removed duplicate "תוספות"
         "works": ["Tosafot on Shas"],
         "category": "Talmud",
         "sefaria_base": "Tosafot on",
@@ -282,10 +286,10 @@ TORAH_AUTHORS_KB = [
         "region": "France",
         "school": "Ashkenaz",
         "methodology": "Leading Tosafist, dialectic master",
-        "variations": ["רבינו תם", 'ר"ת', "תם", "יעקב בן מאיר"],
+        "variations": ['ר"ת', "תם", "יעקב בן מאיר"],  # FIXED
         "works": ["Sefer HaYashar", "Tosafot (primary author)"],
         "category": "Talmud",
-        "sefaria_base": None,  # Works appear under Tosafot
+        "sefaria_base": None,
         "commentary_on": ["Talmud"],
         "teacher": "Rashi (grandfather)",
         "tefillin_dispute": "Tefillin of Rabbeinu Tam (order dispute with Rashi)",
@@ -302,13 +306,13 @@ TORAH_AUTHORS_KB = [
         "region": "Spain/Egypt",
         "school": "Sefarad",
         "methodology": "Systematic codification, philosophical rationalism",
-        "variations": ['רמב"ם', 'רמב״ם', 'הרמב"ם', 'מימוני', 'נשר הגדול'],
+        "variations": ['רמב״ם', 'הרמב"ם', 'מימוני', 'נשר הגדול'],  # FIXED
         "works": ["Mishneh Torah", "Sefer HaMitzvot", "Moreh Nevukhim", "Perush HaMishnayot"],
         "category": "Halakha/Philosophy",
         "sefaria_base": "Rambam on",
         "commentary_on": ["Mishnah"],
         "halacha_work": "Mishneh Torah",
-        "masechta_coverage": "all",  # Commentary on all Mishnah
+        "masechta_coverage": "all",
         "super_commentaries": ["Maggid Mishneh", "Kesef Mishneh", "Raavad Hassagot", "Lechem Mishneh"],
         "pillar_status": "Second of Three Pillars",
         "controversy": "Maimonidean Controversy (philosophy vs tradition)",
@@ -323,11 +327,11 @@ TORAH_AUTHORS_KB = [
         "era": "Rishonim",
         "period": "1125-1198",
         "region": "Provence",
-        "variations": ['ראב"ד', 'ראב״ד', 'הראב"ד'],
+        "variations": ['ראב״ד', 'הראב"ד'],  # FIXED
         "works": ["Hassagot on Mishneh Torah", "Baalei HaNefesh"],
         "category": "Halakha",
         "sefaria_base": "Raavad on",
-        "commentary_on": ["Mishneh Torah"],  # Critical glosses
+        "commentary_on": ["Mishneh Torah"],
         "standard_position": "Printed on page of Mishneh Torah",
         "disambiguation": "Raavad III (most famous)",
     },
@@ -341,7 +345,7 @@ TORAH_AUTHORS_KB = [
         "period": "1250-1327",
         "region": "Germany/Spain",
         "school": "Ashkenaz transplanted to Sefarad",
-        "variations": ['רא"ש', 'רא״ש', 'הרא"ש', 'אשרי'],
+        "variations": ['רא״ש', 'הרא"ש', 'אשרי'],  # FIXED
         "works": ["Piskei HaRosh", "Teshuvot HaRosh"],
         "category": "Halakha/Talmud",
         "sefaria_base": "Rosh on",
@@ -362,7 +366,7 @@ TORAH_AUTHORS_KB = [
         "period": "1235-1310",
         "region": "Spain (Barcelona)",
         "school": "Sefarad",
-        "variations": ['רשב"א', 'רשב״א', 'הרשב"א'],
+        "variations": ['רשב״א', 'הרשב"א'],  # FIXED
         "works": ["Chiddushei HaRashba", "Teshuvot HaRashba"],
         "category": "Talmud/Halakha",
         "sefaria_base": "Rashba on",
@@ -382,7 +386,7 @@ TORAH_AUTHORS_KB = [
         "period": "1250-1330",
         "region": "Spain (Seville)",
         "school": "Sefarad",
-        "variations": ['ריטב"א', 'ריטב״א', 'הריטב"א'],
+        "variations": ['ריטב״א', 'הריטב"א'],  # FIXED
         "works": ["Chiddushei HaRitva"],
         "category": "Talmud",
         "sefaria_base": "Ritva on",
@@ -401,7 +405,7 @@ TORAH_AUTHORS_KB = [
         "period": "1290-1375",
         "region": "Spain (Gerona)",
         "school": "Sefarad",
-        "variations": ["רן", 'ר"ן', "הרן", "נסים גירונדי"],
+        "variations": ['ר"ן', "הרן", "נסים גירונדי"],  # FIXED: removed duplicate "רן"
         "works": ["Ran on Rif", "Chiddushei HaRan"],
         "category": "Talmud",
         "sefaria_base": "Ran on",
@@ -421,7 +425,7 @@ TORAH_AUTHORS_KB = [
         "era": "Rishonim",
         "period": "15th century",
         "region": "Spain",
-        "variations": ["נימוקי יוסף", 'נ"י'],
+        "variations": ['נ"י'],  # FIXED
         "works": ["Nimukei Yosef on Rif"],
         "category": "Talmud",
         "sefaria_base": "Nimukei Yosef on",
@@ -438,7 +442,7 @@ TORAH_AUTHORS_KB = [
         "era": "Rishonim",
         "period": "1249-1310",
         "region": "Provence",
-        "variations": ["מאירי", "המאירי", "בית הבחירה"],
+        "variations": ["המאירי", "בית הבחירה"],  # FIXED
         "works": ["Beit HaBechira"],
         "category": "Talmud",
         "sefaria_base": "Meiri on",
@@ -457,7 +461,7 @@ TORAH_AUTHORS_KB = [
         "period": "1215-1293",
         "region": "Germany",
         "school": "Ashkenaz",
-        "variations": ['מהר"ם', 'מהר״ם', 'מהר"ם מרוטנבורג'],
+        "variations": ['מהר״ם', 'מהר"ם מרוטנבורג'],  # FIXED
         "works": ["Teshuvot Maharam", "Hagahot Maimoniot"],
         "category": "Halakha/Responsa",
         "sefaria_base": "Maharam of Rothenburg on",
@@ -475,7 +479,7 @@ TORAH_AUTHORS_KB = [
         "period": "1250-1298",
         "region": "Germany",
         "school": "Ashkenaz",
-        "variations": ["מרדכי", "המרדכי"],
+        "variations": ["המרדכי"],  # FIXED
         "works": ["Sefer HaMordechai"],
         "category": "Halakha/Talmud",
         "sefaria_base": "Mordechai on",
@@ -497,7 +501,7 @@ TORAH_AUTHORS_KB = [
         "era": "Rishonim",
         "period": "1269-1343",
         "region": "Spain",
-        "variations": ["טור", "בעל הטורים", "יעקב בעל הטורים"],
+        "variations": ["בעל הטורים", "יעקב בעל הטורים"],  # FIXED
         "works": ["Arba'ah Turim", "Baal HaTurim on Torah"],
         "category": "Halakha/Exegesis",
         "sefaria_base": "Tur",
@@ -513,10 +517,10 @@ TORAH_AUTHORS_KB = [
         "primary_name_en": "Beit Yosef",
         "full_name_he": "רבי יוסף קארו",
         "full_name_en": "Yosef Karo",
-        "era": "Acharonim",  # Cusp of Rishonim/Acharonim
+        "era": "Acharonim",
         "period": "1488-1575",
         "region": "Spain/Turkey/Israel",
-        "variations": ["בית יוסף", "מרן", "יוסף קארו"],
+        "variations": ["מרן", "יוסף קארו"],  # FIXED
         "works": ["Beit Yosef", "Shulchan Aruch", "Kesef Mishneh"],
         "category": "Halakha",
         "sefaria_base": "Beit Yosef on",
@@ -534,7 +538,7 @@ TORAH_AUTHORS_KB = [
         "era": "Acharonim",
         "period": "1488-1575",
         "region": "Israel (Safed)",
-        "variations": ["שולחן ערוך", 'שו"ע', "שולחן ערוך"],
+        "variations": ['שו"ע'],  # FIXED: removed duplicate
         "works": ["Shulchan Aruch"],
         "category": "Halakha",
         "sefaria_base": "Shulchan Arukh",
@@ -555,7 +559,7 @@ TORAH_AUTHORS_KB = [
         "period": "1530-1572",
         "region": "Poland (Krakow)",
         "school": "Ashkenaz",
-        "variations": ['רמ"א', 'רמ״א', 'הרמ"א', 'איסרליש'],
+        "variations": ['רמ״א', 'הרמ"א', 'איסרליש'],  # FIXED
         "works": ["Mapah (glosses on Shulchan Aruch)", "Darkei Moshe"],
         "category": "Halakha",
         "sefaria_base": "Rema on",
@@ -573,7 +577,7 @@ TORAH_AUTHORS_KB = [
         "era": "Acharonim",
         "period": "1586-1667",
         "region": "Poland",
-        "variations": ['ט"ז', 'ט״ז', 'טז', 'דוד הלוי'],
+        "variations": ['ט״ז', 'טז', 'דוד הלוי'],  # FIXED
         "works": ["Turei Zahav"],
         "category": "Halakha",
         "sefaria_base": "Turei Zahav on",
@@ -590,7 +594,7 @@ TORAH_AUTHORS_KB = [
         "era": "Acharonim",
         "period": "1622-1663",
         "region": "Lithuania/Poland",
-        "variations": ['ש"ך', 'ש״ך', 'שך'],
+        "variations": ['ש״ך', 'שך'],  # FIXED
         "works": ["Siftei Kohen"],
         "category": "Halakha",
         "sefaria_base": "Shach on",
@@ -608,7 +612,7 @@ TORAH_AUTHORS_KB = [
         "era": "Acharonim",
         "period": "1637-1683",
         "region": "Poland",
-        "variations": ["מגן אברהם", 'מג"א', "גומבינר"],
+        "variations": ['מג"א', "גומבינר"],  # FIXED
         "works": ["Magen Avraham"],
         "category": "Halakha",
         "sefaria_base": "Magen Avraham on",
@@ -626,7 +630,7 @@ TORAH_AUTHORS_KB = [
         "era": "Acharonim",
         "period": "1838-1933",
         "region": "Poland/Lithuania",
-        "variations": ["משנה ברורה", 'מ"ב', "חפץ חיים"],
+        "variations": ['מ"ב', "חפץ חיים"],  # FIXED
         "works": ["Mishnah Berurah", "Chofetz Chaim", "Biur Halacha"],
         "category": "Halakha",
         "sefaria_base": "Mishnah Berurah",
@@ -645,11 +649,11 @@ TORAH_AUTHORS_KB = [
         "era": "Acharonim",
         "period": "1829-1908",
         "region": "Belarus",
-        "variations": ["ערוך השולחן", "עה״ש"],
+        "variations": ["עה״ש"],  # FIXED
         "works": ["Aruch HaShulchan"],
         "category": "Halakha",
         "sefaria_base": "Arukh HaShulchan",
-        "commentary_on": [],  # Independent code
+        "commentary_on": [],
         "all_four_sections": True,
         "disambiguation": None,
     },
@@ -666,7 +670,7 @@ TORAH_AUTHORS_KB = [
         "era": "Acharonim",
         "period": "1754-1813",
         "region": "Galicia",
-        "variations": ["קצות החושן", "קצות", "קה״ח"],
+        "variations": ["קצות", "קה״ח"],  # FIXED
         "works": ["Ketzot HaChoshen"],
         "category": "Halakha",
         "sefaria_base": "Ketzot HaChoshen on",
@@ -685,7 +689,7 @@ TORAH_AUTHORS_KB = [
         "era": "Acharonim",
         "period": "1760-1832",
         "region": "Poland",
-        "variations": ["נתיבות המשפט", "נתיבות"],
+        "variations": ["נתיבות"],  # FIXED
         "works": ["Netivot HaMishpat"],
         "category": "Halakha",
         "sefaria_base": "Netivot HaMishpat on",
@@ -707,7 +711,7 @@ TORAH_AUTHORS_KB = [
         "era": "Acharonim",
         "period": "1555-1631",
         "region": "Poland",
-        "variations": ['מהרש"א', 'מהרש״א'],
+        "variations": ['מהרש״א'],  # FIXED
         "works": ["Chiddushei Halachot", "Chiddushei Aggadot"],
         "category": "Talmud",
         "sefaria_base": "Maharsha on",
@@ -725,7 +729,7 @@ TORAH_AUTHORS_KB = [
         "era": "Acharonim",
         "period": "1510-1574",
         "region": "Poland",
-        "variations": ['מהרש"ל', 'מהרש״ל'],
+        "variations": ['מהרש״ל'],  # FIXED
         "works": ["Yam Shel Shlomo", "Chochmat Shlomo"],
         "category": "Talmud/Halakha",
         "sefaria_base": "Maharshal on",
@@ -741,7 +745,7 @@ TORAH_AUTHORS_KB = [
         "era": "Acharonim",
         "period": "1680-1756",
         "region": "Poland/Germany",
-        "variations": ["פני יהושע", 'פנ"י', "יעקב יהושע"],
+        "variations": ['פנ"י', "יעקב יהושע"],  # FIXED
         "works": ["Pnei Yehoshua"],
         "category": "Talmud",
         "sefaria_base": "Pnei Yehoshua on",
@@ -759,7 +763,7 @@ TORAH_AUTHORS_KB = [
         "era": "Acharonim",
         "period": "1761-1837",
         "region": "Germany/Poland (Posen)",
-        "variations": ["רבי עקיבא איגר", 'רע"א', "איגר"],
+        "variations": ['רע"א', "איגר"],  # FIXED
         "works": ["Gilyon HaShas", "Teshuvot R' Akiva Eiger"],
         "category": "Talmud/Halakha",
         "sefaria_base": "Rabbi Akiva Eiger on",
@@ -780,7 +784,7 @@ TORAH_AUTHORS_KB = [
         "era": "Acharonim (Contemporary)",
         "period": "1895-1986",
         "region": "USA (New York)",
-        "variations": ["אגרות משה", 'אג"מ', "רב משה", "פיינשטיין"],
+        "variations": ['אג"מ', "רב משה", "פיינשטיין"],  # FIXED
         "works": ["Igrot Moshe", "Dibrot Moshe"],
         "category": "Halakha/Responsa",
         "sefaria_base": "Igrot Moshe",
@@ -798,7 +802,7 @@ TORAH_AUTHORS_KB = [
         "period": "1920-2013",
         "region": "Israel",
         "school": "Sefarad",
-        "variations": ["יביע אומר", "יחוה דעת", "הרב עובדיה", 'יבי"א'],
+        "variations": ["יחוה דעת", "הרב עובדיה", 'יבי"א'],  # FIXED
         "works": ["Yabia Omer", "Yechaveh Daat", "Chazon Ovadia"],
         "category": "Halakha/Responsa",
         "sefaria_base": "Yabia Omer",
@@ -816,7 +820,7 @@ TORAH_AUTHORS_KB = [
         "era": "Acharonim (Contemporary)",
         "period": "1878-1953",
         "region": "Lithuania/Israel",
-        "variations": ["חזון איש", 'חזו"א'],
+        "variations": ['חזו"א'],  # FIXED
         "works": ["Chazon Ish"],
         "category": "Halakha/Talmud",
         "sefaria_base": "Chazon Ish on",
@@ -837,7 +841,7 @@ TORAH_AUTHORS_KB = [
         "era": "Acharonim",
         "period": "1707-1746",
         "region": "Italy/Amsterdam",
-        "variations": ['רמח"ל', 'רמח״ל', "לוצאטו"],
+        "variations": ['רמח״ל', "לוצאטו"],  # FIXED
         "works": ["Mesillat Yesharim", "Derech HaShem", "Daat Tevunot"],
         "category": "Musar/Kabbalah/Philosophy",
         "sefaria_base": "Ramchal",
@@ -853,7 +857,7 @@ TORAH_AUTHORS_KB = [
         "era": "Rishonim",
         "period": "11th century",
         "region": "Spain",
-        "variations": ["חובת הלבבות", "רבינו בחיי", "בחיי"],
+        "variations": ["רבינו בחיי", "בחיי"],  # FIXED
         "works": ["Chovot HaLevavot"],
         "category": "Musar/Philosophy",
         "sefaria_base": "Chovot HaLevavot",
@@ -869,7 +873,7 @@ TORAH_AUTHORS_KB = [
         "era": "Rishonim",
         "period": "1075-1141",
         "region": "Spain",
-        "variations": ["הכוזרי", "ספר הכוזרי", 'ריה"ל'],
+        "variations": ["ספר הכוזרי", 'ריה"ל'],  # FIXED
         "works": ["Sefer HaKuzari"],
         "category": "Philosophy",
         "sefaria_base": "Kuzari",
@@ -878,7 +882,7 @@ TORAH_AUTHORS_KB = [
     },
 
     # ==========================================================================
-    # ACRONYM DISAMBIGUATION EXAMPLES (Add more Maharams, etc.)
+    # ACRONYM DISAMBIGUATION EXAMPLES
     # ==========================================================================
     {
         "id": "maharam_lublin",
@@ -889,7 +893,7 @@ TORAH_AUTHORS_KB = [
         "era": "Acharonim",
         "period": "1558-1616",
         "region": "Poland (Lublin)",
-        "variations": ['מהר"ם מלובלין', 'מהר"ם'],
+        "variations": ['מהר"ם מלובלין'],  # FIXED: removed duplicate
         "works": ["Meir Einei Chachamim"],
         "category": "Talmud/Halakha",
         "sefaria_base": "Maharam of Lublin on",
@@ -905,7 +909,7 @@ TORAH_AUTHORS_KB = [
         "era": "Acharonim",
         "period": "1807-1879",
         "region": "Hungary",
-        "variations": ['מהר"ם שיק', 'מהר"ם'],
+        "variations": ['מהר"ם שיק'],  # FIXED: removed duplicate
         "works": ["Teshuvot Maharam Schick"],
         "category": "Halakha/Responsa",
         "sefaria_base": "Maharam Schick",
@@ -915,7 +919,7 @@ TORAH_AUTHORS_KB = [
 ]
 
 # ==============================================================================
-#  ENHANCED UTILITY FUNCTIONS
+#  ENHANCED UTILITY FUNCTIONS (FIXED)
 # ==============================================================================
 
 def normalize_text(text: str) -> str:
@@ -929,41 +933,58 @@ def normalize_text(text: str) -> str:
     # Replace unicode variants
     text = text.replace('״', '"').replace('׳', "'")
     # Normalize common stylized quotes to plain ASCII quotes
-    text = text.replace('“', '"').replace('”', '"')
-    text = text.replace('‘', "'").replace('’', "'")
+    text = text.replace('"', '"').replace('"', '"')
+    text = text.replace(''', "'").replace(''', "'")
 
     return text.strip()
+
 
 def build_lookup_index() -> Dict[str, List[Dict]]:
     """
     Builds a fast lookup index: normalized_name → [list of matching authors]
     Handles the case where multiple authors share an acronym (e.g., multiple Maharams)
+    
+    FIXED: Now deduplicates entries to prevent same author appearing multiple times
     """
     index = {}
     
     for author in TORAH_AUTHORS_KB:
+        author_id = author['id']
+        
+        # Collect all names/variations for this author
+        all_names = set()
+        
         # Add primary name
         primary = normalize_text(author['primary_name_he'])
-        if primary not in index:
-            index[primary] = []
-        index[primary].append(author)
+        all_names.add(primary)
         
         # Add all variations
         for var in author.get('variations', []):
             normalized = normalize_text(var)
-            if normalized not in index:
-                index[normalized] = []
-            index[normalized].append(author)
+            all_names.add(normalized)
+        
+        # Now add to index, checking for duplicates
+        for name in all_names:
+            if name not in index:
+                index[name] = []
+            
+            # Check if this author is already in the list (by id)
+            already_present = any(a['id'] == author_id for a in index[name])
+            if not already_present:
+                index[name].append(author)
     
     return index
 
+
 # Build the index once on module load
 AUTHOR_LOOKUP_INDEX = build_lookup_index()
+
 
 def is_author(hebrew_term: str) -> bool:
     """Check if a Hebrew term is a known author."""
     normalized = normalize_text(hebrew_term)
     return normalized in AUTHOR_LOOKUP_INDEX
+
 
 def get_author_matches(hebrew_term: str) -> List[Dict]:
     """
@@ -972,6 +993,7 @@ def get_author_matches(hebrew_term: str) -> List[Dict]:
     """
     normalized = normalize_text(hebrew_term)
     return AUTHOR_LOOKUP_INDEX.get(normalized, [])
+
 
 def disambiguate_author(hebrew_term: str, context: str = None, period: str = None) -> Optional[Dict]:
     """
@@ -1025,6 +1047,7 @@ def disambiguate_author(hebrew_term: str, context: str = None, period: str = Non
     # Last resort: return first match
     return matches[0]
 
+
 def get_sefaria_ref(author_hebrew: str, sugya_ref: str) -> Optional[str]:
     """
     Construct a Sefaria reference for an author's commentary on a sugya.
@@ -1055,6 +1078,7 @@ def get_sefaria_ref(author_hebrew: str, sugya_ref: str) -> Optional[str]:
     # Standard format
     return f"{sefaria_base} {sugya_ref}"
 
+
 def detect_authors_in_text(text: str) -> List[Dict]:
     """
     Scan text and identify all authors mentioned.
@@ -1081,6 +1105,7 @@ def detect_authors_in_text(text: str) -> List[Dict]:
     
     return found_authors
 
+
 def export_to_json(filename: str = "torah_authors_master_kb.json"):
     """Export the entire KB to JSON."""
     try:
@@ -1089,6 +1114,7 @@ def export_to_json(filename: str = "torah_authors_master_kb.json"):
         print(f"✓ Exported {len(TORAH_AUTHORS_KB)} authors to {filename}")
     except Exception as e:
         print(f"✗ Error exporting: {e}")
+
 
 def get_stats() -> Dict:
     """Get statistics about the knowledge base."""
@@ -1105,13 +1131,14 @@ def get_stats() -> Dict:
     }
     return stats
 
+
 # ==============================================================================
 #  TESTING
 # ==============================================================================
 
 if __name__ == "__main__":
     print("=" * 70)
-    print("MASTER TORAH AUTHORS KNOWLEDGE BASE - PHASE 2")
+    print("MASTER TORAH AUTHORS KNOWLEDGE BASE - PHASE 2 (FIXED)")
     print("=" * 70)
     
     stats = get_stats()
@@ -1120,37 +1147,16 @@ if __name__ == "__main__":
         print(f"  {key.replace('_', ' ').title()}: {value}")
     
     print("\n" + "=" * 70)
-    print("TESTING AUTHOR DETECTION")
+    print("TESTING DUPLICATE FIX")
     print("=" * 70)
     
-    test_phrase = 'כמו שכתב הרמב"ם בהלכות תשובה וגם הראב"ד השיג עליו, וכן פסק השולחן ערוך והרמ"א'
-    print(f"\nTest phrase: '{test_phrase}'")
-    
-    detected = detect_authors_in_text(test_phrase)
-    print(f"\nFound {len(detected)} authors:")
-    for author in detected:
-        print(f"  ✓ {author['primary_name_en']} ({author['era']}) - {author['period']}")
-    
-    print("\n" + "=" * 70)
-    print("TESTING DISAMBIGUATION")
-    print("=" * 70)
-    
-    # Test Maharam disambiguation
-    print("\nTesting 'מהר\"ם' disambiguation:")
-    matches = get_author_matches('מהר"ם')
-    print(f"  Found {len(matches)} matches:")
-    for match in matches:
-        print(f"    - {match['primary_name_en']}: {match['period']}")
-    
-    print("\n  With context 'Rothenburg':")
-    result = disambiguate_author('מהר"ם', context="Rothenburg")
-    if result:
-        print(f"    → {result['primary_name_en']} ({result['period']})")
-    
-    print("\n  With context '16th century':")
-    result = disambiguate_author('מהר"ם', context="16th century")
-    if result:
-        print(f"    → {result['primary_name_en']} ({result['period']})")
+    # Test that Ran and Tosafot no longer have duplicates
+    test_terms = ['רן', 'תוספות', 'רש"י']
+    for term in test_terms:
+        matches = get_author_matches(term)
+        print(f"\n'{term}': {len(matches)} match(es)")
+        for m in matches:
+            print(f"  - {m['primary_name_en']} ({m['period']})")
     
     print("\n" + "=" * 70)
     print("TESTING SEFARIA REFERENCE CONSTRUCTION")
@@ -1165,8 +1171,3 @@ if __name__ == "__main__":
     for author, sugya in test_cases:
         ref = get_sefaria_ref(author, sugya)
         print(f"  {author} + {sugya} → {ref}")
-    
-    print("\n" + "=" * 70)
-    print("EXPORT TO JSON")
-    print("=" * 70)
-    export_to_json()

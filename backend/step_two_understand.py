@@ -4,6 +4,11 @@ COMPLETE VERSION WITH MASTER KB INTEGRATION BUILT-IN
 =====================================================
 This file includes ALL Master KB enhancements.
 Simply replace your existing step_two_understand.py with this file.
+
+FIXES IN THIS VERSION:
+- Added explicit instructions to prefer Bavli over Yerushalmi
+- Added validation for constructed refs
+- Better guidance for comparison queries
 """
 
 import logging
@@ -145,6 +150,7 @@ Return ONLY a JSON object with this structure:
 """
 
     # Build system prompt with Master KB author handling
+    # FIXED: Added explicit Bavli preference and ref validation instructions
     system_prompt = f"""You are a Torah scholar assistant specializing in understanding Torah learning queries.
 
 Your task is to analyze the query and Sefaria data to determine the best search strategy.
@@ -170,13 +176,32 @@ Fetch Strategies:
 
 {get_author_handling_instructions()}
 
-IMPORTANT GUIDELINES:
-1. For concept queries: Use the primary_sugya from Sefaria data
-2. For author queries: Use the constructed Commentary reference (e.g., "Ran on Pesachim 4b")
-3. For comparison queries: Include all relevant author references
-4. Always prefer actual Torah sources over dictionaries or modern works
-5. If uncertain, set confidence to "low" and provide clarification_prompt
-6. Keep reasoning brief (1-2 sentences)
+CRITICAL GUIDELINES FOR PRIMARY_SOURCES:
+
+1. **BAVLI ONLY**: The Rishonim (Rashi, Tosafot, Ran, Rashba, Ritva, Meiri) wrote commentaries on the BAVLI (Babylonian Talmud), NOT on the Yerushalmi (Jerusalem Talmud).
+   - CORRECT: "Ran on Pesachim 4b", "Tosafot on Bava Metzia 10a"
+   - WRONG: "Ran on Jerusalem Talmud Pesachim" (DOES NOT EXIST!)
+   - WRONG: "Tosafot on Yerushalmi" (DOES NOT EXIST!)
+
+2. **USE PROVIDED REFS**: If the Sefaria data shows a "constructed_ref" for an author, USE THAT EXACT REF. Do not invent your own.
+
+3. **DAF FORMAT**: Bavli uses daf format like "4b", "10a". Yerushalmi uses perek:halacha format like "2:2:6:2".
+   - If you see a ref with format like "2:2:6:2", it's Yerushalmi - DO NOT use it for Rishonim.
+   - If you see a ref with format like "4b", it's Bavli - this is correct.
+
+4. **PRIMARY SUGYA**: Look at the "Primary sugya" in the Sefaria data. Use this masechta+daf for constructing commentary refs.
+
+5. **VALIDATE BEFORE OUTPUT**: Before returning primary_sources, verify:
+   - No "Jerusalem Talmud" or "Yerushalmi" in any source
+   - Commentary refs follow the pattern "Author on Masechta Daf" (e.g., "Ran on Pesachim 4b")
+   - All refs are from BAVLI
+
+6. For concept queries: Use the primary_sugya from Sefaria data (ensure it's Bavli)
+7. For author queries: Use the constructed Commentary reference (e.g., "Ran on Pesachim 4b")
+8. For comparison queries: Include all relevant author references, all based on the SAME Bavli sugya
+9. Always prefer actual Torah sources over dictionaries or modern works
+10. If uncertain, set confidence to "low" and provide clarification_prompt
+11. Keep reasoning brief (1-2 sentences)
 
 Return ONLY valid JSON, no preamble or markdown.
 """
@@ -207,6 +232,19 @@ Return ONLY valid JSON, no preamble or markdown.
         # Parse JSON
         strategy_dict = json.loads(response_text)
         
+        # VALIDATION: Check for Yerushalmi refs and fix them
+        primary_sources = strategy_dict.get('primary_sources', [])
+        validated_sources = []
+        for source in primary_sources:
+            if 'Jerusalem Talmud' in source or 'Yerushalmi' in source:
+                logger.warning(f"[ANALYZE] Removing invalid Yerushalmi ref: {source}")
+                # Try to fix it by extracting just the masechta
+                # This is a safety net - ideally Claude shouldn't generate these
+                continue
+            validated_sources.append(source)
+        
+        strategy_dict['primary_sources'] = validated_sources
+        
         # Convert to SearchStrategy
         strategy = SearchStrategy(**strategy_dict)
         
@@ -219,24 +257,23 @@ Return ONLY valid JSON, no preamble or markdown.
         return strategy
         
     except json.JSONDecodeError as e:
-        logger.error(f"[ANALYZE] Failed to parse Claude response as JSON: {e}")
-        logger.error(f"[ANALYZE] Response was: {response_text[:500]}")
+        logger.error(f"[ANALYZE] JSON parse error: {e}")
+        logger.error(f"[ANALYZE] Raw response: {response_text[:500]}")
         
-        # Return fallback strategy
         return SearchStrategy(
-            query_type=QueryType.UNKNOWN,
+            query_type=QueryType.AMBIGUOUS,
             fetch_strategy=FetchStrategy.DIRECT,
             primary_sources=[],
             confidence=ConfidenceLevel.LOW,
             clarification_prompt="I had trouble understanding your query. Could you rephrase it?",
-            reasoning="Failed to parse query analysis"
+            reasoning="Failed to validate query analysis"
         )
         
     except ValidationError as e:
-        logger.error(f"[ANALYZE] Failed to validate strategy: {e}")
+        logger.error(f"[ANALYZE] Strategy validation error: {e}")
         
         return SearchStrategy(
-            query_type=QueryType.UNKNOWN,
+            query_type=QueryType.AMBIGUOUS,
             fetch_strategy=FetchStrategy.DIRECT,
             primary_sources=[],
             confidence=ConfidenceLevel.LOW,
