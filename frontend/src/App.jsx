@@ -56,6 +56,41 @@ function App() {
   //  API CALLS
   // ==========================================
 
+  const callSearch = useCallback(async (searchQueryOverride) => {
+    const searchQuery = searchQueryOverride || query
+    if (!searchQuery) {
+      setError('No query to search. Try again?')
+      return
+    }
+
+    setSearchLoading(true)
+    setSearchResult(null)
+    
+    try {
+      const response = await fetch(`${API_BASE}/search`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // Important: always send the ORIGINAL user query to the full pipeline.
+        // The backend re-runs Step 1 (mixed query detection) itself. Passing only
+        // the transliterated term would collapse mixed queries to a single term.
+        body: JSON.stringify({ query: searchQuery })
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to search sources')
+      }
+      
+      const data = await response.json()
+      setSearchResult(data)
+      
+    } catch (err) {
+      setError('Error searching for sources. Make sure the backend is running.')
+      console.error(err)
+    } finally {
+      setSearchLoading(false)
+    }
+  }, [query])
+
   const callDecipher = useCallback(async (queryText, strict = false) => {
     setLoading(true);
     setError('');
@@ -87,7 +122,7 @@ function App() {
         setConfirmedHebrew(completeHebrew);
         console.log('[callDecipher] High-confidence result:', completeHebrew);
         // Auto-trigger Steps 2 & 3
-        callSearch(completeHebrew);
+        callSearch(data.original_query || queryText);
       } else if (data.needs_validation) {
         setShowValidation(true);
       }
@@ -98,7 +133,7 @@ function App() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [callSearch]);
   
   const confirmSelection = useCallback(async (selectionIndex, customHebrew = null) => {
     if (!decipherResult) return
@@ -145,7 +180,7 @@ function App() {
         setShowValidation(false)
         
         // Auto-trigger Steps 2 & 3
-        callSearch(completeHebrew)
+        callSearch(decipherResult?.original_query || query)
       } else {
         setError(data.message || 'Could not confirm selection')
       }
@@ -156,34 +191,7 @@ function App() {
     } finally {
       setLoading(false)
     }
-  }, [decipherResult])
-  
-  // Call the full search pipeline (Steps 2 & 3)
-  const callSearch = useCallback(async (hebrewTerm) => {
-    setSearchLoading(true)
-    setSearchResult(null)
-    
-    try {
-      const response = await fetch(`${API_BASE}/search`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: hebrewTerm })
-      })
-      
-      if (!response.ok) {
-        throw new Error('Failed to search sources')
-      }
-      
-      const data = await response.json()
-      setSearchResult(data)
-      
-    } catch (err) {
-      setError('Error searching for sources. Make sure the backend is running.')
-      console.error(err)
-    } finally {
-      setSearchLoading(false)
-    }
-  }, [])
+  }, [callSearch, decipherResult, query])
   
   const rejectTranslation = useCallback(async () => {
     if (!decipherResult || !decipherResult.hebrew_term) return

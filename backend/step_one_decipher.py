@@ -1,29 +1,30 @@
 """
-Step 1: DECIPHER - V4 Architecture (Mixed Query Support)
-=========================================================
+Step 1: DECIPHER - V4.2 Architecture (Author-Aware + Optimized)
+================================================================
 
-Transliteration → Hebrew using:
-1. Mixed Query Detection (NEW in V4)
-2. Word Dictionary (instant cache) - FREE
-3. Transliteration Map V3 with:
-   - Input normalization (typo tolerance)
-   - Prefix detection (she+root handling)
-   - Preference-ordered variants (כתיב מלא first)
-4. Sefaria Validation with "First Valid Wins" logic
+IMPROVEMENTS FROM V4.1:
+1. AUTHOR-AWARE EXTRACTION: Skip phrase validation for known author names
+   - Detects "ran", "rashi", "tosfos" etc. BEFORE trying phrase combinations
+   - Prevents wasting API calls on "rans shittah" variants
+
+2. AUTHOR-PRIORITY VALIDATION: Author names beat generic words
+   - Uses find_best_validated_with_authors() from V3 validator
+   - "רש"י" (133 hits) beats "ראשי" (10000 hits)
+
+3. PARALLEL VALIDATION: Batch validation for phrases
+   - Validates multiple variants concurrently
+   - Significant speedup for multi-word phrases
+
+4. CONNECTION POOLING: Reuses HTTP connections
+   - Via V3 SefariaValidator with shared client
+
+Architecture:
+- Detects mixed queries (English + Hebrew)
+- Extracts Hebrew candidates with author awareness
+- Transliterates each candidate using cascade
+- Returns validated Hebrew terms for Step 2
 
 NO VECTOR SEARCH. NO CLAUDE.
-
-KEY ARCHITECTURAL CHANGES in V4:
-- Detects mixed English/Hebrew queries ("what is chezkas haguf")
-- Extracts Hebrew candidates from mixed queries
-- Transliterates each candidate separately
-- Returns multiple hebrew_terms for Step 2 to verify
-- Double defense: Step 1 extracts, Step 2 (Claude) verifies
-
-V4.1 FIX:
-- Expanded ENGLISH_MARKERS with common verbs/adverbs
-- Word-level candidate splitting and validation
-- Better handling of mixed phrases like "ran learn up"
 """
 
 import sys
@@ -31,17 +32,16 @@ import os
 import re
 import asyncio
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set, Tuple
 
 # Add current directory to path (for local imports)
 sys.path.insert(0, str(Path(__file__).parent))
 
-# Import Pydantic models (now works with local imports)
+# Import Pydantic models
 from models import DecipherResult, ConfidenceLevel
 
-# Import our V3 modules
+# Import V3 modules
 try:
-    # Try relative import (when run as part of backend)
     from tools.word_dictionary import get_dictionary
     from tools.transliteration_map import (
         generate_smart_variants,
@@ -51,9 +51,8 @@ try:
     )
     from tools.sefaria_validator import get_validator
 except ImportError:
-    # Fallback for standalone testing
     from word_dictionary import get_dictionary
-    from tools.transliteration_map import (
+    from transliteration_map import (
         generate_smart_variants,
         generate_hebrew_variants,
         transliteration_confidence,
@@ -64,7 +63,11 @@ except ImportError:
 import logging
 logger = logging.getLogger(__name__)
 
-# Logging helpers to keep output readable and well-spaced
+
+# ==========================================
+#  LOGGING HELPERS
+# ==========================================
+
 def log_section(title: str) -> None:
     line = "=" * 90
     logger.info("\n%s\n%s\n%s", line, title, line)
@@ -84,19 +87,80 @@ def log_list(label: str, items: List[str]) -> None:
 
 
 # ==========================================
-#  MIXED QUERY DETECTION (V4.1 - EXPANDED)
+#  KNOWN AUTHOR TRANSLITERATIONS (V4.2 NEW)
 # ==========================================
 
-# English words that signal "this is a mixed query, not pure transliteration"
-# These are words that would NEVER appear as Hebrew transliterations
-# V4.1: EXPANDED with common verbs and adverbs
+# Common English transliterations of author names
+# These trigger "author mode" - skip phrase validation, treat as individual
+AUTHOR_TRANSLITERATIONS = {
+    # Rishonim - Commentators
+    'rashi', 'rashis',
+    'tosfos', 'tosafos', 'tosfot', 'tosafot', 'tosfoses',
+    'ran', 'rans',
+    'rosh', 'roshs',
+    'rashba', 'rashbas',
+    'ritva', 'ritvas',
+    'ramban', 'rambans',
+    'rambam', 'rambams',
+    'meiri', 'meiris',
+    'nimukei', 'nimukay',  # Nimukei Yosef
+    'mordechai', 'mordechais',
+    'rif', 'rifs',
+    'rabbeinu', 'rabeinu',
+    
+    # Acharonim
+    'shach', 'shachs',
+    'taz', 'tazs',
+    'magen', 'avraham',  # Magen Avraham
+    'ketzos', 'ktzos', 'ketzot',
+    'nesivos', 'nsivos', 'nesivot',
+    'pnei', 'pney', 'peni',  # Pnei Yehoshua
+    'maharsha', 'maharshas',
+    'maharal', 'maharals',
+    'maharam', 'maharams',
+    'chavos', 'chavas', 'chavot',  # Chavos Daas
+    
+    # Common abbreviations
+    'sma', 'sm"a',
+    'gra', 'gr"a',
+    'bach', 'bachs',
+    'pri', 'megadim',  # Pri Megadim
+}
+
+
+def is_author_transliteration(word: str) -> bool:
+    """
+    Check if a word is a known author transliteration.
+    
+    This helps us avoid trying phrase validation for author names.
+    E.g., "rans shittah" should NOT be tried as a phrase because
+    "rans" is clearly an author name (Ran with possessive 's').
+    """
+    cleaned = word.lower().strip()
+    
+    # Direct match
+    if cleaned in AUTHOR_TRANSLITERATIONS:
+        return True
+    
+    # Check if stripping suffix matches
+    stripped, _ = strip_english_suffixes(cleaned)
+    if stripped in AUTHOR_TRANSLITERATIONS:
+        return True
+    
+    return False
+
+
+# ==========================================
+#  ENGLISH MARKERS (Mixed Query Detection)
+# ==========================================
+
 ENGLISH_MARKERS = {
     # Question words
     'what', 'which', 'how', 'why', 'when', 'where', 'who', 'whose',
     'does', 'do', 'did', 'is', 'are', 'was', 'were', 'can', 'could',
     'would', 'should', 'will',
     
-    # Common verbs (V4.1: EXPANDED)
+    # Common verbs
     'explain', 'describe', 'compare', 'define', 'tell', 'show',
     'find', 'get', 'give', 'list', 'search', 'look',
     'learn', 'study', 'teach', 'read', 'write', 'understand',
@@ -108,7 +172,7 @@ ENGLISH_MARKERS = {
     'with', 'by', 'about', 'into', 'through', 'during', 'before',
     'after', 'above', 'below', 'between', 'under', 'again',
     
-    # Adverbs & directions (V4.1: NEW)
+    # Adverbs & directions
     'up', 'down', 'out', 'over', 'off', 'away', 'back', 'here', 'there',
     'now', 'then', 'always', 'never', 'often', 'sometimes', 'usually',
     'very', 'too', 'quite', 'rather', 'just', 'only', 'also', 'even',
@@ -130,62 +194,39 @@ ENGLISH_MARKERS = {
     'more', 'most', 'other', 'such', 'no', 'not', 'only', 'own',
 }
 
-# Minimum English markers to trigger mixed-query mode
 MIN_ENGLISH_MARKERS = 2
 
 
 # ==========================================
-#  ENGLISH SUFFIX STRIPPING (V4.1)
+#  ENGLISH SUFFIX STRIPPING
 # ==========================================
 
-def strip_english_suffixes(word: str) -> tuple:
+def strip_english_suffixes(word: str) -> Tuple[str, bool]:
     """
     Strip common English grammatical suffixes from transliterated Hebrew terms.
     
-    Users naturally write possessives and plurals:
-    - "ran's" → "ran"
-    - "rashis" → "rashi"
-    - "mechaber's" → "mechaber"
-    - "tosfos's" → "tosfos"
-    - "tosfoses" → "tosfos"
-    
-    Returns: (cleaned_word, was_stripped)
-    
     Examples:
-        strip_english_suffixes("rans") → ("ran", True)
-        strip_english_suffixes("rashis") → ("rashi", True)
-        strip_english_suffixes("tosfoses") → ("tosfos", True)
-        strip_english_suffixes("tosfos") → ("tosfos", False)
+        "rans" → ("ran", True)
+        "rashis" → ("rashi", True)
+        "tosfoses" → ("tosfos", True)
     """
     original = word.lower()
     
-    # Explicit possessive with apostrophe: 's or s'
+    # Explicit possessive with apostrophe
     if original.endswith("'s"):
         return (word[:-2], True)
     if original.endswith("s'"):
         return (word[:-2], True)
     
-    # Handle "es" plural (tosfoses → tosfos, rashbas → rashba)
+    # Handle "es" plural
     if original.endswith('es') and len(original) > 3:
-        # Check if it's not a natural ending like "moses"
-        # Most Hebrew terms don't naturally end in "es"
         return (word[:-2], True)
     
     # Handle simple "s" suffix
-    # BUT: Protect terms that naturally end in 's' or 'os'
     if original.endswith('s') and len(original) > 3:
-        # DON'T strip if ends in 'os' (tosfos, malkos - these are natural)
+        # DON'T strip if ends in 'os' (tosfos, malkos - natural)
         if original.endswith('os'):
             return (word, False)
-        
-        # DON'T strip if ends in 'as' and word is very short (might be natural)
-        if original.endswith('as') and len(original) <= 5:
-            # Could be "midas", "chas", etc. - might be natural
-            # But "rashbas" (len=7) should be stripped
-            pass  # Will be handled by general rule below
-        
-        # For everything else: strip the 's'
-        # This catches: rans, rashis, mechabers, etc.
         return (word[:-1], True)
     
     return (word, False)
@@ -194,17 +235,9 @@ def strip_english_suffixes(word: str) -> tuple:
 def is_mixed_query(query: str) -> bool:
     """
     Detect if query contains English + transliterated Hebrew.
-    
     Returns True if 2+ English marker words found.
-    
-    Examples:
-        "chezkas haguf" → False (pure transliteration)
-        "what is chezkas haguf" → True (mixed)
-        "explain migu" → True (mixed)
-        "how does the ran learn up the sugya" → True (mixed)
     """
     words = query.lower().split()
-    # Strip punctuation for matching
     clean_words = [re.sub(r'[?,.\'"!;:]', '', w) for w in words]
     english_count = sum(1 for w in clean_words if w in ENGLISH_MARKERS)
     
@@ -219,38 +252,38 @@ def is_mixed_query(query: str) -> bool:
 
 
 # ==========================================
-#  HIT-COUNT WEIGHTED VALIDATION (V4.1)
+#  AUTHOR-AWARE WEIGHTED VALIDATION (V4.2)
 # ==========================================
 
 async def find_best_validated(
     variants: List[str],
     validator,
-    original_word: str = None
+    original_word: str = None,
+    parallel: bool = True
 ) -> Optional[Dict]:
     """
-    Instead of "first valid wins", find the MOST LIKELY valid variant.
+    Find the BEST valid variant using author-aware weighted scoring.
     
-    Uses hit-count weighting:
-    - 1-10 hits: score = hits * 1 (very suspicious - likely wrong)
-    - 11-100 hits: score = hits * 5 (possible, but uncertain)
-    - 101-1000 hits: score = hits * 10 (likely correct)
-    - 1000+ hits: score = hits * 20 (very confident)
+    V4.2: Uses the new find_best_validated_with_authors() which:
+    - Prioritizes author names over generic words
+    - Validates in parallel for speed
     
-    This ensures "רן" (5000 hits) beats "רנס" (8 hits) by a huge margin.
-    
-    Args:
-        variants: List of Hebrew variants to check
-        validator: Sefaria validator instance
-        original_word: Original transliteration (for logging)
-    
-    Returns:
-        Best validation result dict or None
+    Falls back to legacy validation if new method unavailable.
     """
+    # Try new author-aware validation
+    if hasattr(validator, 'find_best_validated_with_authors'):
+        return await validator.find_best_validated_with_authors(
+            variants, 
+            original_word=original_word,
+            parallel=parallel
+        )
+    
+    # Legacy fallback: weighted scoring without author awareness
+    logger.debug(f"[WEIGHTED-VALIDATION] Checking {len(variants)} variants for '{original_word}'")
+    
     best_score = 0
     best_result = None
     best_variant = None
-    
-    logger.debug(f"[WEIGHTED-VALIDATION] Checking {len(variants)} variants for '{original_word}'")
     
     for variant in variants:
         result = await validator.validate_term(variant)
@@ -263,10 +296,10 @@ async def find_best_validated(
         if hits >= 1000:
             score = hits * 20
             confidence = "very_high"
-        elif hits >= 101:
+        elif hits >= 100:
             score = hits * 10
             confidence = "high"
-        elif hits >= 11:
+        elif hits >= 10:
             score = hits * 5
             confidence = "medium"
         else:
@@ -289,29 +322,25 @@ async def find_best_validated(
 
 
 # ==========================================
-#  HEBREW CANDIDATE EXTRACTION (V4.1 - IMPROVED)
+#  AUTHOR-AWARE EXTRACTION (V4.2 NEW)
 # ==========================================
 
 async def extract_hebrew_candidates(text: str) -> List[str]:
     """
     Extract likely Hebrew transliterations from mixed English/Hebrew query.
     
-    V4.1 IMPROVEMENTS:
-    - Word-level splitting and validation
-    - Don't bundle English words with Hebrew terms
-    - Validate individual words, not just phrases
+    V4.2 IMPROVEMENTS:
+    - AUTHOR DETECTION: If a word is a known author name, treat it individually
+      (don't try to combine with next word as phrase)
+    - PARALLEL VALIDATION: Validate phrase variants in parallel
+    - SMARTER PHRASE HANDLING: Only try phrases when both words are non-authors
     
     Strategy:
     1. Split on English markers to get segments
-    2. For each segment, split into words
-    3. Validate each word individually via Sefaria
-    4. Return words that validate, not arbitrary phrases
-    
-    Examples:
-        "how does the ran learn up the sugya of bittul chometz"
-        → Segments: ["ran learn up", "sugya", "bittul chometz"]
-        → Word validation: "ran"✓, "learn"✗, "up"✗, "sugya"✓, "bittul chometz"✓
-        → Returns: ["ran", "sugya", "bittul chometz"]
+    2. For each segment:
+       a. If first word is author name → extract individually, not as phrase
+       b. Otherwise → try full phrase first, then individual words
+    3. Validate each candidate
     """
     logger.debug(f"[EXTRACT] Starting extraction from: '{text}'")
     
@@ -323,77 +352,95 @@ async def extract_hebrew_candidates(text: str) -> List[str]:
     
     for word in words:
         if word.lower() in ENGLISH_MARKERS:
-            # Flush current segment if we have one
             if current_segment:
                 segments.append(current_segment)
                 current_segment = []
         else:
-            # Not a known English word - might be Hebrew
             current_segment.append(word)
     
-    # Don't forget the last segment
     if current_segment:
         segments.append(current_segment)
     
     logger.debug(f"[EXTRACT] Split into {len(segments)} segments: {segments}")
     
-    # Step 2: For each segment, validate words individually AND as phrases
+    # Step 2: Process each segment with author awareness
     validator = get_validator()
     validated_candidates = []
     
     for segment in segments:
         if not segment:
             continue
+        
+        # V4.2: Check if first word is an author name
+        first_word = segment[0]
+        first_word_cleaned, _ = strip_english_suffixes(first_word)
+        first_is_author = is_author_transliteration(first_word_cleaned)
+        
+        if first_is_author:
+            # AUTHOR MODE: Don't try phrase validation, process words individually
+            logger.debug(f"[EXTRACT] Author detected: '{first_word_cleaned}' - processing segment individually")
             
-        # Try full segment first (handles multi-word terms like "bittul chometz")
-        full_phrase = ' '.join(segment)
-        logger.debug(f"[EXTRACT] Checking full phrase: '{full_phrase}'")
-        
-        # V4.1: Strip suffix from full phrase too
-        cleaned_phrase, phrase_stripped = strip_english_suffixes(full_phrase)
-        if phrase_stripped:
-            logger.debug(f"[EXTRACT]   Stripped suffix from phrase: '{full_phrase}' → '{cleaned_phrase}'")
-            full_phrase = cleaned_phrase
-        
-        # Quick transliteration check for the phrase
-        variants = generate_hebrew_variants(full_phrase, max_variants=10)
-        if variants:
-            # V4.1: Use hit-count weighted validation for phrases too
-            result = await find_best_validated(variants, validator, full_phrase)
-            if result and result.get('hits', 0) > 0:
-                logger.debug(f"[EXTRACT]   ✓ Full phrase '{full_phrase}' validated ({result['hits']} hits)")
-                validated_candidates.append(full_phrase)
-                continue  # Don't split if the whole phrase works
-        
-        # If phrase doesn't validate, try individual words
-        logger.debug(f"[EXTRACT]   ✗ Full phrase didn't validate, trying individual words...")
-        for word in segment:
-            if len(word) <= 1:
-                continue
+            for word in segment:
+                if len(word) <= 1:
+                    continue
+                if word.lower() in ENGLISH_MARKERS:
+                    continue
                 
-            # Skip if it's a pure English word we somehow missed
-            if word.lower() in ENGLISH_MARKERS:
-                continue
-            
-            # V4.1: Strip English suffixes BEFORE validation
-            cleaned_word, was_stripped = strip_english_suffixes(word)
-            
-            if was_stripped:
-                logger.debug(f"[EXTRACT]   Stripped suffix: '{word}' → '{cleaned_word}'")
-            
-            # Try to validate this word (use cleaned version)
-            logger.debug(f"[EXTRACT]   Checking word: '{cleaned_word}'")
-            word_variants = generate_hebrew_variants(cleaned_word, max_variants=10)
-            
-            if word_variants:
-                # V4.1: Use hit-count weighted validation instead of first valid
-                result = await find_best_validated(word_variants, validator, cleaned_word)
+                cleaned_word, was_stripped = strip_english_suffixes(word)
+                if was_stripped:
+                    logger.debug(f"[EXTRACT]   Stripped suffix: '{word}' → '{cleaned_word}'")
                 
+                # Validate individual word
+                word_variants = generate_hebrew_variants(cleaned_word, max_variants=8)
+                if word_variants:
+                    result = await find_best_validated(word_variants, validator, cleaned_word, parallel=True)
+                    if result and result.get('hits', 0) > 0:
+                        logger.debug(f"[EXTRACT]     ✓ '{cleaned_word}' validated ({result['hits']} hits)")
+                        validated_candidates.append(cleaned_word)
+                    else:
+                        logger.debug(f"[EXTRACT]     ✗ '{cleaned_word}' failed validation")
+        else:
+            # STANDARD MODE: Try full phrase first, then individual words
+            full_phrase = ' '.join(segment)
+            logger.debug(f"[EXTRACT] Checking full phrase: '{full_phrase}'")
+            
+            cleaned_phrase, phrase_stripped = strip_english_suffixes(full_phrase)
+            if phrase_stripped:
+                logger.debug(f"[EXTRACT]   Stripped suffix from phrase: '{full_phrase}' → '{cleaned_phrase}'")
+                full_phrase = cleaned_phrase
+            
+            # Generate and validate phrase variants (in parallel)
+            variants = generate_hebrew_variants(full_phrase, max_variants=8)
+            if variants:
+                result = await find_best_validated(variants, validator, full_phrase, parallel=True)
                 if result and result.get('hits', 0) > 0:
-                    logger.debug(f"[EXTRACT]     ✓ Word '{cleaned_word}' validated ({result['hits']} hits)")
-                    validated_candidates.append(cleaned_word)  # Add the CLEANED version
-                else:
-                    logger.debug(f"[EXTRACT]     ✗ Word '{cleaned_word}' failed validation")
+                    logger.debug(f"[EXTRACT]   ✓ Full phrase '{full_phrase}' validated ({result['hits']} hits)")
+                    validated_candidates.append(full_phrase)
+                    continue  # Don't split if phrase works
+            
+            # Phrase didn't validate - try individual words
+            logger.debug(f"[EXTRACT]   ✗ Full phrase didn't validate, trying individual words...")
+            
+            for word in segment:
+                if len(word) <= 1:
+                    continue
+                if word.lower() in ENGLISH_MARKERS:
+                    continue
+                
+                cleaned_word, was_stripped = strip_english_suffixes(word)
+                if was_stripped:
+                    logger.debug(f"[EXTRACT]   Stripped suffix: '{word}' → '{cleaned_word}'")
+                
+                logger.debug(f"[EXTRACT]   Checking word: '{cleaned_word}'")
+                word_variants = generate_hebrew_variants(cleaned_word, max_variants=8)
+                
+                if word_variants:
+                    result = await find_best_validated(word_variants, validator, cleaned_word, parallel=True)
+                    if result and result.get('hits', 0) > 0:
+                        logger.debug(f"[EXTRACT]     ✓ Word '{cleaned_word}' validated ({result['hits']} hits)")
+                        validated_candidates.append(cleaned_word)
+                    else:
+                        logger.debug(f"[EXTRACT]     ✗ Word '{cleaned_word}' failed validation")
     
     # Remove duplicates while preserving order
     seen = set()
@@ -408,20 +455,17 @@ async def extract_hebrew_candidates(text: str) -> List[str]:
 
 
 # ==========================================
-#  HEBREW NORMALIZATION (for comparison)
+#  HEBREW NORMALIZATION
 # ==========================================
 
 def normalize_hebrew(text: str) -> str:
     """Normalize Hebrew for comparison."""
     if not text:
         return ""
-    # Remove spaces and punctuation
     text = re.sub(r'[\s,.;:!?()\[\]{}"\'\-]', '', text)
-    # Normalize final forms for comparison
     finals = {'ך': 'כ', 'ם': 'מ', 'ן': 'נ', 'ף': 'פ', 'ץ': 'צ'}
     for f, s in finals.items():
         text = text.replace(f, s)
-    # Remove niqqud
     text = re.sub(r'[\u0591-\u05C7]', '', text)
     return text
 
@@ -431,20 +475,10 @@ def normalize_hebrew(text: str) -> str:
 # ==========================================
 
 def determine_confidence(hits: int, method: str) -> ConfidenceLevel:
-    """
-    Determine confidence level based on hit count and method.
-
-    Args:
-        hits: Number of Sefaria hits
-        method: How the term was found ("dictionary", "sefaria", etc.")
-
-    Returns:
-        ConfidenceLevel enum
-    """
+    """Determine confidence level based on hit count and method."""
     if method == "dictionary":
         return ConfidenceLevel.HIGH
 
-    # Sefaria-based confidence
     if hits >= 100:
         return ConfidenceLevel.HIGH
     elif hits >= 10:
@@ -456,33 +490,25 @@ def determine_confidence(hits: int, method: str) -> ConfidenceLevel:
 
 
 # ==========================================
-#  SINGLE TERM DECIPHER (for each candidate)
+#  SINGLE TERM DECIPHER
 # ==========================================
 
 async def decipher_single(query: str) -> DecipherResult:
     """
     Decipher a single transliteration term.
     
-    V4.1 UPDATE: Now strips English suffixes and uses hit-count weighting.
-    
-    This is the core V3 logic, used for:
-    - Pure transliteration queries
-    - Each candidate extracted from mixed queries
-    
     Tools (cascading):
     1. Word Dictionary (cache) - FREE, instant
     2. Transliteration Map - FREE, generates variants
-    3. Sefaria Validation (weighted) - FREE, validates against corpus
-    
-    Returns DecipherResult with success/hebrew_term/confidence.
+    3. Sefaria Validation (author-aware weighted) - FREE, validates
     """
     logger.info(f"[DECIPHER_SINGLE] Processing: '{query}'")
     
-    # V4.1: Strip English suffixes FIRST
+    # Strip English suffixes FIRST
     cleaned_query, was_stripped = strip_english_suffixes(query)
     if was_stripped:
         logger.info(f"  Stripped suffix: '{query}' → '{cleaned_query}'")
-        query = cleaned_query  # Use cleaned version
+        query = cleaned_query
     
     # Normalize input
     normalized_query = normalize_input(query)
@@ -497,7 +523,6 @@ async def decipher_single(query: str) -> DecipherResult:
     
     if cached_result:
         hebrew_term = cached_result['hebrew']
-        hits = cached_result.get('hits', 999)  # Assume high if cached
         logger.info(f"    ✓ Dictionary HIT: '{normalized_query}' → '{hebrew_term}'")
         
         return DecipherResult(
@@ -519,7 +544,6 @@ async def decipher_single(query: str) -> DecipherResult:
     # ========================================
     logger.debug(f"  [TOOL 2] Transliteration Map - Generating variants...")
     
-    # Generate preference-ordered Hebrew variants
     variants = generate_hebrew_variants(normalized_query, max_variants=15)
     logger.debug(f"    Generated {len(variants)} variants")
     logger.debug(f"    Top variants: {variants[:5]}")
@@ -539,18 +563,16 @@ async def decipher_single(query: str) -> DecipherResult:
         )
     
     # ========================================
-    # TOOL 3: Sefaria Validation (V4.1: Hit-Count Weighted)
+    # TOOL 3: Sefaria Validation (Author-Aware)
     # ========================================
     logger.debug(f"  [TOOL 3] Sefaria Validation - Finding best validated term...")
     
     validator = get_validator()
-    # V4.1: Use hit-count weighted validation instead of "first valid wins"
-    validation_result = await find_best_validated(variants, validator, normalized_query)
+    validation_result = await find_best_validated(variants, validator, normalized_query, parallel=True)
     
     if not validation_result or validation_result.get('hits', 0) == 0:
         logger.warning(f"  No valid Hebrew term found for '{query}'")
         
-        # Return first variant as a guess with LOW confidence
         return DecipherResult(
             success=False,
             hebrew_term=variants[0],
@@ -582,8 +604,8 @@ async def decipher_single(query: str) -> DecipherResult:
         confidence=confidence,
         method="sefaria",
         message=f"Found in Sefaria with {hits} references",
-        alternatives=variants[1:6],  # Other options
-        sample_refs=sample_refs,  # Include sample references
+        alternatives=variants[1:6],
+        sample_refs=sample_refs,
         is_mixed_query=False,
         original_query=query,
         extraction_confident=True
@@ -591,46 +613,33 @@ async def decipher_single(query: str) -> DecipherResult:
 
 
 # ==========================================
-#  MAIN DECIPHER FUNCTION (V4 + V4.1)
+#  MAIN DECIPHER FUNCTION (V4.2)
 # ==========================================
 
 async def decipher(query: str) -> DecipherResult:
     """
     Main entry point for Step 1: Transliteration → Hebrew
     
-    V4 FLOW:
+    V4.2 FLOW:
     1. Check if mixed query (English + Hebrew)
     2. If mixed:
-       - Extract Hebrew candidates (V4.1: with word-level validation)
+       - Extract Hebrew candidates (author-aware, V4.2)
        - Transliterate each candidate
        - Return all terms for Step 2 to verify
     3. If pure transliteration:
-       - Use V3 single-term flow (dictionary → transliteration → Sefaria)
-    
-    V4.1 FIX:
-    - Better candidate extraction that validates individual words
-    - Doesn't bundle English with Hebrew terms
-    
-    Returns:
-        DecipherResult with:
-        - success: bool
-        - hebrew_term: str (primary term)
-        - hebrew_terms: List[str] (all terms, for mixed queries)
-        - is_mixed_query: bool
-        - confidence: ConfidenceLevel
-        - method: str
+       - Use single-term flow (dictionary → transliteration → Sefaria)
     """
-    log_section("STEP 1: DECIPHER (V4.1) - Transliteration and Extraction")
+    log_section("STEP 1: DECIPHER (V4.2) - Author-Aware Extraction")
     logger.info("Incoming query: %s", query)
     
     # ========================================
-    # V4: MIXED QUERY DETECTION
+    # MIXED QUERY DETECTION
     # ========================================
     if is_mixed_query(query):
         log_subsection("Mixed Query Detected")
-        logger.info("Detected English + Hebrew mix; extracting and validating Hebrew candidates")
+        logger.info("Detected English + Hebrew mix; extracting with author awareness")
         
-        # V4.1: New extraction logic that validates at word level
+        # V4.2: Author-aware extraction
         candidates = await extract_hebrew_candidates(query)
         
         if not candidates:
@@ -663,7 +672,6 @@ async def decipher(query: str) -> DecipherResult:
             if result.success or result.hebrew_term:
                 all_hebrew_terms.append(result.hebrew_term)
                 all_confidences.append(result.confidence)
-                # Handle confidence being either enum or string
                 conf_str = result.confidence.value if hasattr(result.confidence, 'value') else result.confidence
                 logger.info("Result: '%s' -> '%s' (%s confidence)", candidate, result.hebrew_term, conf_str)
             else:
@@ -671,8 +679,6 @@ async def decipher(query: str) -> DecipherResult:
         
         # Determine overall confidence
         if all_confidences:
-            # Use the lowest confidence (most conservative)
-            # Handle both ConfidenceLevel enums and strings
             def get_conf_str(c):
                 return c.value if hasattr(c, 'value') else c
             
@@ -686,10 +692,7 @@ async def decipher(query: str) -> DecipherResult:
         else:
             overall_confidence = ConfidenceLevel.LOW
         
-        # Primary term is the first one (usually most important)
         primary_term = all_hebrew_terms[0] if all_hebrew_terms else None
-        
-        # V4.1: Higher extraction confidence since we validated at word level
         extraction_confident = len(all_hebrew_terms) == len(candidates)
         
         log_subsection("Mixed Query Summary")
@@ -711,14 +714,13 @@ async def decipher(query: str) -> DecipherResult:
         )
     
     # ========================================
-    # V3: PURE TRANSLITERATION (unchanged)
+    # PURE TRANSLITERATION
     # ========================================
     else:
         log_subsection("Pure Transliteration Flow")
         logger.info("No English markers detected; running dictionary -> transliteration map -> Sefaria cascade")
         result = await decipher_single(query)
         
-        # Ensure hebrew_terms is populated for consistency
         if result.success and result.hebrew_term and not result.hebrew_terms:
             result.hebrew_terms = [result.hebrew_term]
         
@@ -730,18 +732,22 @@ async def decipher(query: str) -> DecipherResult:
 # ==========================================
 
 async def quick_test():
-    """Quick test of the decipher function."""
+    """Quick test of the V4.2 decipher function."""
     test_queries = [
-        # V3 pure transliteration
+        # Pure transliteration
         "chezkas haguf",
         "migu",
         
-        # V4 mixed queries
+        # Mixed queries
         "what is chezkas haguf",
         "explain migu",
         
-        # V4.1 fix - the problematic query
-        "how does the ran learn up the sugya of bittul chometz",
+        # V4.2 test: Author names in mixed queries
+        "what is the rans shittah in bittul chometz",
+        "how does rashis pshat differ from tosfoses",
+        
+        # Author comparison
+        "what is the difference between rashi and tosfos on pesachim",
     ]
     
     for query in test_queries:
@@ -756,7 +762,6 @@ async def quick_test():
         print(f"  Hebrew: {result.hebrew_term}")
         if len(result.hebrew_terms) > 1:
             print(f"  All terms: {result.hebrew_terms}")
-        # Handle confidence being either enum or string
         conf_str = result.confidence.value if hasattr(result.confidence, 'value') else result.confidence
         print(f"  Confidence: {conf_str}")
         print(f"  Method: {result.method}")

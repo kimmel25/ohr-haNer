@@ -1,6 +1,14 @@
 """
-Smart Sefaria Data Gathering V2 - Multi-Layer Meta-Term Detection
-===================================================================
+Smart Sefaria Data Gathering V3 - Enhanced Source Validation
+=============================================================
+
+FIXES IN V3:
+  1. Comprehensive non-Bavli filtering (Mishnah, Yerushalmi, Tosefta, Midrash)
+  2. Daf format validation (must be Xa or Xb for Bavli)
+  3. Category-based prioritization (Talmud > Commentary > others)
+  4. Expanded MODERN_WORKS_TO_SKIP list
+  5. Better commentary detection (any "X on Y" pattern)
+  6. Source priority system (classical sources first)
 
 4-LAYER DEFENSE SYSTEM:
   Layer A: Expanded Dictionary (100+ Hebrew/Aramaic meta-terms)
@@ -12,11 +20,7 @@ PHILOSOPHY:
   - Meta-terms describe HOW a topic is discussed (שיטה, סברא, מחלוקת)
   - Substantive terms are the ACTUAL TOPIC (ביטול חמץ, חזקת הגוף)
   - We want to find primary sugya based on SUBSTANTIVE terms, not meta
-
-FIXES IN THIS VERSION:
-  - Filter out Yerushalmi (Jerusalem Talmud) - prefer Bavli
-  - Validate that constructed refs are for Bavli, not Yerushalmi
-  - Better masechta extraction that handles Yerushalmi refs
+  - ALWAYS prefer classical sources over modern works
 """
 
 import logging
@@ -35,6 +39,42 @@ from tools.torah_authors_master import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+# ==============================================================================
+#  SOURCE PRIORITY SYSTEM (V3 NEW!)
+# ==============================================================================
+# Lower number = higher priority. Classical sources should ALWAYS come first.
+
+SOURCE_PRIORITY = {
+    # Classical Torah sources - HIGHEST priority
+    'Talmud': 1,              # Bavli Gemara
+    'Mishnah': 2,             # Mishnah (as source, not for Rishon refs)
+    'Tanakh': 3,              # Chumash, Neviim, Kesuvim
+    
+    # Primary Rishonim - HIGH priority
+    'Talmud Commentary': 4,   # Rashi, Tosfos, Rishonim on Gemara
+    
+    # Secondary Rishonim - MEDIUM priority
+    'Halakhah': 5,            # Rambam, Tur, SA
+    
+    # Acharonim - LOWER priority
+    'Responsa': 6,            # Shut
+    'Musar': 7,
+    'Jewish Thought': 8,
+    
+    # Modern/Reference - LOWEST priority
+    'Reference': 99,          # Dictionaries, encyclopedias
+    'Mishnah Commentary': 90, # These often aren't useful for Bavli refs
+    'Liturgy': 95,
+    'Chasidut': 80,
+    'Kabbalah': 85,
+    'Modern': 100,
+}
+
+def get_category_priority(category: str) -> int:
+    """Get priority for a Sefaria category. Lower = better."""
+    return SOURCE_PRIORITY.get(category, 50)
 
 
 # ==============================================================================
@@ -85,7 +125,6 @@ META_TERMS_HEBREW: Set[str] = {
     # ==========================================
     'כלל', 'כללים', 'כללי', 'כללא',     # klal - rule
     'עיקר', 'עיקרים', 'עיקרי',          # ikar - principle
-    'יסוד', 'יסודות', 'יסודי',          # yesod - foundation
     'גדר', 'גדרים', 'גדרי',             # geder - parameter/scope
     
     # ==========================================
@@ -119,7 +158,6 @@ META_TERMS_HEBREW: Set[str] = {
     # DEFINITION / CHARACTERIZATION TERMS
     # ==========================================
     'הגדרה', 'הגדרות', 'הגדרת',         # hagdara - definition
-    'גדר', 'גדרים', 'גדרי',             # geder - parameter
     'תוכן', 'תכנים',                   # content
     'מהות', 'מהותו',                   # essence
     
@@ -533,33 +571,196 @@ MASECHTA_NAMES = {
 
 MASECHTA_NAMES_EN = set(MASECHTA_NAMES.values())
 
-# Yerushalmi indicators to SKIP
-YERUSHALMI_INDICATORS = [
+
+# ==============================================================================
+#  V3 ENHANCED: NON-BAVLI DETECTION
+# ==============================================================================
+# Comprehensive filtering for anything that's NOT Bavli Talmud
+
+# Sources that are NOT Bavli - should be filtered when looking for Rishon refs
+NON_BAVLI_INDICATORS = [
+    # Yerushalmi
     'Jerusalem Talmud',
     'Yerushalmi',
     'Palestinian Talmud',
     'Talmud Yerushalmi',
-    'JT ',  # Sometimes abbreviated
+    'JT ',
+    
+    # Mishnah (the text itself, not Bavli discussing it)
+    'Mishnah ',  # Space to avoid matching "Mishnah Berurah"
+    'Mishna ',
+    'Mishneh ',  # Could be "Mishneh Torah" - handled separately
+    'Seder Zeraim',
+    'Seder Moed',
+    'Seder Nashim',
+    'Seder Nezikin',
+    'Seder Kodashim',
+    'Seder Taharot',
+    
+    # Tosefta
+    'Tosefta ',
+    
+    # Midrash
+    'Midrash ',
+    'Bereishit Rabbah',
+    'Shemot Rabbah',
+    'Vayikra Rabbah',
+    'Bamidbar Rabbah',
+    'Devarim Rabbah',
+    'Tanchuma',
+    'Mechilta',
+    'Sifra',
+    'Sifre',
+    'Sifrei',
+]
+
+# V3 EXPANDED: Modern works that should NEVER be used as primary sugya source
+MODERN_WORKS_TO_SKIP = [
+    # Modern Hebrew works
+    'Peninei Halakhah',
+    'Mishnat Eretz Yisrael',
+    'Kovetz',
+    'Encyclopedia',
+    'Contemporary',
+    'Modern',
+    
+    # Reference/Dictionary works
+    'Machberet',           # Machberet Menachem - dictionary
+    'Arukh',               # Could be dictionary
+    'Jastrow',
+    'Dictionary',
+    'Lexicon',
+    
+    # Liturgy
+    'Selichot',
+    'Machzor',
+    'Siddur',
+    'Kinot',
+    
+    # Collections/Anthologies  
+    'Otzar',
+    'Yalkut',
+    'Anthology',
+    
+    # Specific problematic works
+    'Maaseh Rokeach',      # V3: The work that caused the bug!
+    'Korban HaEdah',       # Yerushalmi commentary
+    'Pnei Moshe',          # Yerushalmi commentary
+    'Mareh HaPanim',       # Yerushalmi commentary
 ]
 
 
-def is_yerushalmi_ref(ref: str) -> bool:
-    """Check if a reference is to Yerushalmi (Jerusalem Talmud)."""
+def is_non_bavli_ref(ref: str) -> bool:
+    """
+    V3 ENHANCED: Check if a reference is NOT from Bavli Talmud.
+    
+    Returns True for:
+    - Yerushalmi
+    - Mishnah (the text)
+    - Tosefta
+    - Midrash
+    - Modern works
+    """
     ref_lower = ref.lower()
-    for indicator in YERUSHALMI_INDICATORS:
+    
+    for indicator in NON_BAVLI_INDICATORS:
         if indicator.lower() in ref_lower:
+            return True
+    
+    return False
+
+
+def is_yerushalmi_ref(ref: str) -> bool:
+    """
+    Check if a reference is specifically to Yerushalmi (Jerusalem Talmud).
+    Kept for backward compatibility - use is_non_bavli_ref() for broader check.
+    """
+    ref_lower = ref.lower()
+    yerushalmi_indicators = [
+        'jerusalem talmud', 'yerushalmi', 'palestinian talmud',
+        'talmud yerushalmi', 'jt '
+    ]
+    for indicator in yerushalmi_indicators:
+        if indicator in ref_lower:
             return True
     return False
 
 
+def is_modern_work(ref: str) -> bool:
+    """Check if reference is to a modern/reference work that shouldn't be used as source."""
+    ref_lower = ref.lower()
+    for work in MODERN_WORKS_TO_SKIP:
+        if work.lower() in ref_lower:
+            return True
+    return False
+
+
+# ==============================================================================
+#  V3 NEW: BAVLI DAF FORMAT VALIDATION
+# ==============================================================================
+
+def has_valid_bavli_daf(ref: str) -> bool:
+    """
+    V3 NEW: Check if reference has valid Bavli daf format (Xa or Xb).
+    
+    Valid: "Pesachim 4b", "Ketubot 10a", "Bava Metzia 2a:5"
+    Invalid: "Pesachim 14" (Mishnah chapter), "Pesachim 2:2:6:2" (Yerushalmi format)
+    """
+    # Must have daf format: number followed by 'a' or 'b'
+    return bool(re.search(r'\d+[ab]', ref))
+
+
+def is_valid_bavli_gemara_ref(ref: str) -> bool:
+    """
+    V3 NEW: Comprehensive validation that a ref is valid Bavli Gemara.
+    
+    Must:
+    1. NOT be Yerushalmi/Mishnah/etc.
+    2. Have valid daf format (Xa or Xb)
+    3. NOT be a commentary (no "X on Y")
+    4. NOT be a modern work
+    """
+    # Check not non-Bavli
+    if is_non_bavli_ref(ref):
+        return False
+    
+    # Check not modern
+    if is_modern_work(ref):
+        return False
+    
+    # Check has daf format
+    if not has_valid_bavli_daf(ref):
+        return False
+    
+    # Check not a commentary
+    if is_commentary_ref(ref):
+        return False
+    
+    return True
+
+
+def is_commentary_ref(ref: str) -> bool:
+    """
+    V3 ENHANCED: Check if this is a commentary reference.
+    Any ref with " on " pattern is a commentary.
+    """
+    return ' on ' in ref.lower()
+
+
+# ==============================================================================
+#  V3 ENHANCED: EXTRACT MASECHTA AND DAF
+# ==============================================================================
+
 def extract_masechta_from_ref(ref: str) -> Optional[str]:
     """Extract masechta name from a Sefaria reference."""
-    # First, strip Yerushalmi indicator if present
+    # First, strip non-Bavli prefixes if present
     ref = re.sub(r'^Jerusalem Talmud ', '', ref)
     ref = re.sub(r'^Yerushalmi ', '', ref)
+    ref = re.sub(r'^Mishnah ', '', ref)
+    ref = re.sub(r'^Tosefta ', '', ref)
     
     # Strip commentary prefixes
-    ref = re.sub(r'^(Rashi|Tosafot|Ran|Rashba|Ritva|Meiri) on ', '', ref)
+    ref = re.sub(r'^(Rashi|Tosafot|Ran|Rashba|Ritva|Meiri|Nimukei Yosef|Shita Mekubetzet) on ', '', ref, flags=re.IGNORECASE)
     
     sorted_masechtot = sorted(MASECHTA_NAMES_EN, key=len, reverse=True)
     for masechta_en in sorted_masechtot:
@@ -569,118 +770,177 @@ def extract_masechta_from_ref(ref: str) -> Optional[str]:
 
 
 def extract_daf_from_ref(ref: str) -> Optional[str]:
-    """Extract daf from reference."""
+    """Extract daf from reference (e.g., '4b', '10a')."""
     match = re.search(r'(\d+[ab])', ref)
     return match.group(1) if match else None
 
 
 def clean_sugya_ref(ref: str) -> str:
     """Clean a sugya reference to just masechta + daf."""
-    # Remove Yerushalmi prefix first
+    # Remove non-Bavli prefixes
     ref = re.sub(r'^Jerusalem Talmud ', '', ref)
     ref = re.sub(r'^Yerushalmi ', '', ref)
+    ref = re.sub(r'^Mishnah ', '', ref)
     
+    # Remove commentary prefix (get base ref)
     ref = ref.split(' on ')[-1]
+    
     masechta = extract_masechta_from_ref(ref)
     daf = extract_daf_from_ref(ref)
+    
     if masechta and daf:
         return f"{masechta} {daf}"
+    
     return ref
 
 
 # ==============================================================================
-#  SMART GATHERING - MAIN FUNCTION
+#  V3 ENHANCED: PRIMARY SUGYA EXTRACTION
 # ==============================================================================
-
-MODERN_WORKS_TO_SKIP = [
-    'Peninei Halakhah', 'Mishnat Eretz Yisrael', 'Kovetz',
-    'Encyclopedia', 'Contemporary', 'Modern',
-]
-
 
 def extract_primary_sugya_from_results(
     concept: str,
     sefaria_results: Dict,
-    prefer_gemara: bool = True,
-    prefer_bavli: bool = True  # NEW: Prefer Bavli over Yerushalmi
+    hits_with_categories: List[Dict] = None,
+    prefer_bavli: bool = True
 ) -> Optional[str]:
     """
-    Extract primary sugya reference from Sefaria search results.
+    V3 ENHANCED: Extract primary sugya reference from Sefaria search results.
     
-    FIXED: Now filters out Yerushalmi (Jerusalem Talmud) references.
-    The Rishonim primarily commented on Bavli, so we want Bavli refs.
+    Now with:
+    1. Category-based filtering (prefer "Talmud" category)
+    2. Daf format validation
+    3. Comprehensive non-Bavli filtering
+    4. Modern work filtering
     
     Args:
         concept: The concept being searched
-        sefaria_results: Sefaria search results
-        prefer_gemara: Prefer Gemara over commentaries
-        prefer_bavli: Prefer Bavli over Yerushalmi (NEW)
+        sefaria_results: Sefaria search results dict
+        hits_with_categories: Optional list of {ref, category} for better filtering
+        prefer_bavli: Prefer Bavli over Yerushalmi (default True)
     """
     top_refs = sefaria_results.get('top_refs', [])
     masechtot = sefaria_results.get('masechtot', {})
     
     if not top_refs:
+        logger.warning(f"[EXTRACT-SUGYA] No top_refs for '{concept}'")
         return None
     
     primary_masechta = None
     if masechtot:
         primary_masechta = max(masechtot.items(), key=lambda x: x[1])[0]
+        logger.debug(f"[EXTRACT-SUGYA] Primary masechta by hits: {primary_masechta}")
     
-    bavli_gemara_refs = []
-    yerushalmi_refs = []
-    commentary_refs = []
+    # V3: Separate refs into categories
+    bavli_gemara_refs = []      # Actual Bavli Gemara (highest priority)
+    bavli_commentary_refs = []  # Commentaries on Bavli (second priority)
+    other_refs = []             # Everything else
+    skipped_refs = []           # Refs we're skipping (for logging)
     
-    for ref in top_refs[:30]:  # Check more refs to find Bavli
-        # Skip modern works
-        if any(modern in ref for modern in MODERN_WORKS_TO_SKIP):
+    for ref in top_refs[:50]:  # Check more refs to find good ones
+        # V3: Skip modern works first
+        if is_modern_work(ref):
+            skipped_refs.append((ref, "modern_work"))
             continue
         
-        # Check if Yerushalmi
-        if is_yerushalmi_ref(ref):
-            yerushalmi_refs.append(ref)
-            logger.debug(f"[EXTRACT-SUGYA] Skipping Yerushalmi: {ref}")
+        # V3: Skip non-Bavli (Yerushalmi, Mishnah, Tosefta, Midrash)
+        if is_non_bavli_ref(ref):
+            skipped_refs.append((ref, "non_bavli"))
             continue
         
-        # Check if commentary
-        is_commentary = any(comm in ref for comm in [
-            'Rashi on', 'Tosafot on', 'Ran on', 'Rashba on',
-            'Meiri on', 'Ritva on', 'Nimukei Yosef on'
-        ])
+        # Check if it's a commentary
+        is_commentary = is_commentary_ref(ref)
         
-        masechta = extract_masechta_from_ref(ref)
-        
-        if not is_commentary and masechta:
-            # It's a Gemara ref (Bavli since we filtered Yerushalmi)
-            if primary_masechta and masechta == primary_masechta:
-                bavli_gemara_refs.insert(0, ref)
+        # V3: Validate daf format for non-commentary refs
+        if not is_commentary:
+            if has_valid_bavli_daf(ref):
+                # This is a valid Bavli Gemara ref!
+                masechta = extract_masechta_from_ref(ref)
+                if masechta:
+                    # Prioritize refs from the most common masechta
+                    if primary_masechta and masechta == primary_masechta:
+                        bavli_gemara_refs.insert(0, ref)
+                    else:
+                        bavli_gemara_refs.append(ref)
             else:
-                bavli_gemara_refs.append(ref)
-        elif masechta:
-            commentary_refs.append(ref)
+                # Has no daf format - likely a Mishnah chapter or other
+                skipped_refs.append((ref, "no_daf_format"))
+                continue
+        else:
+            # Commentary ref - extract base and validate
+            base_ref = ref.split(' on ')[-1] if ' on ' in ref else ref
+            if has_valid_bavli_daf(base_ref):
+                bavli_commentary_refs.append(ref)
+            else:
+                skipped_refs.append((ref, "commentary_no_daf"))
     
-    # Prefer Bavli Gemara
-    if prefer_bavli and bavli_gemara_refs:
+    # Log what we skipped (for debugging)
+    if skipped_refs:
+        logger.debug(f"[EXTRACT-SUGYA] Skipped {len(skipped_refs)} refs:")
+        for ref, reason in skipped_refs[:5]:
+            logger.debug(f"  - {ref}: {reason}")
+    
+    # V3: Prefer Bavli Gemara refs first
+    if bavli_gemara_refs:
         selected = bavli_gemara_refs[0]
-        logger.info(f"[EXTRACT-SUGYA] Selected Bavli: {selected}")
+        logger.info(f"[EXTRACT-SUGYA] ✓ Selected Bavli Gemara: {selected}")
         return selected
     
-    # Fall back to commentary refs (which should also be on Bavli)
-    if commentary_refs:
-        # Extract the base sugya from commentary
-        for comm_ref in commentary_refs:
-            if not is_yerushalmi_ref(comm_ref):
-                base_ref = comm_ref.split(' on ')[-1] if ' on ' in comm_ref else comm_ref
-                logger.info(f"[EXTRACT-SUGYA] Extracted from commentary: {base_ref}")
-                return base_ref
-    
-    # Last resort: Yerushalmi (if nothing else)
-    if yerushalmi_refs and not prefer_bavli:
-        logger.warning(f"[EXTRACT-SUGYA] Only Yerushalmi found: {yerushalmi_refs[0]}")
-        return yerushalmi_refs[0]
+    # V3: Fall back to commentary refs (extract base)
+    if bavli_commentary_refs:
+        comm_ref = bavli_commentary_refs[0]
+        base_ref = comm_ref.split(' on ')[-1] if ' on ' in comm_ref else comm_ref
+        logger.info(f"[EXTRACT-SUGYA] ✓ Extracted from commentary: {base_ref}")
+        return base_ref
     
     logger.warning(f"[EXTRACT-SUGYA] No valid Bavli sugya found for '{concept}'")
     return None
 
+
+# ==============================================================================
+#  V3 ENHANCED: Category-Aware Search Result Processing
+# ==============================================================================
+
+def filter_hits_by_priority(
+    hits: List,
+    max_results: int = 30,
+    require_bavli_for_gemara: bool = True
+) -> List:
+    """
+    V3 NEW: Filter and sort search hits by source priority.
+    
+    Returns hits sorted by: Talmud > Commentary > Halakhah > others
+    """
+    # Group by category priority
+    priority_groups = {}
+    
+    for hit in hits:
+        category = getattr(hit, 'category', None) or 'Other'
+        priority = get_category_priority(category)
+        
+        # V3: Skip non-Bavli refs for Talmud category
+        if category == 'Talmud' and require_bavli_for_gemara:
+            ref = getattr(hit, 'ref', '')
+            if is_non_bavli_ref(ref) or not has_valid_bavli_daf(ref):
+                continue
+        
+        if priority not in priority_groups:
+            priority_groups[priority] = []
+        priority_groups[priority].append(hit)
+    
+    # Flatten in priority order
+    result = []
+    for priority in sorted(priority_groups.keys()):
+        result.extend(priority_groups[priority])
+        if len(result) >= max_results:
+            break
+    
+    return result[:max_results]
+
+
+# ==============================================================================
+#  SMART GATHERING - MAIN FUNCTION
+# ==============================================================================
 
 async def gather_sefaria_data_smart(
     hebrew_terms: List[str],
@@ -688,16 +948,15 @@ async def gather_sefaria_data_smart(
     sefaria_client
 ) -> Dict:
     """
-    Intelligently gather Sefaria data with 4-layer meta-term detection.
+    V3 ENHANCED: Intelligently gather Sefaria data with comprehensive validation.
     
     Process:
     1. Initial classification (Layer A + C)
     2. Search substantive terms FIRST
-    3. Search meta-terms for context
-    4. Apply Layer D statistical analysis
-    5. Construct author references
-    
-    FIXED: Now filters out Yerushalmi and validates refs.
+    3. V3: Filter by category priority
+    4. V3: Validate Bavli refs
+    5. Search meta-terms for context
+    6. Construct author references
     
     Args:
         hebrew_terms: List of Hebrew terms from Step 1
@@ -708,7 +967,7 @@ async def gather_sefaria_data_smart(
         Dict with data for each term
     """
     logger.info("=" * 70)
-    logger.info("[SMART-GATHER-V2] Starting with 4-layer meta-term detection")
+    logger.info("[SMART-GATHER-V3] Starting with enhanced source validation")
     logger.info("=" * 70)
     
     # ==========================================
@@ -716,7 +975,7 @@ async def gather_sefaria_data_smart(
     # ==========================================
     authors, substantive, meta, classifications = classify_terms(hebrew_terms)
     
-    logger.info(f"[SMART-GATHER-V2] Initial classification:")
+    logger.info(f"[SMART-GATHER-V3] Initial classification:")
     logger.info(f"  Authors: {authors}")
     logger.info(f"  Substantive: {substantive}")  
     logger.info(f"  Meta: {meta}")
@@ -744,27 +1003,31 @@ async def gather_sefaria_data_smart(
     # ==========================================
     # PHASE 1: Search SUBSTANTIVE concepts first
     # ==========================================
-    logger.info(f"[SMART-GATHER-V2] Phase 1: Searching {len(substantive)} substantive concepts")
+    logger.info(f"[SMART-GATHER-V3] Phase 1: Searching {len(substantive)} substantive concepts")
     
     for concept in substantive:
-        logger.info(f"[SMART-GATHER-V2] Searching substantive: '{concept}'")
+        logger.info(f"[SMART-GATHER-V3] Searching substantive: '{concept}'")
         
         try:
             result = await sefaria_client.search(concept, size=100)
             
             total_hits = result.total_hits
-            top_refs = [hit.ref for hit in result.hits][:30]  # Get more refs
+            
+            # V3: Filter hits by priority before processing
+            filtered_hits = filter_hits_by_priority(result.hits, max_results=50)
+            top_refs = [hit.ref for hit in filtered_hits][:30]
             
             categories = {}
             masechtot = {}
             
-            for hit in result.hits[:100]:
+            for hit in filtered_hits:
                 cat = hit.category
                 categories[cat] = categories.get(cat, 0) + 1
                 
                 # Only count Bavli masechtot for primary sugya selection
-                if not is_yerushalmi_ref(hit.ref):
-                    masechta = extract_masechta_from_ref(hit.ref)
+                ref = hit.ref
+                if not is_non_bavli_ref(ref) and has_valid_bavli_daf(ref):
+                    masechta = extract_masechta_from_ref(ref)
                     if masechta:
                         masechtot[masechta] = masechtot.get(masechta, 0) + 1
             
@@ -776,7 +1039,7 @@ async def gather_sefaria_data_smart(
             is_generic, gen_conf, gen_reason = is_statistically_generic(stat_analysis)
             
             if is_generic:
-                logger.warning(f"[SMART-GATHER-V2] Layer D flagged '{concept}' as potentially generic")
+                logger.warning(f"[SMART-GATHER-V3] Layer D flagged '{concept}' as potentially generic")
                 logger.warning(f"  Reason: {gen_reason}")
                 # Move to meta, but with lower confidence
                 meta.append(concept)
@@ -790,36 +1053,51 @@ async def gather_sefaria_data_smart(
                 }
                 continue
             
-            # Extract primary sugya (FIXED: now filters Yerushalmi)
+            # V3 ENHANCED: Extract primary sugya with validation
             sugya = extract_primary_sugya_from_results(
                 concept,
                 {'top_refs': top_refs, 'masechtot': masechtot},
-                prefer_bavli=True  # IMPORTANT: Prefer Bavli
+                prefer_bavli=True
             )
+            
+            # V3: Validate the sugya we got
+            if sugya:
+                if is_non_bavli_ref(sugya):
+                    logger.error(f"[SMART-GATHER-V3] Extracted sugya is non-Bavli! Rejecting: {sugya}")
+                    sugya = None
+                elif not has_valid_bavli_daf(sugya):
+                    logger.error(f"[SMART-GATHER-V3] Extracted sugya has no valid daf! Rejecting: {sugya}")
+                    sugya = None
             
             if sugya and not primary_sugya:
                 primary_sugya = clean_sugya_ref(sugya)
                 primary_masechta = extract_masechta_from_ref(primary_sugya)
-                logger.info(f"[SMART-GATHER-V2] ⭐ PRIMARY SUGYA (Bavli): {primary_sugya}")
+                logger.info(f"[SMART-GATHER-V3] ⭐ PRIMARY SUGYA (Bavli validated): {primary_sugya}")
+            
+            # V3: Filter out non-Bavli from top_refs
+            clean_top_refs = [
+                r for r in top_refs[:10]
+                if not is_non_bavli_ref(r) and not is_modern_work(r)
+            ]
             
             sefaria_data[concept] = {
                 'type': 'concept',
                 'is_substantive': True,
                 'total_hits': total_hits,
-                'top_refs': [r for r in top_refs[:10] if not is_yerushalmi_ref(r)],  # Filter Yerushalmi
+                'top_refs': clean_top_refs,
                 'primary_sugya': sugya,
                 'masechtot': masechtot,
             }
             
         except Exception as e:
-            logger.error(f"[SMART-GATHER-V2] Search failed for '{concept}': {e}")
+            logger.error(f"[SMART-GATHER-V3] Search failed for '{concept}': {e}")
             sefaria_data[concept] = {'type': 'concept', 'error': str(e)}
     
     # ==========================================
     # PHASE 2: Search meta-terms (for context only)
     # ==========================================
     if meta:
-        logger.info(f"[SMART-GATHER-V2] Phase 2: Searching {len(meta)} meta-terms (context only)")
+        logger.info(f"[SMART-GATHER-V3] Phase 2: Searching {len(meta)} meta-terms (context only)")
         
         for term in meta:
             if term in sefaria_data:  # Already searched if flagged by Layer D
@@ -843,16 +1121,16 @@ async def gather_sefaria_data_smart(
     # PHASE 3: Construct author references
     # ==========================================
     if authors and primary_sugya:
-        logger.info(f"[SMART-GATHER-V2] Phase 3: Constructing author refs for {primary_sugya}")
+        logger.info(f"[SMART-GATHER-V3] Phase 3: Constructing author refs for {primary_sugya}")
         
-        # VALIDATION: Ensure primary_sugya is Bavli, not Yerushalmi
-        if is_yerushalmi_ref(primary_sugya):
-            logger.error(f"[SMART-GATHER-V2] Primary sugya is Yerushalmi! Cannot construct Rishon refs.")
+        # V3: Double-check primary_sugya is valid Bavli
+        if is_non_bavli_ref(primary_sugya) or not has_valid_bavli_daf(primary_sugya):
+            logger.error(f"[SMART-GATHER-V3] Primary sugya failed validation! {primary_sugya}")
             for author_term in authors:
                 sefaria_data[author_term] = {
                     'type': 'author',
                     'construction_failed': True,
-                    'reason': 'Primary sugya is Yerushalmi - Rishonim commented on Bavli',
+                    'reason': f'Primary sugya validation failed: {primary_sugya}',
                     'based_on_sugya': primary_sugya,
                 }
         else:
@@ -914,16 +1192,16 @@ async def gather_sefaria_data_smart(
                     }
     
     elif authors and not primary_sugya:
-        logger.warning("[SMART-GATHER-V2] Authors found but no sugya!")
+        logger.warning("[SMART-GATHER-V3] Authors found but no valid sugya!")
         for author_term in authors:
             sefaria_data[author_term] = {
                 'type': 'author',
                 'needs_clarification': True,
-                'reason': 'No sugya found'
+                'reason': 'No valid Bavli sugya found'
             }
     
     logger.info("=" * 70)
-    logger.info(f"[SMART-GATHER-V2] Complete. Primary sugya: {primary_sugya}")
+    logger.info(f"[SMART-GATHER-V3] Complete. Primary sugya: {primary_sugya}")
     logger.info("=" * 70)
     
     return sefaria_data
@@ -1069,7 +1347,7 @@ def format_smart_gather_for_claude(sefaria_data: Dict) -> str:
 
 if __name__ == "__main__":
     print("=" * 70)
-    print("SMART GATHER V2 - 4-LAYER META-TERM DETECTION TEST")
+    print("SMART GATHER V3 - ENHANCED SOURCE VALIDATION TEST")
     print("=" * 70)
     
     # Test Layer A: Dictionary
@@ -1090,8 +1368,8 @@ if __name__ == "__main__":
         status = "✓" if is_meta == expected_meta else "✗"
         print(f"  {status} '{term}': {result.term_type.value} ({result.detection_layer})")
     
-    # Test Yerushalmi filtering
-    print("\n🏛️ YERUSHALMI FILTERING")
+    # V3: Test non-Bavli filtering
+    print("\n🏛️ V3 NON-BAVLI FILTERING")
     print("-" * 50)
     test_refs = [
         ("Jerusalem Talmud Pesachim 2:2:6:2", True),
@@ -1099,12 +1377,30 @@ if __name__ == "__main__":
         ("Yerushalmi Berakhot 1:1", True),
         ("Rashi on Pesachim 4b", False),
         ("Ran on Jerusalem Talmud Pesachim", True),
+        ("Mishnah Pesachim 3:7", True),  # V3 NEW
+        ("Maaseh Rokeach on Mishnah, Seder Moed, Pesachim 14", True),  # V3 NEW - the bug!
+        ("Tosefta Pesachim 1:1", True),  # V3 NEW
     ]
     
-    for ref, expected_yerushalmi in test_refs:
-        is_yer = is_yerushalmi_ref(ref)
-        status = "✓" if is_yer == expected_yerushalmi else "✗"
-        print(f"  {status} '{ref}': {'Yerushalmi' if is_yer else 'Bavli'}")
+    for ref, expected_non_bavli in test_refs:
+        is_nb = is_non_bavli_ref(ref)
+        status = "✓" if is_nb == expected_non_bavli else "✗"
+        print(f"  {status} '{ref}': {'Non-Bavli' if is_nb else 'Bavli'}")
+    
+    # V3: Test daf validation
+    print("\n📖 V3 DAF FORMAT VALIDATION")
+    print("-" * 50)
+    daf_tests = [
+        ("Pesachim 4b", True),
+        ("Pesachim 14", False),  # Mishnah chapter - no a/b
+        ("Ketubot 10a:5", True),
+        ("Bava Metzia 2:2:6:2", False),  # Yerushalmi format
+    ]
+    
+    for ref, expected_valid in daf_tests:
+        is_valid = has_valid_bavli_daf(ref)
+        status = "✓" if is_valid == expected_valid else "✗"
+        print(f"  {status} '{ref}': {'Valid daf' if is_valid else 'Invalid daf'}")
     
     print("\n" + "=" * 70)
     print("Full term classification:")

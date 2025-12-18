@@ -17,7 +17,7 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import Any, Dict, Iterable, List
+from typing import Any, Dict, List
 
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -96,79 +96,70 @@ def print_step1_result(result: Any) -> None:
 
 
 def print_step2_result(strategy: Any) -> None:
-    """Pretty print Step 2 result."""
+    """Pretty print Step 2 result (QueryAnalysis)."""
     qtype = getattr(strategy.query_type, "value", strategy.query_type)
+    realm = getattr(strategy.realm, "value", strategy.realm)
+    conf = getattr(strategy.confidence, "value", strategy.confidence)
+
+    # Get primary author/target for logging
+    primary = strategy.target_authors[0] if strategy.target_authors else "(none)"
+
     logger.info(
         "Step 2 complete - Type: %s, Primary: %s, Confidence: %s",
         qtype,
-        strategy.primary_source,
-        getattr(strategy.confidence, "value", strategy.confidence),
+        primary,
+        conf,
     )
 
-    _print_divider("STEP 2: SEARCH STRATEGY")
+    _print_divider("STEP 2: QUERY ANALYSIS")
     print(f"  Query Type:     {qtype}")
-    print(f"  Primary Source: {strategy.primary_source or '(none)'}")
+    print(f"  Realm:          {realm}")
 
-    if getattr(strategy, "primary_sources", None) and len(strategy.primary_sources) > 1:
-        print(f"  All Primaries:  {strategy.primary_sources}")
+    if strategy.target_authors:
+        print(f"  Target Authors: {', '.join(strategy.target_authors)}")
 
-    if getattr(strategy, "is_comparison_query", False):
-        print("\n  Comparison:     Yes")
-        print(f"  Compare Terms:  {strategy.comparison_terms}")
+    if strategy.target_masechtos:
+        print(f"  Target Masechtos: {', '.join(strategy.target_masechtos)}")
 
-    fetch = getattr(strategy.fetch_strategy, "value", strategy.fetch_strategy)
-    print(f"  Fetch Strategy: {fetch}")
-    print(f"  Depth:          {strategy.depth}")
+    topics = getattr(strategy, "target_topics", None) or getattr(
+        strategy, "search_topics", []
+    )
+    if topics:
+        print(f"  Search Topics:  {', '.join(topics)}")
 
-    conf = getattr(strategy.confidence, "value", strategy.confidence)
+    search_method = getattr(strategy.search_method, "value", strategy.search_method)
+    breadth = getattr(strategy.breadth, "value", strategy.breadth)
+    print(f"  Search Method:  {search_method}")
+    print(f"  Breadth:        {breadth}")
     print(f"  Confidence:     {conf}")
 
     if strategy.reasoning:
         print("\n  Reasoning:")
         _wrap_text(strategy.reasoning)
 
-    if strategy.related_sugyos:
-        print(f"\n  Related Sugyos ({len(strategy.related_sugyos)}):")
-        for idx, sugya in enumerate(strategy.related_sugyos[:5], 1):
-            ref = sugya.ref if hasattr(sugya, "ref") else sugya.get("ref", "?")
-            imp = (
-                sugya.importance
-                if hasattr(sugya, "importance")
-                else sugya.get("importance", "?")
-            )
-            conn = (
-                sugya.connection
-                if hasattr(sugya, "connection")
-                else sugya.get("connection", "?")
-            )
-            print(f"     {idx}. {ref} ({imp})")
-            _wrap_text(conn, indent=10)
+    if strategy.search_description:
+        print("\n  Search Description:")
+        _wrap_text(strategy.search_description)
 
-    print("\n  Sefaria Stats:")
-    print(f"     Total hits: {getattr(strategy, 'sefaria_hits', 0)}")
-    if getattr(strategy, "hits_by_masechta", None):
-        top_3 = sorted(
-            strategy.hits_by_masechta.items(), key=lambda item: item[1], reverse=True
-        )[:3]
-        print(f"     Top: {', '.join(f'{m}({c})' for m, c in top_3)}")
-
-    if strategy.clarification_prompt:
-        print(f"\n  Clarification: {strategy.clarification_prompt}")
+    if strategy.needs_clarification and strategy.clarification_question:
+        print(f"\n  Needs Clarification: {strategy.clarification_question}")
+        if strategy.clarification_options:
+            print(f"  Options: {strategy.clarification_options}")
 
 
 def print_step3_result(result: Any) -> None:
-    """Pretty print Step 3 result."""
+    """Pretty print Step 3 result (SearchResult)."""
+    levels_found = getattr(result, "levels_found", [])
     logger.info(
         "Step 3 complete - Sources: %s, Levels: %s",
         result.total_sources,
-        result.levels_included,
+        levels_found,
     )
 
     _print_divider("STEP 3: SEARCH RESULTS")
-    print(f"  Primary Source:  {result.primary_source or '(none)'}")
     print(f"  Total Sources:   {result.total_sources}")
     print(
-        f"  Levels Included: {', '.join(result.levels_included) if result.levels_included else '(none)'}"
+        f"  Levels Found:    {', '.join(levels_found) if levels_found else '(none)'}"
     )
 
     conf = getattr(result.confidence, "value", result.confidence)
@@ -214,20 +205,12 @@ def print_step3_result(result: Any) -> None:
                 print("\n  Primary Text Preview:")
                 _wrap_text(preview, indent=5, width=70)
 
-    if result.related_sugyos:
-        print(f"\n  Related Sugyos ({len(result.related_sugyos)}):")
-        for idx, rel in enumerate(result.related_sugyos[:3], 1):
-            ref = rel.ref if hasattr(rel, "ref") else rel.get("ref", "?")
-            conn = rel.connection if hasattr(rel, "connection") else rel.get("connection", "?")
-            print(f"     {idx}. {ref}")
-            _wrap_text(conn, indent=10)
+    if getattr(result, "search_description", None):
+        print("\n  Search Description:")
+        _wrap_text(result.search_description)
 
-    if result.interpretation:
-        print("\n  Interpretation:")
-        _wrap_text(result.interpretation)
-
-    if result.needs_clarification and result.clarification_prompt:
-        print(f"\n  Needs Clarification: {result.clarification_prompt}")
+    if result.needs_clarification and getattr(result, "clarification_question", None):
+        print(f"\n  Needs Clarification: {result.clarification_question}")
 
 
 async def run_pipeline(query: str) -> None:
@@ -249,6 +232,11 @@ async def run_pipeline(query: str) -> None:
 
         step1_result = await decipher(query)
         print_step1_result(step1_result)
+    except ImportError as exc:
+        logger.error("Step 1 import failed: %s", exc, exc_info=True)
+        print(f"\n  ❌ Step 1 Import Error: {exc}")
+        print("     Make sure step_one_decipher.py exists and is in the backend folder")
+        return
     except Exception as exc:  # noqa: BLE001
         logger.error("Step 1 failed: %s", exc, exc_info=True)
         print(f"\n  ❌ Step 1 Error: {exc}")
@@ -270,18 +258,23 @@ async def run_pipeline(query: str) -> None:
     try:
         from step_two_understand import understand
 
-        strategy = await understand(
-            hebrew_term=hebrew_term,
-            original_query=query,
-            step1_result=step1_result,
-        )
+        # Try new signature first, fall back to legacy
+        try:
+            strategy = await understand(
+                hebrew_term=hebrew_term,
+                original_query=query,
+                step1_result=step1_result,
+            )
+        except TypeError:
+            logger.warning("Step 2 doesn't support step1_result, using legacy call")
+            strategy = await understand(hebrew_term, query)
+        
         print_step2_result(strategy)
-    except TypeError:
-        logger.warning("Step 2 doesn't support step1_result, using legacy call")
-        from step_two_understand import understand
-
-        strategy = await understand(hebrew_term, query)
-        print_step2_result(strategy)
+    except ImportError as exc:
+        logger.error("Step 2 import failed: %s", exc, exc_info=True)
+        print(f"\n  ❌ Step 2 Import Error: {exc}")
+        print("     Make sure step_two_understand.py exists and is in the backend folder")
+        return
     except Exception as exc:  # noqa: BLE001
         logger.error("Step 2 failed: %s", exc, exc_info=True)
         print(f"\n  ❌ Step 2 Error: {exc}")
@@ -298,7 +291,7 @@ async def run_pipeline(query: str) -> None:
     except ImportError as exc:
         logger.error("Step 3 import error: %s", exc, exc_info=True)
         print(f"\n  ❌ Step 3 Import Error: {exc}")
-        print("     This is likely a missing import in step_three_search.py")
+        print("     Make sure step_three_search.py exists and is in the backend folder")
         print("     Steps 1 & 2 completed successfully!")
         return
     except Exception as exc:  # noqa: BLE001
@@ -318,10 +311,12 @@ async def run_pipeline(query: str) -> None:
 
     qtype = getattr(strategy.query_type, "value", strategy.query_type)
     print(f"  Query type:  {qtype}")
-    print(f"  Primary:     {strategy.primary_source}")
+    primary = strategy.target_authors[0] if strategy.target_authors else "(none)"
+    print(f"  Primary:     {primary}")
     print(f"  Sources:     {search_result.total_sources}")
+    levels_found = getattr(search_result, "levels_found", [])
     print(
-        f"  Levels:      {', '.join(search_result.levels_included) if search_result.levels_included else '(none)'}"
+        f"  Levels:      {', '.join(levels_found) if levels_found else '(none)'}"
     )
 
     logger.info("=" * 80)
