@@ -929,12 +929,13 @@ def normalize_text(text: str) -> str:
     """
     if not text:
         return ""
-    
-    # Replace unicode variants
+
+    # Replace Hebrew gershayim/geresh with plain ASCII
     text = text.replace('״', '"').replace('׳', "'")
-    # Normalize common stylized quotes to plain ASCII quotes
-    text = text.replace('"', '"').replace('"', '"')
-    text = text.replace(''', "'").replace(''', "'")
+
+    # Replace common “smart quote” variants with ASCII
+    text = text.replace('“', '"').replace('”', '"').replace('„', '"')
+    text = text.replace('’', "'").replace('‘', "'")
 
     return text.strip()
 

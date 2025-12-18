@@ -22,6 +22,9 @@ import json
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field, asdict
 from enum import Enum
+from pathlib import Path
+import importlib.util
+import re
 
 from anthropic import Anthropic
 
@@ -110,6 +113,221 @@ class SourceCategories:
     
     # Layer 8: Acharonim
     acharonim: bool = False  # Pnei Yehoshua, Ketzos, etc.
+
+    @classmethod
+    def from_dict(cls, raw: Any) -> "SourceCategories":
+        """Best-effort construction from Claude JSON."""
+        if not isinstance(raw, dict):
+            return cls()
+
+        # Allow a few common key variants
+        alias = {
+            "psukim": "psukim",
+            "pesukim": "psukim",
+            "tanach": "psukim",
+            "mishnah": "mishnayos",
+            "mishna": "mishnayos",
+            "mishnayos": "mishnayos",
+            "tosefta": "tosefta",
+            "gemara": "gemara_bavli",
+            "bavli": "gemara_bavli",
+            "gemara_bavli": "gemara_bavli",
+            "gemara_yerushalmi": "gemara_yerushalmi",
+            "yerushalmi": "gemara_yerushalmi",
+            "midrash": "midrash",
+            "rashi": "rashi",
+            "tosfos": "tosfos",
+            "tosafot": "tosfos",
+            "rishonim": "rishonim",
+            "rambam": "rambam",
+            "tur": "tur",
+            "shulchan_aruch": "shulchan_aruch",
+            "nosei_keilim_rambam": "nosei_keilim_rambam",
+            "nosei_keilim_tur": "nosei_keilim_tur",
+            "nosei_keilim_sa": "nosei_keilim_sa",
+            "acharonim": "acharonim",
+        }
+
+        kwargs: Dict[str, bool] = {}
+        for k, v in raw.items():
+            k_norm = str(k).strip().lower().replace(" ", "_").replace("-", "_")
+            field_name = alias.get(k_norm)
+            if not field_name:
+                continue
+            kwargs[field_name] = bool(v)
+
+        return cls(**kwargs)
+
+
+# ==============================================================================
+#  ENUM COERCION (defensive parsing of Claude JSON)
+# ==============================================================================
+
+_BREADTH_ALIASES = {
+    # Claude sometimes uses descriptive words; map them to our allowed enum values
+    "focused": "narrow",
+    "tight": "narrow",
+    "specific": "narrow",
+    "narrowly": "narrow",
+    "broad": "wide",
+    "broadly": "wide",
+    "expanded": "wide",
+    "full": "exhaustive",
+    "complete": "exhaustive",
+    "comprehensive": "exhaustive",
+}
+
+_SEARCH_METHOD_ALIASES = {
+    "trickleup": "trickle_up",
+    "trickle-up": "trickle_up",
+    "trickledown": "trickle_down",
+    "trickle-down": "trickle_down",
+}
+
+
+def _coerce_enum(enum_cls: type[Enum], raw_value: Any, default_member: Enum, aliases: Optional[Dict[str, str]] = None) -> Enum:
+    """Best-effort coercion of a string-ish value into an Enum member."""
+    if raw_value is None:
+        return default_member
+    if isinstance(raw_value, enum_cls):
+        return raw_value
+
+    s = str(raw_value).strip()
+    if not s:
+        return default_member
+
+    s_norm = s.lower().replace(" ", "_").replace("-", "_")
+    if aliases:
+        s_norm = aliases.get(s_norm, s_norm)
+
+    # Match by Enum.value
+    for member in enum_cls:
+        if str(getattr(member, "value", "")).lower() == s_norm:
+            return member
+
+    # Match by Enum.name (in case Claude returns e.g. "STANDARD")
+    for member in enum_cls:
+        if str(getattr(member, "name", "")).lower() == s_norm:
+            return member
+
+    return default_member
+
+
+def _extract_json_object(text: str) -> Optional[Dict[str, Any]]:
+    """Extract the first JSON object from a Claude response."""
+    if not text:
+        return None
+    t = text.strip()
+
+    # Strip markdown fences
+    if t.startswith("```"):
+        parts = t.split("```")
+        if len(parts) >= 2:
+            t = parts[1].strip()
+            if t.lower().startswith("json"):
+                t = t[4:].strip()
+
+    # Fast path
+    try:
+        obj = json.loads(t)
+        return obj if isinstance(obj, dict) else None
+    except Exception:
+        pass
+
+    # Greedy extract between first { and last }
+    m = re.search(r"\{.*\}", t, flags=re.DOTALL)
+    if not m:
+        return None
+    try:
+        obj = json.loads(m.group(0))
+        return obj if isinstance(obj, dict) else None
+    except Exception:
+        return None
+
+
+def _safe_list(x: Any) -> List[str]:
+    if x is None:
+        return []
+    if isinstance(x, list):
+        return [str(i) for i in x if str(i).strip()]
+    if isinstance(x, str):
+        return [s.strip() for s in x.split(",") if s.strip()]
+    return []
+
+
+def _load_author_kb():
+    """Load author helpers even if the project isn't installed as a package."""
+    try:
+        from torah_authors_master import is_author, get_author_matches  # type: ignore
+        return is_author, get_author_matches
+    except Exception:
+        try:
+            here = Path(__file__).resolve().parent
+            path = here / "torah_authors_master.py"
+            if not path.exists():
+                return None, None
+            spec = importlib.util.spec_from_file_location("_ohr_haner_torah_authors_master", str(path))
+            if spec is None or spec.loader is None:
+                return None, None
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)  # type: ignore
+            return getattr(mod, "is_author", None), getattr(mod, "get_author_matches", None)
+        except Exception:
+            return None, None
+
+
+def _is_meta_term(term: str) -> bool:
+    try:
+        from smart_gather import META_TERMS_HEBREW  # type: ignore
+        return term in META_TERMS_HEBREW
+    except Exception:
+        # Minimal safety net
+        return term in {"שיטה", "שיטות", "דעה", "דעות", "סברא", "סברה", "מחלוקת", "טעם", "כלל"}
+
+
+def _split_terms_into_topics_and_authors(hebrew_terms: List[str]) -> tuple[list[str], list[str]]:
+    """Return (topics_hebrew, authors_en)."""
+    is_author, get_author_matches = _load_author_kb()
+
+    topics: List[str] = []
+    authors: List[str] = []
+    for t in hebrew_terms:
+        t = str(t).strip()
+        if not t:
+            continue
+        if _is_meta_term(t):
+            continue
+
+        try:
+            is_auth = bool(is_author(t)) if callable(is_author) else False
+        except Exception:
+            is_auth = False
+
+        if is_auth:
+            # Convert to canonical English if possible (Step 3 expects e.g. "Ran")
+            en = None
+            try:
+                if callable(get_author_matches):
+                    matches = get_author_matches(t) or []
+                    if matches:
+                        en = matches[0].get("primary_name_en")
+            except Exception:
+                en = None
+            authors.append(en or t)
+        else:
+            topics.append(t)
+
+    # Dedup while preserving order
+    def _dedup(seq: List[str]) -> List[str]:
+        seen = set()
+        out = []
+        for s in seq:
+            if s not in seen:
+                seen.add(s)
+                out.append(s)
+        return out
+
+    return _dedup(topics), _dedup(authors)
 
 
 @dataclass 
@@ -313,50 +531,69 @@ Return ONLY valid JSON."""
                 response_text = response_text[4:]
             response_text = response_text.strip()
         
-        result = json.loads(response_text)
-        
-        # Build SourceCategories
-        cats = result.get("source_categories", {})
-        source_categories = SourceCategories(
-            psukim=cats.get("psukim", False),
-            mishnayos=cats.get("mishnayos", False),
-            tosefta=cats.get("tosefta", False),
-            gemara_bavli=cats.get("gemara_bavli", True),
-            gemara_yerushalmi=cats.get("gemara_yerushalmi", False),
-            midrash=cats.get("midrash", False),
-            rashi=cats.get("rashi", True),
-            tosfos=cats.get("tosfos", True),
-            rishonim=cats.get("rishonim", False),
-            rambam=cats.get("rambam", False),
-            tur=cats.get("tur", False),
-            shulchan_aruch=cats.get("shulchan_aruch", False),
-            nosei_keilim_rambam=cats.get("nosei_keilim_rambam", False),
-            nosei_keilim_tur=cats.get("nosei_keilim_tur", False),
-            nosei_keilim_sa=cats.get("nosei_keilim_sa", False),
-            acharonim=cats.get("acharonim", False),
-        )
-        
+        result = _extract_json_object(response_text)
+        if not result:
+            raise json.JSONDecodeError("Could not extract JSON object", response_text, 0)
+
+        # Build SourceCategories (tolerant to missing/extra keys)
+        source_categories = SourceCategories.from_dict(result.get("source_categories"))
+
+        # Coerce enums defensively
+        query_type = _coerce_enum(QueryType, result.get("query_type"), QueryType.UNKNOWN)
+        realm = _coerce_enum(Realm, result.get("realm"), Realm.UNKNOWN)
+        breadth = _coerce_enum(Breadth, result.get("breadth"), Breadth.STANDARD, _BREADTH_ALIASES)
+        search_method = _coerce_enum(SearchMethod, result.get("search_method"), SearchMethod.TRICKLE_UP, _SEARCH_METHOD_ALIASES)
+
+        # Lists
+        search_topics = _safe_list(result.get("search_topics"))
+        search_topics_hebrew = _safe_list(result.get("search_topics_hebrew"))
+        target_masechtos = _safe_list(result.get("target_masechtos"))
+        target_perakim = _safe_list(result.get("target_perakim"))
+        target_dapim = _safe_list(result.get("target_dapim"))
+        target_authors = _safe_list(result.get("target_authors"))
+
         analysis = QueryAnalysis(
             original_query=query,
             hebrew_terms_from_step1=hebrew_terms,
-            query_type=QueryType(result.get("query_type", "unknown")),
-            realm=Realm(result.get("realm", "unknown")),
-            breadth=Breadth(result.get("breadth", "standard")),
-            search_method=SearchMethod(result.get("search_method", "trickle_up")),
-            search_topics=result.get("search_topics", []),
-            search_topics_hebrew=result.get("search_topics_hebrew", []),
-            target_masechtos=result.get("target_masechtos", []),
-            target_perakim=result.get("target_perakim", []),
-            target_dapim=result.get("target_dapim", []),
-            target_authors=result.get("target_authors", []),
+            query_type=query_type,
+            realm=realm,
+            breadth=breadth,
+            search_method=search_method,
+            search_topics=search_topics,
+            search_topics_hebrew=search_topics_hebrew,
+            target_masechtos=target_masechtos,
+            target_perakim=target_perakim,
+            target_dapim=target_dapim,
+            target_authors=target_authors,
             source_categories=source_categories,
             confidence=ConfidenceLevel(result.get("confidence", "medium")),
-            needs_clarification=result.get("needs_clarification", False),
+            needs_clarification=bool(result.get("needs_clarification", False)),
             clarification_question=result.get("clarification_question"),
-            clarification_options=result.get("clarification_options", []),
-            reasoning=result.get("reasoning", ""),
-            search_description=result.get("search_description", ""),
+            clarification_options=_safe_list(result.get("clarification_options")),
+            reasoning=str(result.get("reasoning", "") or ""),
+            search_description=str(result.get("search_description", "") or ""),
         )
+
+        # Post-clean: ensure authors/meta terms don't leak into search_topics
+        step1_topics, step1_authors = _split_terms_into_topics_and_authors(hebrew_terms)
+        if not analysis.search_topics_hebrew:
+            analysis.search_topics_hebrew = step1_topics
+
+        # Remove author-ish / meta terms from topics
+        cleaned = [t for t in analysis.search_topics_hebrew if t and not _is_meta_term(t)]
+        # If Claude accidentally includes author acronyms in topics, drop them
+        is_author, _ = _load_author_kb()
+        if callable(is_author):
+            cleaned = [t for t in cleaned if not bool(is_author(t))]
+        analysis.search_topics_hebrew = cleaned
+
+        # If Claude didn't provide authors, use Step 1 author extraction
+        if not analysis.target_authors and step1_authors:
+            analysis.target_authors = step1_authors
+
+        # If user is asking about specific rishonim, ensure we enable rishonim layer
+        if analysis.target_authors and any(a.lower() not in {"rashi", "tosfos", "tosafot"} for a in analysis.target_authors):
+            analysis.source_categories.rishonim = True
         
         # Log the analysis
         logger.info(f"[UNDERSTAND] Analysis complete:")
@@ -383,6 +620,7 @@ Return ONLY valid JSON."""
 
 def _fallback_analysis(query: str, hebrew_terms: List[str], error: str) -> QueryAnalysis:
     """Create a low-confidence fallback analysis."""
+    topics, authors = _split_terms_into_topics_and_authors(hebrew_terms)
     return QueryAnalysis(
         original_query=query,
         hebrew_terms_from_step1=hebrew_terms,
@@ -390,8 +628,9 @@ def _fallback_analysis(query: str, hebrew_terms: List[str], error: str) -> Query
         realm=Realm.UNKNOWN,
         breadth=Breadth.STANDARD,
         search_method=SearchMethod.HYBRID,
-        search_topics=hebrew_terms,  # Best guess
-        search_topics_hebrew=hebrew_terms,
+        search_topics=topics or hebrew_terms,  # Best guess
+        search_topics_hebrew=topics or hebrew_terms,
+        target_authors=authors,
         source_categories=SourceCategories(),
         confidence=ConfidenceLevel.LOW,
         needs_clarification=True,

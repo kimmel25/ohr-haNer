@@ -174,17 +174,23 @@ async def search_sefaria_for_inyan(
     try:
         from tools.sefaria_client import get_sefaria_client
         client = get_sefaria_client()
-        
-        # Build search query - just the inyan
+        # Build search query.
+        # NOTE: We do NOT prefix the masechta name into the text query, since that
+        # can over-constrain (the segment won't contain the book title).
         search_query = inyan
-        
-        # If masechta specified, add it to narrow results
+
+        # Build ES path filters:
+        # - category_filter: coarse corpus slice (e.g., ["Bavli"], ["Tanakh"])
+        # - masechta_filter: narrow to a specific book by path fragment (e.g., "Pesachim")
+        search_filters = []
+        if category_filter:
+            search_filters.extend(category_filter)
         if masechta_filter:
-            search_query = f"{masechta_filter} {inyan}"
+            search_filters.append(masechta_filter)
+
+        logger.info(f"[SEARCH] Searching Sefaria for INYAN: '{search_query}' filters={search_filters}")
         
-        logger.info(f"[SEARCH] Searching Sefaria for INYAN: '{search_query}'")
-        
-        results = await client.search(search_query, size=size, filters=category_filter)
+        results = await client.search(search_query, size=size, filters=search_filters)
         
         if results and results.hits:
             logger.info(f"[SEARCH] Found {len(results.hits)} hits")
@@ -286,13 +292,38 @@ async def find_base_sources(
         logger.warning("[FIND] No search topics provided!")
         return [], []
     
-    inyan = " ".join(search_terms)
+
+    # Search each topic separately; then merge.
+    # Joining multiple topics into one ES query over-constrains and often returns 0 hits.
+    terms = [t.strip() for t in search_terms if isinstance(t, str) and t.strip()]
+    display_inyan = " / ".join(terms) if terms else " ".join(search_terms)
+
+    async def gather_hits(category_filter: List[str], masechta_filter: str = None, per_term_size: int = 30) -> List[Dict]:
+        combined = []
+        for term in terms or [display_inyan]:
+            combined.extend(await search_sefaria_for_inyan(
+                term,
+                masechta_filter=masechta_filter,
+                category_filter=category_filter,
+                size=per_term_size
+            ))
+        # Deduplicate by ref preserving order
+        seen = set()
+        out = []
+        for h in combined:
+            ref = getattr(h, "ref", None) or (h.get("ref") if isinstance(h, dict) else None)
+            if ref and ref not in seen:
+                seen.add(ref)
+                out.append(h)
+        return out
+
+    inyan = display_inyan
     logger.info(f"[FIND] Phase 1: Finding base sources for INYAN: '{inyan}'")
     
     # === Search Psukim ===
     if analysis.source_categories.psukim:
         logger.info("[FIND] Searching psukim...")
-        hits = await search_sefaria_for_inyan(inyan, category_filter=["Tanakh"])
+        hits = await gather_hits(["Tanakh"])
         for hit in hits[:5]:
             if hit.ref not in found_refs:
                 found_refs.add(hit.ref)
@@ -310,7 +341,7 @@ async def find_base_sources(
     # === Search Mishnayos ===
     if analysis.source_categories.mishnayos:
         logger.info("[FIND] Searching mishnayos...")
-        hits = await search_sefaria_for_inyan(inyan, category_filter=["Mishnah"])
+        hits = await gather_hits(["Mishnah"])
         for hit in hits[:5]:
             if hit.ref not in found_refs:
                 found_refs.add(hit.ref)
@@ -333,11 +364,7 @@ async def find_base_sources(
         masechtos_to_search = analysis.target_masechtos or [None]
         
         for masechta in masechtos_to_search:
-            hits = await search_sefaria_for_inyan(
-                inyan, 
-                masechta_filter=masechta,
-                category_filter=["Bavli"]
-            )
+            hits = await gather_hits(["Bavli"], masechta_filter=masechta, per_term_size=30)
             
             for hit in hits[:10]:
                 # Only include base gemara refs (not commentaries)
@@ -493,7 +520,21 @@ async def trickle_down_search(analysis: QueryAnalysis) -> List[Source]:
     
     # Search in halachic literature
     logger.info(f"[TRICKLE DOWN] Searching later sources for: '{inyan}'")
-    hits = await search_sefaria_for_inyan(inyan, category_filter=["Halakhah"])
+    
+    # Search each topic separately, then merge
+    hits = []
+    terms = analysis.search_topics_hebrew or analysis.search_topics or [inyan]
+    for term in terms:
+        hits.extend(await search_sefaria_for_inyan(term, category_filter=["Halakhah"]))
+    # Deduplicate by ref
+    seen = set()
+    deduped = []
+    for h in hits:
+        ref = getattr(h, "ref", None) or (h.get("ref") if isinstance(h, dict) else None)
+        if ref and ref not in seen:
+            seen.add(ref)
+            deduped.append(h)
+    hits = deduped
     
     for hit in hits[:15]:
         if hit.ref not in found_refs:

@@ -431,6 +431,73 @@ class SefariaClient:
             logger.error(f"Sefaria API error: {e}")
             return None
     
+# ------------------------------------------
+#  INTERNAL HELPERS FOR SEARCH FILTERS
+# ------------------------------------------
+
+@staticmethod
+def _escape_for_es_regex(text: str) -> str:
+    """
+    Escape a path fragment for ES regexp queries.
+    ES regex patterns in Sefaria examples escape '/' as '\/'.
+    """
+    if text is None:
+        return ""
+    escaped = re.escape(str(text))
+    # Ensure forward slashes are escaped (Sefaria doc examples use '\/')
+    escaped = escaped.replace("/", r"\/")
+    return escaped
+
+def _filters_to_path_regexes(self, filters: List[str]) -> List[str]:
+    """
+    Convert high-level filters (e.g., 'Bavli', 'Tanakh', 'Pesachim')
+    into ES regex patterns applied to the 'path' field.
+
+    NOTE: Per Sefaria Search API docs, text filters apply to 'path'. citeturn0search1turn0search4
+    """
+    if not filters:
+        return []
+
+    mapped: List[str] = []
+    for f in filters:
+        if not f:
+            continue
+        f_str = str(f).strip()
+        low = f_str.lower()
+
+        # Pipeline shortcuts
+        if low in {"tanakh", "torah", "nakh"}:
+            mapped.append(r"Tanakh\/.*")
+            continue
+        if low in {"mishnah", "mishna"}:
+            mapped.append(r"Mishnah\/.*")
+            continue
+        if low in {"bavli"}:
+            mapped.append(r"Talmud\/Bavli\/.*")
+            continue
+        if low in {"yerushalmi", "jerusalem talmud"}:
+            mapped.append(r"Talmud\/Yerushalmi\/.*")
+            continue
+        if low in {"halakhah", "halacha", "halakhic"}:
+            mapped.append(r"Halakhah\/.*")
+            continue
+
+        # Explicit path
+        if "/" in f_str:
+            mapped.append(self._escape_for_es_regex(f_str) + r".*")
+        else:
+            # Book/category fragment anywhere in path
+            mapped.append(r".*\/" + self._escape_for_es_regex(f_str) + r".*")
+
+    # Deduplicate preserving order
+    seen = set()
+    out = []
+    for rx in mapped:
+        if rx not in seen:
+            seen.add(rx)
+            out.append(rx)
+    return out
+
     # ------------------------------------------
     #  SEARCH API
     # ------------------------------------------
@@ -455,29 +522,59 @@ class SefariaClient:
             SearchResults with hits and aggregations
         """
         logger.info(f"Searching Sefaria for: '{query}'")
-        
-        # Build ElasticSearch query
-        es_query = {
-            "size": size,
-            "query": {
-                "query_string": {
+        # Build ElasticSearch query (via Sefaria ES proxy).
+        #
+        # IMPORTANT:
+        # - Sefaria's "text" search supports filtering on the *path* field (not "categories").
+        # - Using match_phrase on "naive_lemmatizer" is generally more reliable for Hebrew.
+        #   See Sefaria Search API docs and examples.
+        #
+        # NOTE: We intentionally do NOT use query_string here because it is brittle
+        # with punctuation (gershayim/geresh, quotes) and can error or over-constrain.
+
+        base_query = {
+            "match_phrase": {
+                "naive_lemmatizer": {
                     "query": query,
-                    "default_operator": "AND"
+                    "slop": 10
+                }
+            }
+        }
+
+        es_query: Dict[str, Any] = {
+            "size": size,
+            "highlight": {
+                "pre_tags": ["<b>"],
+                "post_tags": ["</b>"],
+                "fields": {
+                    "exact": {"fragment_size": 200}
                 }
             },
-            "sort": [{"_score": {"order": "desc"}}]
-        }
-        
-        if filters:
-            es_query["query"] = {
-                "bool": {
-                    "must": es_query["query"],
-                    "filter": {
-                        "terms": {"categories": filters}
+            "query": {
+                "function_score": {
+                    "field_value_factor": {
+                        "field": "pagesheetrank",
+                        "missing": 0.04
+                    },
+                    "query": {
+                        "bool": {
+                            "must": base_query
+                        }
                     }
                 }
             }
-        
+        }
+
+        # Apply filters on the 'path' field (AND semantics).
+        if filters:
+            path_regexes = self._filters_to_path_regexes(filters)
+            if path_regexes:
+                es_query["query"]["function_score"]["query"]["bool"]["filter"] = {
+                    "bool": {
+                        "must": [{"regexp": {"path": rx}} for rx in path_regexes]
+                    }
+                }
+
         cache_key = f"search:{query}:{size}:{filters}"
         
         response = await self._request(

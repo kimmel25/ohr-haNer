@@ -96,7 +96,7 @@ class SefariaValidator:
         
         try:
             from torah_authors_master import AUTHOR_LOOKUP_INDEX
-            self._author_names = set(AUTHOR_LOOKUP_INDEX.keys())
+            self._author_names = {self._normalize_for_author_check(k) for k in AUTHOR_LOOKUP_INDEX.keys()}
             logger.debug(f"[VALIDATOR] Loaded {len(self._author_names)} author names from Master KB")
         except ImportError:
             logger.warning("[VALIDATOR] Could not import Master KB - author detection disabled")
@@ -118,7 +118,82 @@ class SefariaValidator:
         author_names = self._load_author_names()
         normalized = self._normalize_for_author_check(hebrew_term)
         return normalized in author_names
-    
+
+    # ------------------------------------------
+    #  AUTHOR DISAMBIGUATION (prevents 'Rashi' -> 'Rosh' type landmines)
+    # ------------------------------------------
+
+    @staticmethod
+    def _latin_norm(s: Optional[str]) -> str:
+        """Normalize Latin input for matching (letters only, lowercase)."""
+        import re
+        if not s:
+            return ""
+        return re.sub(r"[^a-z]", "", s.lower())
+
+    @staticmethod
+    def _levenshtein(a: str, b: str) -> int:
+        """Small Levenshtein distance implementation (no dependencies)."""
+        if a == b:
+            return 0
+        if not a:
+            return len(b)
+        if not b:
+            return len(a)
+        # DP with two rows
+        prev = list(range(len(b) + 1))
+        for i, ca in enumerate(a, 1):
+            cur = [i]
+            for j, cb in enumerate(b, 1):
+                ins = cur[j-1] + 1
+                dele = prev[j] + 1
+                sub = prev[j-1] + (0 if ca == cb else 1)
+                cur.append(min(ins, dele, sub))
+            prev = cur
+        return prev[-1]
+
+    def _candidate_tokens(self, cand: Dict[str, str]) -> Set[str]:
+        """Generate plausible latin tokens for an author candidate."""
+        import re
+        tokens = set()
+        cid = self._latin_norm(cand.get("id", ""))
+        if cid:
+            tokens.add(cid)
+        pen = self._latin_norm(cand.get("primary_name_en", ""))
+        if pen:
+            tokens.add(pen)
+            # also add first word if it's multi-word
+            parts = re.split(r"\s+", cand.get("primary_name_en", "").strip())
+            if parts:
+                first = self._latin_norm(parts[0])
+                if first:
+                    tokens.add(first)
+        return tokens
+
+    def _author_candidate_matches_original(self, original_word: Optional[str], cand: Dict[str, str]) -> bool:
+        """
+        Decide if an author-candidate is plausibly what the user typed.
+
+        Example landmine: original='rashi' but a Hebrew variant hits 'ראש' (Rosh).
+        We should NOT treat that as an author-match for 'rashi'.
+        """
+        o = self._latin_norm(original_word)
+        if not o:
+            return True  # no constraint
+        tokens = self._candidate_tokens(cand)
+        if not tokens:
+            return True
+
+        for t in tokens:
+            if not t:
+                continue
+            if o == t or o in t or t in o:
+                return True
+            # allow small typos for longer names
+            if len(o) >= 5 and len(t) >= 5 and self._levenshtein(o, t) <= 1:
+                return True
+        return False
+
     # ==========================================
     #  SINGLE TERM VALIDATION
     # ==========================================
@@ -177,13 +252,29 @@ class SefariaValidator:
                 
                 # Check if this is an author name
                 is_author = self.is_author_name(hebrew_term)
+
+                # If it looks like an author, capture which author(s) we think it is.
+                author_candidates = []
+                if is_author:
+                    try:
+                        from torah_authors_master import get_author_matches
+                        matches = get_author_matches(hebrew_term)
+                        for a in matches:
+                            author_candidates.append({
+                                "id": a.get("id", ""),
+                                "primary_name_en": a.get("primary_name_en", ""),
+                                "primary_name_he": a.get("primary_name_he", ""),
+                            })
+                    except Exception:
+                        author_candidates = []
                 
                 result = {
                     "found": hits > 0,
                     "hits": hits,
                     "sample_refs": sample_refs,
                     "term": hebrew_term,
-                    "is_author": is_author
+                    "is_author": is_author,
+                    "author_candidates": author_candidates
                 }
                 
                 self._cache[hebrew_term] = result
@@ -312,13 +403,30 @@ class SefariaValidator:
                 non_author_results.append((variant, result, hits))
         
         # If we found any authors, return the best one (highest hits among authors)
-        if author_results:
-            # Sort by hits descending
-            author_results.sort(key=lambda x: x[2], reverse=True)
-            best_variant, best_result, best_hits = author_results[0]
-            logger.info(f"[WEIGHTED-VALIDATION] ✓ AUTHOR PRIORITY: '{best_variant}' ({best_hits} hits)")
-            return best_result
         
+        if author_results:
+                    # If original_word is provided, only treat an "author match" as valid
+                    # when it plausibly matches what the user typed (prevents Rashi->Rosh landmines).
+                    filtered_authors = []
+                    for variant, result, hits in author_results:
+                        cands = result.get("author_candidates") or []
+                        if not cands:
+                            # If we can't identify the author, keep it (back-compat)
+                            filtered_authors.append((variant, result, hits))
+                            continue
+
+                        if any(self._author_candidate_matches_original(original_word, c) for c in cands):
+                            filtered_authors.append((variant, result, hits))
+                        else:
+                            # Demote to non-author pool
+                            non_author_results.append((variant, result, hits))
+
+                    if filtered_authors:
+                        filtered_authors.sort(key=lambda x: x[2], reverse=True)
+                        best_variant, best_result, best_hits = filtered_authors[0]
+                        logger.info(f"[WEIGHTED-VALIDATION] ✓ AUTHOR PRIORITY: '{best_variant}' ({best_hits} hits)")
+                        return best_result
+
         # PHASE 2: No authors found, use standard hit-count weighting
         best_score = 0
         best_result = None
