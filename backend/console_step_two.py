@@ -151,6 +151,35 @@ def print_sefaria_data(data: dict):
         print(f"\n  ⚠️ Error: {data['error']}")
 
 
+# --------------------------
+# Print QueryAnalysis (Step 2)
+# --------------------------
+def print_query_analysis(analysis):
+    """Pretty print a QueryAnalysis returned by step_two_understand.understand()."""
+    logger.info(f"QueryAnalysis generated - Type: {getattr(analysis,'query_type', '(none)')}, "
+                f"Confidence: {getattr(analysis,'confidence', '(none)')}, "
+                f"Authors: {getattr(analysis,'target_authors', [])}")
+    print(f"\n{'─' * 50}")
+    print(f"  🧠 QUERY ANALYSIS (Step 2)")
+    print(f"{'─' * 50}")
+    print(f"  Query:           {getattr(analysis, 'original_query', '(none)')}")
+    print(f"  Query Type:      {getattr(analysis, 'query_type', '(none)')}")
+    print(f"  Realm:           {getattr(analysis, 'realm', '(none)')}")
+    print(f"  Search Method:   {getattr(analysis, 'search_method', '(none)')}")
+    print(f"  INYAN (he):      {getattr(analysis, 'search_topics_hebrew', [])}")
+    print(f"  INYAN (en):      {getattr(analysis, 'search_topics', [])}")
+    print(f"  WHERE (masechtos): {getattr(analysis, 'target_masechtos', []) or getattr(analysis, 'target_sefarim', [])}")
+    print(f"  REFS:            {getattr(analysis, 'target_refs', [])}")
+    print(f"  WHOSE:           {getattr(analysis, 'target_authors', [])}")
+    print(f"  Confidence:      {getattr(analysis, 'confidence', '(none)')}")
+    print(f"  Needs Clarify:   {getattr(analysis, 'needs_clarification', False)}")
+    if getattr(analysis, 'reasoning', None):
+        print(f"\n  📝 Reasoning:\n    {analysis.reasoning}")
+    if getattr(analysis, 'search_description', None):
+        print(f"\n  🔎 Search Description:\n    {analysis.search_description}")
+    print(f"{'─' * 50}\n")
+
+
 async def test_sefaria(hebrew_term: str):
     """Test just the Sefaria data gathering."""
     logger.info(f"Testing Sefaria-only mode for term: '{hebrew_term}'")
@@ -173,9 +202,16 @@ async def test_full(hebrew_term: str):
     
     try:
         from step_two_understand import understand
-        strategy = await understand(hebrew_term)
-        print_strategy(strategy)
-        logger.info(f"Full analysis completed successfully for '{hebrew_term}'")
+        result = await understand(hebrew_term)
+        # Step 2 returns a QueryAnalysis. Some callers expect a SearchStrategy.
+        # Detect and print appropriately.
+        if hasattr(result, "primary_source"):
+            # It's a SearchStrategy-like object
+            print_strategy(result)
+        else:
+            # It's a QueryAnalysis
+            print_query_analysis(result)
+            logger.info(f"Full analysis completed successfully for '{hebrew_term}'")
     except Exception as e:
         logger.error(f"Full analysis failed for '{hebrew_term}': {e}", exc_info=True)
         print(f"\n  ✗ Error: {e}")
