@@ -18,21 +18,52 @@ import os
 import sys
 from pathlib import Path
 from typing import Any, Dict, List
+from datetime import datetime
 
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-# Set up logging
-try:
-    from logging_config import setup_logging
-
-    setup_logging(log_level=logging.DEBUG)
-except ImportError:
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
-        datefmt="%H:%M:%S",
+# Set up logging with file handler
+def setup_logging():
+    """Set up logging to both file and console."""
+    log_dir = Path(__file__).parent / "logs"
+    log_dir.mkdir(exist_ok=True)
+    
+    log_file = log_dir / f"marei_mekomos_{datetime.now().strftime('%Y%m%d')}.log"
+    
+    # Create formatters
+    file_formatter = logging.Formatter(
+        '%(asctime)s | %(levelname)-8s | %(name)s:%(funcName)s:%(lineno)d | %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
     )
+    console_formatter = logging.Formatter(
+        '%(asctime)s | %(levelname)-8s | %(message)s',
+        datefmt='%H:%M:%S'
+    )
+    
+    # File handler (DEBUG level)
+    file_handler = logging.FileHandler(log_file, encoding='utf-8')
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(file_formatter)
+    
+    # Console handler (INFO level)
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(console_formatter)
+    
+    # Root logger
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.DEBUG)
+    root_logger.addHandler(file_handler)
+    root_logger.addHandler(console_handler)
+    
+    print(f"Logging to: {log_file}")
+    root_logger.info("=" * 80)
+    root_logger.info("Marei Mekomos V5 - Full Pipeline Console - Logging initialized")
+    root_logger.info(f"Log file: {log_file}")
+    root_logger.info("=" * 80)
+
+setup_logging()
 
 logger = logging.getLogger(__name__)
 

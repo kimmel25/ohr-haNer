@@ -29,6 +29,21 @@ from dataclasses import dataclass, field
 
 from models import ConfidenceLevel
 
+# Import the new commentary fetcher
+try:
+    from commentary_fetcher import (
+        CommentaryFetcherFactory,
+        CommentaryDiscoverer,
+        AuthorRegistry,
+        RefNormalizer,
+        FetchedCommentary,
+        fetch_commentaries_v2,
+        to_source
+    )
+    COMMENTARY_FETCHER_AVAILABLE = True
+except ImportError:
+    COMMENTARY_FETCHER_AVAILABLE = False
+
 # Import Step 2's output type
 try:
     from step_two_understand import (
@@ -274,30 +289,25 @@ async def find_base_sources(
 ) -> Tuple[List[Source], List[str]]:
     """
     PHASE 1: Find the base sources where the INYAN is discussed.
-    
-    Uses search_topics (NOT author names) to find:
-    - Psukim
-    - Mishnayos  
-    - Gemara
-    
-    Returns: (list of Source objects, list of base refs for commentary fetching)
     """
     sources = []
-    base_refs = []  # Gemara refs to fetch commentaries on
+    base_refs = []
     found_refs: Set[str] = set()
     
-    # Get the search terms - the INYAN
     search_terms = analysis.search_topics_hebrew or analysis.search_topics
     if not search_terms:
         logger.warning("[FIND] No search topics provided!")
         return [], []
+
+    terms = [t.strip() for t in search_terms if isinstance(t, str) and t.strip()]
+    display_inyan = " / ".join(terms) if terms else " ".join(search_terms)
     
+    logger.info(f"[FIND] Phase 1: Finding base sources for INYAN: '{display_inyan}'")
+    logger.info(f"[FIND] Target masechtos: {analysis.target_masechtos}")
+    logger.info(f"[FIND] Source categories enabled: bavli={analysis.source_categories.gemara_bavli}, mishna={analysis.source_categories.mishnayos}, psukim={analysis.source_categories.psukim}")
 
     # Search each topic separately; then merge.
     # Joining multiple topics into one ES query over-constrains and often returns 0 hits.
-    terms = [t.strip() for t in search_terms if isinstance(t, str) and t.strip()]
-    display_inyan = " / ".join(terms) if terms else " ".join(search_terms)
-
     async def gather_hits(category_filter: List[str], masechta_filter: str = None, per_term_size: int = 30) -> List[Dict]:
         combined = []
         for term in terms or [display_inyan]:
@@ -362,31 +372,40 @@ async def find_base_sources(
         
         # If we have target masechtos, search within them
         masechtos_to_search = analysis.target_masechtos or [None]
+        logger.info(f"[FIND] Searching in masechtos: {masechtos_to_search}")
         
         for masechta in masechtos_to_search:
+            logger.info(f"[FIND]   Searching masechta: {masechta or 'all'}")
             hits = await gather_hits(["Bavli"], masechta_filter=masechta, per_term_size=30)
+            logger.info(f"[FIND]   Got {len(hits)} hits for {masechta or 'all'}")
             
-            for hit in hits[:10]:
-                # Only include base gemara refs (not commentaries)
+            for idx, hit in enumerate(hits[:10]):
+                logger.debug(f"[FIND]     Hit {idx+1}: {hit.ref} (is_base={is_base_gemara_ref(hit.ref)})")
+                
                 if is_base_gemara_ref(hit.ref) and hit.ref not in found_refs:
                     found_refs.add(hit.ref)
                     
                     text = await get_text(hit.ref)
                     if text:
+                        hebrew_preview = (getattr(text, 'hebrew', '') or '')[:100]
+                        logger.info(f"[FIND]       ✓ Added base source: {hit.ref}")
+                        logger.debug(f"[FIND]         Hebrew preview: {hebrew_preview}...")
+                        
                         sources.append(Source(
                             ref=hit.ref,
                             he_ref=getattr(hit, 'he_ref', hit.ref),
                             level=SourceLevel.GEMARA_BAVLI,
                             level_hebrew=LEVEL_HEBREW[SourceLevel.GEMARA_BAVLI],
                             hebrew_text=getattr(text, 'hebrew', '') or '',
-                            relevance_description=f"גמרא העוסקת ב{inyan}",
+                            relevance_description=f"גמרא העוסקת ב{display_inyan}",
                             is_primary=True
                         ))
-                        
-                        # Add to base_refs for commentary fetching
                         base_refs.append(hit.ref)
+                    else:
+                        logger.warning(f"[FIND]       ✗ Could not fetch text for: {hit.ref}")
     
     logger.info(f"[FIND] Phase 1 complete: {len(sources)} base sources, {len(base_refs)} gemara refs")
+    logger.info(f"[FIND] Base refs: {base_refs}")
     return sources, base_refs
 
 
@@ -401,8 +420,15 @@ async def fetch_commentaries(
     """
     PHASE 2: Fetch commentaries on the base sources found.
     
-    Uses target_authors to determine WHICH commentaries to fetch.
-    Constructs refs like "Rashi on Pesachim 4b" and fetches them.
+    Uses DISCOVERY-BASED approach:
+    1. Ask Sefaria what commentaries exist (via /api/related/)
+    2. Filter to target authors
+    3. Fetch full text for matching commentaries
+    
+    This is more reliable than constructing refs blindly because:
+    - Commentary numbering doesn't align with Gemara line numbers
+    - Not all commentators comment on every passage
+    - The related API tells us exactly what exists
     """
     sources = []
     found_refs: Set[str] = set()
@@ -412,59 +438,307 @@ async def fetch_commentaries(
         return []
     
     logger.info(f"[FETCH] Phase 2: Fetching commentaries on {len(base_refs)} base refs")
-    logger.info(f"[FETCH] Target authors: {analysis.target_authors}")
+    logger.info(f"[FETCH] Base refs: {base_refs}")
+    logger.info(f"[FETCH] Target authors from analysis: {analysis.target_authors}")
     
-    # Determine which authors to fetch
-    authors_to_fetch = []
-    
-    # Always fetch Rashi if requested
-    if analysis.source_categories.rashi:
-        authors_to_fetch.append(("Rashi", SourceLevel.RASHI))
-    
-    # Always fetch Tosfos if requested
-    if analysis.source_categories.tosfos:
-        authors_to_fetch.append(("Tosafot", SourceLevel.TOSFOS))
-    
-    # Add specifically requested authors (from target_authors)
+    # Build target author set (normalized)
+    target_authors_lower = set()
     for author in analysis.target_authors:
-        author_normalized = author.strip()
-        if author_normalized.lower() not in ["rashi", "tosfos", "tosafot"]:
-            authors_to_fetch.append((author_normalized, SourceLevel.RISHONIM))
+        target_authors_lower.add(author.lower().strip())
+        # Also add common variations
+        if author.lower() == "tosfos":
+            target_authors_lower.add("tosafot")
+        elif author.lower() == "tosafot":
+            target_authors_lower.add("tosfos")
     
-    # Add other rishonim if requested
+    # Add from source_categories if specified
+    if analysis.source_categories.rashi:
+        target_authors_lower.add("rashi")
+    if analysis.source_categories.tosfos:
+        target_authors_lower.add("tosafot")
+        target_authors_lower.add("tosfos")
     if analysis.source_categories.rishonim:
-        additional_rishonim = ["Ran", "Rashba", "Ritva", "Ramban"]
-        for rishon in additional_rishonim:
-            if rishon not in [a[0] for a in authors_to_fetch]:
-                authors_to_fetch.append((rishon, SourceLevel.RISHONIM))
+        target_authors_lower.update(["ran", "rashba", "ritva", "ramban", "rosh", "meiri"])
     
-    logger.info(f"[FETCH] Will fetch: {[a[0] for a in authors_to_fetch]}")
+    logger.info(f"[FETCH] Target authors (normalized): {sorted(target_authors_lower)}")
     
-    # For each base ref, fetch the commentaries
-    for base_ref in base_refs[:5]:  # Limit to avoid too many API calls
-        for author, level in authors_to_fetch:
-            commentary_ref = construct_commentary_ref(base_ref, author)
+    # Get Sefaria client
+    try:
+        from tools.sefaria_client import get_sefaria_client
+        client = get_sefaria_client()
+    except Exception as e:
+        logger.error(f"[FETCH] Could not get Sefaria client: {e}")
+        return []
+    
+    # Process each base ref - use DISCOVERY approach
+    for base_idx, base_ref in enumerate(base_refs[:5], 1):
+        logger.info(f"[FETCH] Processing base ref {base_idx}/{min(len(base_refs), 5)}: {base_ref}")
+        
+        # Get daf-level ref for broader discovery
+        daf_ref = _to_daf_level(base_ref)
+        logger.info(f"[FETCH]   Discovering commentaries on: {daf_ref}")
+        
+        try:
+            # DISCOVERY: Ask Sefaria what commentaries exist
+            related = await client.get_related(daf_ref, with_text=True)
             
-            if commentary_ref and commentary_ref not in found_refs:
-                found_refs.add(commentary_ref)
+            if not related or not related.commentaries:
+                logger.warning(f"[FETCH]   No commentaries found for {daf_ref}")
+                continue
+            
+            logger.info(f"[FETCH]   Found {len(related.commentaries)} total commentaries")
+            
+            # Filter and fetch each matching commentary
+            for comm in related.commentaries:
+                # Extract author from ref (e.g., "Rashi on Pesachim 4b:1" -> "Rashi")
+                author_name = _extract_author_from_ref(comm.ref)
+                if not author_name:
+                    continue
                 
-                text = await get_text(commentary_ref)
+                # Check if this author is in our target list
+                author_lower = author_name.lower()
+                if target_authors_lower and author_lower not in target_authors_lower:
+                    continue
+                
+                # Skip if already fetched
+                if comm.ref in found_refs:
+                    continue
+                found_refs.add(comm.ref)
+                
+                # Fetch full text
+                logger.debug(f"[FETCH]     Fetching: {comm.ref}")
+                text = await get_text(comm.ref)
+                
                 if text:
                     hebrew = getattr(text, 'hebrew', '') or ''
-                    if hebrew:  # Only add if we got actual text
+                    if hebrew:
+                        # Determine level
+                        level = _get_level_for_author(author_name)
+                        
+                        logger.info(f"[FETCH]     ✓ Got {author_name}: {comm.ref} ({len(hebrew)} chars)")
+                        
                         sources.append(Source(
-                            ref=commentary_ref,
-                            he_ref=getattr(text, 'he_ref', commentary_ref),
+                            ref=comm.ref,
+                            he_ref=getattr(text, 'he_ref', comm.ref),
                             level=level,
-                            level_hebrew=LEVEL_HEBREW.get(level, author),
+                            level_hebrew=LEVEL_HEBREW.get(level, author_name),
                             hebrew_text=hebrew,
-                            author=author,
-                            relevance_description=f"{author} על {base_ref}"
+                            author=author_name,
+                            relevance_description=f"{author_name} על {daf_ref}"
                         ))
-                        logger.debug(f"[FETCH] Got: {commentary_ref}")
+                    else:
+                        logger.debug(f"[FETCH]     ✗ Empty text: {comm.ref}")
+                else:
+                    logger.debug(f"[FETCH]     ✗ Could not fetch: {comm.ref}")
+                        
+        except Exception as e:
+            logger.error(f"[FETCH] Error processing {base_ref}: {e}")
+            continue
     
+    # =========================================================================
+    # PHASE 2B: EXPLICIT FETCH FOR MISSING TARGET AUTHORS
+    # =========================================================================
+    # Check which specifically requested authors weren't found
+    found_authors = set(s.author.lower() for s in sources)
+    original_target_authors = [a.lower() for a in analysis.target_authors]
+    
+    missing_authors = []
+    for target in original_target_authors:
+        # Normalize variations
+        target_normalized = target
+        if target in ["tosfos", "tosafot"]:
+            if "tosfos" not in found_authors and "tosafot" not in found_authors:
+                missing_authors.append(target)
+        elif target not in found_authors:
+            missing_authors.append(target)
+    
+    if missing_authors:
+        logger.warning(f"[FETCH] ⚠️  Missing requested authors: {missing_authors}")
+        logger.info(f"[FETCH] Attempting explicit fetch for missing authors...")
+        
+        # Try explicit fetching for each missing author
+        for missing_author in missing_authors:
+            for base_ref in base_refs[:5]:  # Limit to first 5 base refs
+                # Extract masechta and daf
+                masechta, daf = _extract_masechta_and_daf(base_ref)
+                if not masechta or not daf:
+                    continue
+                
+                # Get refs to try for this author
+                refs_to_try = _get_refs_to_try_for_author(missing_author, masechta, daf)
+                
+                for ref_to_try in refs_to_try:
+                    if ref_to_try in found_refs:
+                        continue
+                    
+                    logger.info(f"[FETCH]   Trying explicit: {ref_to_try}")
+                    
+                    try:
+                        text = await get_text(ref_to_try)
+                        if text:
+                            hebrew = getattr(text, 'hebrew', '') or ''
+                            if hebrew and len(hebrew.strip()) > 10:
+                                found_refs.add(ref_to_try)
+                                
+                                level = _get_level_for_author(missing_author)
+                                author_display = missing_author.title()
+                                
+                                logger.info(f"[FETCH]   ✓ FOUND {author_display}: {ref_to_try} ({len(hebrew)} chars)")
+                                
+                                sources.append(Source(
+                                    ref=ref_to_try,
+                                    he_ref=getattr(text, 'he_ref', ref_to_try),
+                                    level=level,
+                                    level_hebrew=LEVEL_HEBREW.get(level, author_display),
+                                    hebrew_text=hebrew,
+                                    author=author_display,
+                                    relevance_description=f"{author_display} על {masechta} {daf}"
+                                ))
+                                # Found for this author, move to next author
+                                break
+                    except Exception as e:
+                        logger.debug(f"[FETCH]   Error with {ref_to_try}: {e}")
+                
+                # If we found something for this author, don't check more base refs
+                if any(s.author.lower() == missing_author for s in sources):
+                    break
+    
+    # Sort by level (Rashi first, then Tosfos, etc.)
+    level_order = {
+        SourceLevel.RASHI: 1,
+        SourceLevel.TOSFOS: 2,
+        SourceLevel.RISHONIM: 3,
+        SourceLevel.ACHARONIM: 4,
+    }
+    sources.sort(key=lambda s: level_order.get(s.level, 99))
+    
+    # Log final results
     logger.info(f"[FETCH] Phase 2 complete: {len(sources)} commentaries fetched")
+    
+    # Log by author for clarity
+    by_author = {}
+    for source in sources:
+        author = source.author
+        if author not in by_author:
+            by_author[author] = 0
+        by_author[author] += 1
+    
+    logger.info(f"[FETCH] Sources by author:")
+    for author, count in sorted(by_author.items()):
+        logger.info(f"[FETCH]   • {author}: {count}")
+    
+    # Check if any target authors are still missing
+    final_found_authors = set(s.author.lower() for s in sources)
+    still_missing = [a for a in original_target_authors 
+                    if a not in final_found_authors 
+                    and not (a in ["tosfos", "tosafot"] and ("tosfos" in final_found_authors or "tosafot" in final_found_authors))]
+    
+    if still_missing:
+        logger.warning(f"[FETCH] ⚠️  Could not find: {still_missing}")
+        logger.warning(f"[FETCH]    These authors may not have commentary on this sugya in Sefaria")
+    
     return sources
+
+
+def _extract_masechta_and_daf(ref: str) -> tuple:
+    """
+    Extract masechta and daf from a Gemara reference.
+    
+    "Pesachim 4b:5" -> ("Pesachim", "4b")
+    "Pesachim 4b" -> ("Pesachim", "4b")
+    """
+    # Pattern: [Masechta] [Daf][a/b][:line]
+    match = re.match(r'^([A-Za-z\s]+?)\s*(\d+[ab])(?::\d+)?$', ref.strip())
+    if match:
+        return match.group(1).strip(), match.group(2)
+    return None, None
+
+
+def _get_refs_to_try_for_author(author_name: str, masechta: str, daf: str) -> List[str]:
+    """
+    Get list of refs to try for an author on a specific daf.
+    
+    Handles special cases like the Ran (primary work is on Rif).
+    """
+    author_lower = author_name.lower()
+    refs = []
+    
+    # Special handling for Ran - try multiple formats
+    if author_lower == "ran":
+        refs = [
+            f"Ran on {masechta} {daf}",           # Primary (on Rif, but indexed by Gemara daf)
+            f"Chiddushei HaRan on {masechta} {daf}",  # Novellae
+        ]
+    
+    # Rashba
+    elif author_lower == "rashba":
+        refs = [
+            f"Rashba on {masechta} {daf}",
+            f"Chiddushei HaRashba on {masechta} {daf}",
+        ]
+    
+    # Ritva
+    elif author_lower == "ritva":
+        refs = [
+            f"Ritva on {masechta} {daf}",
+            f"Chiddushei HaRitva on {masechta} {daf}",
+        ]
+    
+    # Ramban
+    elif author_lower == "ramban":
+        refs = [
+            f"Ramban on {masechta} {daf}",
+            f"Chiddushei HaRamban on {masechta} {daf}",
+        ]
+    
+    # Default
+    else:
+        refs = [f"{author_name.title()} on {masechta} {daf}"]
+    
+    return refs
+
+
+def _to_daf_level(ref: str) -> str:
+    """
+    Convert a line-level ref to daf-level for broader commentary discovery.
+    
+    "Pesachim 4b:5" -> "Pesachim 4b"
+    "Pesachim 4b" -> "Pesachim 4b" (unchanged)
+    """
+    # Pattern: [Masechta] [Daf][a/b][:Line]
+    match = re.match(r'^([A-Za-z\s]+\d+[ab])(?::\d+)?$', ref.strip(), re.IGNORECASE)
+    if match:
+        return match.group(1).strip()
+    return ref
+
+
+def _extract_author_from_ref(ref: str) -> Optional[str]:
+    """
+    Extract author name from a commentary reference.
+    
+    "Rashi on Pesachim 4b:1" -> "Rashi"
+    "Tosafot on Ketubot 9a" -> "Tosafot"
+    """
+    match = re.match(r'^(.+?)\s+on\s+', ref, re.IGNORECASE)
+    if match:
+        return match.group(1).strip()
+    return None
+
+
+def _get_level_for_author(author_name: str) -> str:
+    """Get the SourceLevel for an author name."""
+    author_lower = author_name.lower()
+    
+    if author_lower == "rashi":
+        return SourceLevel.RASHI
+    elif author_lower in ["tosafot", "tosfos"]:
+        return SourceLevel.TOSFOS
+    elif author_lower in ["ran", "rashba", "ritva", "ramban", "rosh", "meiri", "nimukei yosef"]:
+        return SourceLevel.RISHONIM
+    elif author_lower in ["maharsha", "pnei yehoshua", "maharam"]:
+        return SourceLevel.ACHARONIM
+    else:
+        return SourceLevel.RISHONIM  # Default
 
 
 # ==============================================================================
@@ -692,20 +966,21 @@ async def search(
 ) -> SearchResult:
     """
     Step 3: SEARCH - Execute the search plan from Step 2.
-    
-    Uses:
-    - analysis.search_topics_hebrew → WHAT to search (the INYAN)
-    - analysis.target_masechtos → WHERE to look
-    - analysis.target_authors → WHOSE commentary to fetch
-    - analysis.search_method → HOW to search
     """
     logger.info("=" * 70)
     logger.info("[STEP 3: SEARCH] Executing search plan")
     logger.info("=" * 70)
+    logger.info(f"  Original query: {analysis.original_query}")
     logger.info(f"  INYAN to search: {analysis.search_topics_hebrew}")
-    logger.info(f"  WHERE: {analysis.target_masechtos}")
-    logger.info(f"  WHOSE commentary: {analysis.target_authors}")
+    logger.info(f"  English topics: {analysis.search_topics}")
+    logger.info(f"  WHERE (masechtos): {analysis.target_masechtos}")
+    logger.info(f"  WHOSE commentary (authors): {analysis.target_authors}")
     logger.info(f"  Method: {analysis.search_method.value}")
+    logger.info(f"  Source categories:")
+    logger.info(f"    - Gemara Bavli: {analysis.source_categories.gemara_bavli}")
+    logger.info(f"    - Rashi: {analysis.source_categories.rashi}")
+    logger.info(f"    - Tosfos: {analysis.source_categories.tosfos}")
+    logger.info(f"    - Rishonim: {analysis.source_categories.rishonim}")
     
     # Execute search based on method
     if analysis.search_method == SearchMethod.TRICKLE_UP:
@@ -720,8 +995,19 @@ async def search(
     # Organize
     sorted_sources, by_level = organize_sources(sources)
     
+    logger.info("=" * 70)
+    logger.info(f"[STEP 3: SEARCH] Sources organized by level:")
+    for level_name, level_sources in by_level.items():
+        logger.info(f"  {level_name}: {len(level_sources)} sources")
+        for idx, source in enumerate(level_sources[:3], 1):
+            logger.info(f"    {idx}. {source.ref}")
+            if idx == 3 and len(level_sources) > 3:
+                logger.info(f"    ... and {len(level_sources) - 3} more")
+    
     # Get base refs for description
     base_refs = [s.ref for s in sources if s.level == SourceLevel.GEMARA_BAVLI]
+    
+    logger.info(f"[STEP 3: SEARCH] Base Gemara refs found: {base_refs}")
     
     # Generate description
     description = generate_description(analysis, sorted_sources, base_refs)
@@ -740,11 +1026,35 @@ async def search(
         clarification_question=analysis.clarification_question,
     )
     
+    # =========================================================================
+    # GENERATE SOURCE OUTPUT FILE
+    # =========================================================================
+    try:
+        from source_output import write_source_output
+        from datetime import datetime
+        
+        output_files = write_source_output(
+            result,
+            query=analysis.original_query,
+            output_dir="output",
+            formats=["txt", "html"]  # txt for quick review, html for nice reading
+        )
+        
+        if output_files:
+            logger.info(f"[OUTPUT] Source files generated:")
+            for fmt, path in output_files.items():
+                logger.info(f"[OUTPUT]   {fmt}: {path}")
+    except ImportError:
+        logger.debug("[OUTPUT] source_output module not available, skipping output generation")
+    except Exception as e:
+        logger.warning(f"[OUTPUT] Could not generate source output: {e}")
+    
     logger.info("=" * 70)
     logger.info(f"[STEP 3: SEARCH] Complete")
-    logger.info(f"  Base refs found: {base_refs[:3]}")
+    logger.info(f"  Base refs found: {base_refs}")
     logger.info(f"  Total sources: {result.total_sources}")
-    logger.info(f"  Levels: {result.levels_found}")
+    logger.info(f"  Levels with sources: {result.levels_found}")
+    logger.info(f"  Search description: {description}")
     logger.info("=" * 70)
     
     return result

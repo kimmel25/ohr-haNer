@@ -379,7 +379,8 @@ class SefariaClient:
         endpoint: str, 
         params: Dict = None,
         json_data: Dict = None,
-        cache_key: str = None
+        cache_key: str = None,
+        skip_cache_if_empty_text: bool = False
     ) -> Optional[Dict]:
         """
         Make an HTTP request to Sefaria API.
@@ -390,6 +391,7 @@ class SefariaClient:
             params: Query parameters
             json_data: JSON body for POST requests
             cache_key: Key for caching (if None, no caching)
+            skip_cache_if_empty_text: If True, don't cache responses with empty he/text fields
         
         Returns:
             JSON response as dict, or None on error
@@ -415,8 +417,21 @@ class SefariaClient:
                 if response.status_code == 200:
                     data = response.json()
                     
-                    # Cache successful response
-                    if cache_key and self.cache:
+                    # Cache successful response (but not empty text responses if flag is set)
+                    should_cache = True
+                    if skip_cache_if_empty_text:
+                        # Check if this is an empty text response
+                        he_content = data.get("he", "")
+                        text_content = data.get("text", "")
+                        if isinstance(he_content, list):
+                            he_content = "".join(str(x) for x in he_content if x)
+                        if isinstance(text_content, list):
+                            text_content = "".join(str(x) for x in text_content if x)
+                        if not he_content and not text_content:
+                            should_cache = False
+                            logger.debug(f"Skipping cache for empty response: {endpoint}")
+                    
+                    if cache_key and self.cache and should_cache:
                         self.cache.set(cache_key, data)
                     
                     return data
@@ -430,73 +445,73 @@ class SefariaClient:
         except Exception as e:
             logger.error(f"Sefaria API error: {e}")
             return None
-    
-# ------------------------------------------
-#  INTERNAL HELPERS FOR SEARCH FILTERS
-# ------------------------------------------
 
-@staticmethod
-def _escape_for_es_regex(text: str) -> str:
-    """
-    Escape a path fragment for ES regexp queries.
-    ES regex patterns in Sefaria examples escape '/' as '\/'.
-    """
-    if text is None:
-        return ""
-    escaped = re.escape(str(text))
-    # Ensure forward slashes are escaped (Sefaria doc examples use '\/')
-    escaped = escaped.replace("/", r"\/")
-    return escaped
+    # ------------------------------------------
+    #  INTERNAL HELPERS FOR SEARCH FILTERS
+    # ------------------------------------------
 
-def _filters_to_path_regexes(self, filters: List[str]) -> List[str]:
-    """
-    Convert high-level filters (e.g., 'Bavli', 'Tanakh', 'Pesachim')
-    into ES regex patterns applied to the 'path' field.
+    @staticmethod
+    def _escape_for_es_regex(text: str) -> str:
+        """
+        Escape a path fragment for ES regexp queries.
+        ES regex patterns in Sefaria examples escape '/' as '\/'.
+        """
+        if text is None:
+            return ""
+        escaped = re.escape(str(text))
+        # Ensure forward slashes are escaped (Sefaria doc examples use '\/')
+        escaped = escaped.replace("/", r"\/")
+        return escaped
 
-    NOTE: Per Sefaria Search API docs, text filters apply to 'path'. citeturn0search1turn0search4
-    """
-    if not filters:
-        return []
+    def _filters_to_path_regexes(self, filters: List[str]) -> List[str]:
+        """
+        Convert high-level filters (e.g., 'Bavli', 'Tanakh', 'Pesachim')
+        into ES regex patterns applied to the 'path' field.
 
-    mapped: List[str] = []
-    for f in filters:
-        if not f:
-            continue
-        f_str = str(f).strip()
-        low = f_str.lower()
+        NOTE: Per Sefaria Search API docs, text filters apply to 'path'.
+        """
+        if not filters:
+            return []
 
-        # Pipeline shortcuts
-        if low in {"tanakh", "torah", "nakh"}:
-            mapped.append(r"Tanakh\/.*")
-            continue
-        if low in {"mishnah", "mishna"}:
-            mapped.append(r"Mishnah\/.*")
-            continue
-        if low in {"bavli"}:
-            mapped.append(r"Talmud\/Bavli\/.*")
-            continue
-        if low in {"yerushalmi", "jerusalem talmud"}:
-            mapped.append(r"Talmud\/Yerushalmi\/.*")
-            continue
-        if low in {"halakhah", "halacha", "halakhic"}:
-            mapped.append(r"Halakhah\/.*")
-            continue
+        mapped: List[str] = []
+        for f in filters:
+            if not f:
+                continue
+            f_str = str(f).strip()
+            low = f_str.lower()
 
-        # Explicit path
-        if "/" in f_str:
-            mapped.append(self._escape_for_es_regex(f_str) + r".*")
-        else:
-            # Book/category fragment anywhere in path
-            mapped.append(r".*\/" + self._escape_for_es_regex(f_str) + r".*")
+            # Pipeline shortcuts
+            if low in {"tanakh", "torah", "nakh"}:
+                mapped.append(r"Tanakh\/.*")
+                continue
+            if low in {"mishnah", "mishna"}:
+                mapped.append(r"Mishnah\/.*")
+                continue
+            if low in {"bavli"}:
+                mapped.append(r"Talmud\/Bavli\/.*")
+                continue
+            if low in {"yerushalmi", "jerusalem talmud"}:
+                mapped.append(r"Talmud\/Yerushalmi\/.*")
+                continue
+            if low in {"halakhah", "halacha", "halakhic"}:
+                mapped.append(r"Halakhah\/.*")
+                continue
 
-    # Deduplicate preserving order
-    seen = set()
-    out = []
-    for rx in mapped:
-        if rx not in seen:
-            seen.add(rx)
-            out.append(rx)
-    return out
+            # Explicit path
+            if "/" in f_str:
+                mapped.append(self._escape_for_es_regex(f_str) + r".*")
+            else:
+                # Book/category fragment anywhere in path
+                mapped.append(r".*\/" + self._escape_for_es_regex(f_str) + r".*")
+
+        # Deduplicate preserving order
+        seen = set()
+        out = []
+        for rx in mapped:
+            if rx not in seen:
+                seen.add(rx)
+                out.append(rx)
+        return out
 
     # ------------------------------------------
     #  SEARCH API
@@ -522,15 +537,12 @@ def _filters_to_path_regexes(self, filters: List[str]) -> List[str]:
             SearchResults with hits and aggregations
         """
         logger.info(f"Searching Sefaria for: '{query}'")
+        
         # Build ElasticSearch query (via Sefaria ES proxy).
         #
         # IMPORTANT:
         # - Sefaria's "text" search supports filtering on the *path* field (not "categories").
         # - Using match_phrase on "naive_lemmatizer" is generally more reliable for Hebrew.
-        #   See Sefaria Search API docs and examples.
-        #
-        # NOTE: We intentionally do NOT use query_string here because it is brittle
-        # with punctuation (gershayim/geresh, quotes) and can error or over-constrain.
 
         base_query = {
             "match_phrase": {
@@ -666,6 +678,31 @@ def _filters_to_path_regexes(self, filters: List[str]) -> List[str]:
     #  TEXT API
     # ------------------------------------------
     
+    def _response_has_content(self, response: Dict) -> bool:
+        """
+        Check if a Sefaria text response has actual content.
+        
+        Some refs return 200 OK but with empty text fields.
+        This helper detects those cases so we can try fallback APIs.
+        """
+        if not response:
+            return False
+        
+        # Check Hebrew text
+        hebrew = response.get("he", "")
+        if isinstance(hebrew, list):
+            hebrew = self._flatten_text(hebrew)
+        
+        # Check English text  
+        english = response.get("text", "")
+        if isinstance(english, list):
+            english = self._flatten_text(english)
+        
+        # Has content if either Hebrew or English is non-empty
+        has_content = bool(hebrew and hebrew.strip()) or bool(english and english.strip())
+        
+        return has_content
+    
     async def get_text(
         self, 
         ref: str,
@@ -699,17 +736,26 @@ def _filters_to_path_regexes(self, filters: List[str]) -> List[str]:
             "GET",
             f"/api/v3/texts/{encoded_ref}",
             params=params,
-            cache_key=cache_key
+            cache_key=cache_key,
+            skip_cache_if_empty_text=True  # Don't cache empty text responses
         )
         
-        if not response:
-            # Try legacy API
-            response = await self._request(
+        # Check if v3 returned empty content - if so, try legacy API
+        # This handles cases where v3 returns 200 OK but with empty text fields
+        if not response or not self._response_has_content(response):
+            if response:
+                logger.debug(f"v3 API returned empty content for {ref}, trying legacy API")
+            legacy_response = await self._request(
                 "GET",
                 f"/api/texts/{encoded_ref}",
                 params=params,
-                cache_key=cache_key + "_legacy"
+                cache_key=cache_key + "_legacy",
+                skip_cache_if_empty_text=True  # Don't cache empty text responses
             )
+            # Use legacy if it has content, otherwise stick with v3 response
+            if legacy_response and self._response_has_content(legacy_response):
+                response = legacy_response
+                logger.debug(f"Legacy API succeeded for {ref}")
         
         if not response:
             logger.warning(f"Could not fetch text: {ref}")

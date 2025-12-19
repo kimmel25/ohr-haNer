@@ -118,26 +118,42 @@ async def search_endpoint(request: SearchRequest) -> Dict[str, Any]:
     Takes a query and returns organized Torah sources.
     """
     start = datetime.utcnow()
-    logger.info("[/search] query=%s", request.query)
+    logger.info("=" * 80)
+    logger.info("[/search] STARTING FULL PIPELINE")
+    logger.info("=" * 80)
+    logger.info(f"[/search] Query: '{request.query}'")
+    logger.info(f"[/search] Timestamp: {start.isoformat()}")
 
     try:
         from main_pipeline import search_sources
 
+        logger.info("[/search] Calling main pipeline...")
         result: MareiMekomosResult = await search_sources(request.query)
         duration = (datetime.utcnow() - start).total_seconds()
         conf = enum_value(result.confidence)
 
-        logger.info(
-            "[/search] %s sources | confidence=%s | %.2fs",
-            result.total_sources,
-            conf,
-            duration,
-        )
+        logger.info("=" * 80)
+        logger.info("[/search] PIPELINE COMPLETE")
+        logger.info("=" * 80)
+        logger.info(f"[/search] Duration: {duration:.2f}s")
+        logger.info(f"[/search] Total sources: {result.total_sources}")
+        logger.info(f"[/search] Confidence: {conf}")
+        logger.info(f"[/search] Levels found: {getattr(result, 'levels_found', [])}")
+        
+        # Log source breakdown
+        if hasattr(result, 'sources_by_level'):
+            logger.info("[/search] Sources by level:")
+            for level, sources in getattr(result, 'sources_by_level', {}).items():
+                logger.info(f"  {level}: {len(sources)} sources")
+        
+        logger.info("=" * 80)
 
         return result.model_dump()
 
-    except Exception as exc:  # noqa: BLE001
-        logger.exception("[/search] error")
+    except Exception as exc:
+        logger.exception("[/search] PIPELINE FAILED")
+        logger.error(f"[/search] Error type: {type(exc).__name__}")
+        logger.error(f"[/search] Error message: {str(exc)}")
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
