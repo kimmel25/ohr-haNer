@@ -8,7 +8,8 @@ Usage:
     python console_full_pipeline.py
 
 Commands:
-    - Type any query to run full pipeline (Step 1 + Step 2 + Step 3)
+    - Type any query to run the current mode
+    - Type 'mode' to choose what to run (Step 1 only, Step 2 only, Step 1+2, or full)
     - Type 'q' or 'quit' to exit
 """
 
@@ -17,7 +18,7 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from datetime import datetime
 
 # Add backend to path
@@ -75,6 +76,30 @@ else:
     logger.info("ANTHROPIC_API_KEY found - full analysis enabled")
 
 
+MODE_LABELS = {
+    "step1": "STEP 1 ONLY (DECIPHER)",
+    "step2": "STEP 2 ONLY (UNDERSTAND)",
+    "step1+2": "STEPS 1 + 2 (DECIPHER + UNDERSTAND)",
+    "full": "FULL PIPELINE (STEPS 1 + 2 + 3)",
+}
+
+MODE_ALIASES = {
+    "1": "step1",
+    "step1": "step1",
+    "decipher": "step1",
+    "2": "step2",
+    "step2": "step2",
+    "understand": "step2",
+    "3": "step1+2",
+    "1+2": "step1+2",
+    "step1+2": "step1+2",
+    "steps1+2": "step1+2",
+    "step1-2": "step1+2",
+    "4": "full",
+    "full": "full",
+    "pipeline": "full",
+}
+
 def _print_divider(label: str) -> None:
     print("\n" + "=" * 60)
     print(f"  {label}")
@@ -91,6 +116,74 @@ def _wrap_text(text: str, indent: int = 5, width: int = 65) -> None:
     if line.strip():
         print(line)
 
+
+def _normalize_mode(raw: str) -> Optional[str]:
+    if not raw:
+        return None
+    return MODE_ALIASES.get(raw.strip().lower())
+
+
+def _mode_label(mode: str) -> str:
+    return MODE_LABELS.get(mode, mode)
+
+
+def _prompt_mode(current: Optional[str] = None) -> str:
+    default_mode = current or "full"
+    while True:
+        print("\nSelect run mode:")
+        print("  1 - Step 1 only (DECIPHER)")
+        print("  2 - Step 2 only (UNDERSTAND)")
+        print("  3 - Step 1 + Step 2")
+        print("  4 - Full pipeline (Steps 1 + 2 + 3)")
+        if current:
+            prompt = f"Mode (Enter to keep {_mode_label(default_mode)}): "
+        else:
+            prompt = f"Mode (default {_mode_label(default_mode)}): "
+        choice = input(prompt).strip()
+        if not choice:
+            return default_mode
+        mode = _normalize_mode(choice)
+        if mode:
+            return mode
+        print("Invalid mode. Try 1, 2, 3, or 4.")
+
+
+def _parse_hebrew_terms(raw: str) -> List[str]:
+    if not raw:
+        return []
+    if "," in raw:
+        return [term.strip() for term in raw.split(",") if term.strip()]
+    return [raw.strip()] if raw.strip() else []
+
+
+def _extract_hebrew_terms(step1_result: Any) -> List[str]:
+    if hasattr(step1_result, "hebrew_terms") and step1_result.hebrew_terms:
+        return list(step1_result.hebrew_terms)
+    if getattr(step1_result, "hebrew_term", None):
+        return [step1_result.hebrew_term]
+    return []
+
+
+def _print_step1_summary(query: str, step1_result: Any) -> None:
+    print("\n" + "=" * 70)
+    print("  STEP 1 ONLY COMPLETE")
+    print("=" * 70)
+    print(f"  Input:       '{query}'")
+    hebrew_terms = _extract_hebrew_terms(step1_result)
+    print(f"  Hebrew:      {hebrew_terms or '(none)'}")
+
+
+def _print_step2_summary(query: str, strategy: Any, hebrew_terms: List[str], label: str) -> None:
+    print("\n" + "=" * 70)
+    print(f"  {label}")
+    print("=" * 70)
+    print(f"  Input:       '{query}'")
+    if hebrew_terms:
+        print(f"  Hebrew:      {hebrew_terms}")
+    qtype = getattr(strategy.query_type, "value", strategy.query_type)
+    print(f"  Query type:  {qtype}")
+    primary = strategy.target_authors[0] if strategy.target_authors else "(none)"
+    print(f"  Primary:     {primary}")
 
 def print_step1_result(result: Any) -> None:
     """Pretty print Step 1 result."""
@@ -352,21 +445,164 @@ async def run_pipeline(query: str) -> None:
     logger.info("=" * 80)
 
 
+async def run_pipeline_mode(
+    query: str,
+    mode: str,
+    step2_terms: Optional[List[str]] = None,
+) -> None:
+    """Run pipeline with selectable steps."""
+    logger.info("=" * 80)
+    logger.info("PIPELINE START: '%s' (mode=%s)", query, mode)
+    logger.info("=" * 80)
+
+    print("\n" + "=" * 70)
+    print(f"  RUNNING: {_mode_label(mode)}")
+    print(f"  Query: '{query}'")
+    print("=" * 70)
+
+    # STEP 1: DECIPHER
+    step1_result = None
+    if mode in ("step1", "step1+2", "full"):
+        print("\n-> STEP 1: DECIPHER")
+        logger.info("Starting Step 1: DECIPHER")
+        try:
+            from step_one_decipher import decipher
+
+            step1_result = await decipher(query)
+            print_step1_result(step1_result)
+        except ImportError as exc:
+            logger.error("Step 1 import failed: %s", exc, exc_info=True)
+            print(f"\n  Г?O Step 1 Import Error: {exc}")
+            print("     Make sure step_one_decipher.py exists and is in the backend folder")
+            return
+        except Exception as exc:  # noqa: BLE001
+            logger.error("Step 1 failed: %s", exc, exc_info=True)
+            print(f"\n  Г?O Step 1 Error: {exc}")
+            return
+
+        if mode == "step1":
+            _print_step1_summary(query, step1_result)
+            logger.info("=" * 80)
+            logger.info("STEP 1 ONLY COMPLETE")
+            logger.info("=" * 80)
+            return
+
+        if not step1_result.success and not step1_result.hebrew_term:
+            logger.warning("Step 1 failed - cannot proceed")
+            print("\n  Г?O Step 1 failed - cannot proceed to Step 2")
+            return
+
+    # STEP 2: UNDERSTAND
+    strategy = None
+    hebrew_terms: List[str] = []
+    if mode in ("step2", "step1+2", "full"):
+        if mode == "step2":
+            hebrew_terms = list(step2_terms or [])
+            if not hebrew_terms:
+                logger.warning("Step 2 requested with no Hebrew terms; using query as fallback")
+                hebrew_terms = [query] if query else []
+        else:
+            hebrew_terms = _extract_hebrew_terms(step1_result)
+
+        print("\n-> STEP 2: UNDERSTAND")
+        logger.info("Starting Step 2: UNDERSTAND for '%s'", hebrew_terms)
+        try:
+            from step_two_understand import understand
+
+            # FIX: Use correct parameter names matching the function signature
+            # The function expects: hebrew_terms, query, decipher_result
+            strategy = await understand(
+                hebrew_terms=hebrew_terms,
+                query=query,
+                decipher_result=step1_result,
+            )
+
+            print_step2_result(strategy)
+        except ImportError as exc:
+            logger.error("Step 2 import failed: %s", exc, exc_info=True)
+            print(f"\n  Г?O Step 2 Import Error: {exc}")
+            print("     Make sure step_two_understand.py exists and is in the backend folder")
+            return
+        except Exception as exc:  # noqa: BLE001
+            logger.error("Step 2 failed: %s", exc, exc_info=True)
+            print(f"\n  Г?O Step 2 Error: {exc}")
+            return
+
+        if mode == "step2":
+            _print_step2_summary(query, strategy, hebrew_terms, "STEP 2 ONLY COMPLETE")
+            logger.info("=" * 80)
+            logger.info("STEP 2 ONLY COMPLETE")
+            logger.info("=" * 80)
+            return
+
+        if mode == "step1+2":
+            _print_step2_summary(query, strategy, hebrew_terms, "STEP 1 + 2 COMPLETE")
+            logger.info("=" * 80)
+            logger.info("STEP 1 + 2 COMPLETE")
+            logger.info("=" * 80)
+            return
+
+    # STEP 3: SEARCH
+    print("\n-> STEP 3: SEARCH")
+    logger.info("Starting Step 3: SEARCH")
+    try:
+        from step_three_search import search
+
+        search_result = await search(strategy)
+        print_step3_result(search_result)
+    except ImportError as exc:
+        logger.error("Step 3 import error: %s", exc, exc_info=True)
+        print(f"\n  Г?O Step 3 Import Error: {exc}")
+        print("     Make sure step_three_search.py exists and is in the backend folder")
+        print("     Steps 1 & 2 completed successfully!")
+        return
+    except Exception as exc:  # noqa: BLE001
+        logger.error("Step 3 failed: %s", exc, exc_info=True)
+        print(f"\n  Г?O Step 3 Error: {exc}")
+        print("\n     Note: Steps 1 & 2 completed successfully!")
+        return
+
+    # FINAL SUMMARY
+    print("\n" + "=" * 70)
+    print("  Гo. FULL PIPELINE COMPLETE")
+    print("=" * 70)
+    print(f"  Input:       '{query}'")
+    print(f"  Hebrew:      {hebrew_terms}")
+
+    qtype = getattr(strategy.query_type, "value", strategy.query_type)
+    print(f"  Query type:  {qtype}")
+    primary = strategy.target_authors[0] if strategy.target_authors else "(none)"
+    print(f"  Primary:     {primary}")
+    print(f"  Sources:     {search_result.total_sources}")
+    levels_found = getattr(search_result, "levels_found", [])
+    print(
+        f"  Levels:      {', '.join(levels_found) if levels_found else '(none)'}"
+    )
+
+    logger.info("=" * 80)
+    logger.info("PIPELINE COMPLETE")
+    logger.info("=" * 80)
+
+
 def main() -> None:
     """Main interactive loop."""
     logger.info("Full Pipeline Console Tester started")
+    mode = _prompt_mode()
     print("\n" + "=" * 70)
     print("  MAREI MEKOMOS FULL PIPELINE TESTER")
     print("  Step 1 (DECIPHER) -> Step 2 (UNDERSTAND) -> Step 3 (SEARCH)")
     print("=" * 70)
+    print(f"  Mode: {_mode_label(mode)}")
     print("\nCommands:")
-    print("  <query>  - Run full pipeline")
+    print("  <query>  - Run current mode")
+    print("  mode     - Change run mode")
+    print("  mode <1|2|3|4|step1|step2|step1+2|full> - Set mode directly")
     print("  q / quit - Exit")
     print("=" * 70 + "\n")
 
     while True:
         try:
-            user_input = input("\nEnter query: ").strip()
+            user_input = input(f"\nEnter query (mode={_mode_label(mode)}): ").strip()
             logger.debug("User input: '%s'", user_input)
         except (EOFError, KeyboardInterrupt):
             logger.info("User interrupted - exiting")
@@ -376,12 +612,38 @@ def main() -> None:
         if not user_input:
             continue
 
-        if user_input.lower() in ("q", "quit", "exit"):
+        lower_input = user_input.lower()
+
+        if lower_input in ("q", "quit", "exit"):
             logger.info("User requested exit")
             print("\nGoodbye!")
             break
 
-        asyncio.run(run_pipeline(user_input))
+        if lower_input in ("mode", "m"):
+            mode = _prompt_mode(mode)
+            print(f"\nMode set to: {_mode_label(mode)}")
+            continue
+
+        if lower_input.startswith("mode "):
+            new_mode = _normalize_mode(lower_input[5:])
+            if new_mode:
+                mode = new_mode
+                print(f"\nMode set to: {_mode_label(mode)}")
+            else:
+                print("Invalid mode. Try: 1, 2, 3, 4, step1, step2, step1+2, full")
+            continue
+
+        step2_terms = None
+        if mode == "step2":
+            terms_input = input(
+                "Enter Hebrew terms for Step 2 (comma-separated, or Enter to reuse query): "
+            ).strip()
+            if terms_input:
+                step2_terms = _parse_hebrew_terms(terms_input)
+            else:
+                step2_terms = [user_input] if user_input else []
+
+        asyncio.run(run_pipeline_mode(user_input, mode, step2_terms))
 
 
 if __name__ == "__main__":
