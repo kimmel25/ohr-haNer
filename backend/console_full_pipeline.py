@@ -317,7 +317,7 @@ async def run_pipeline(query: str) -> None:
     try:
         from step_three_search import search
 
-        search_result = await search(strategy, query, hebrew_term)
+        search_result = await search(strategy)
         print_step3_result(search_result)
     except ImportError as exc:
         logger.error("Step 3 import error: %s", exc, exc_info=True)
