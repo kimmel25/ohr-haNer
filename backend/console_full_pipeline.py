@@ -59,7 +59,7 @@ def setup_logging():
     
     print(f"Logging to: {log_file}")
     root_logger.info("=" * 80)
-    root_logger.info("Marei Mekomos V5 - Full Pipeline Console - Logging initialized")
+    root_logger.info("Marei Mekomos V6 - Full Pipeline Console - Logging initialized")
     root_logger.info(f"Log file: {log_file}")
     root_logger.info("=" * 80)
 
@@ -278,27 +278,26 @@ async def run_pipeline(query: str) -> None:
         print("\n  ❌ Step 1 failed - cannot proceed to Step 2")
         return
 
-    hebrew_term = step1_result.hebrew_term
-    hebrew_terms = (
-        step1_result.hebrew_terms if hasattr(step1_result, "hebrew_terms") else [hebrew_term]
-    )
+    # Extract Hebrew terms for Step 2
+    hebrew_terms = []
+    if hasattr(step1_result, "hebrew_terms") and step1_result.hebrew_terms:
+        hebrew_terms = step1_result.hebrew_terms
+    elif step1_result.hebrew_term:
+        hebrew_terms = [step1_result.hebrew_term]
 
     # STEP 2: UNDERSTAND
     print("\n-> STEP 2: UNDERSTAND")
-    logger.info("Starting Step 2: UNDERSTAND for '%s'", hebrew_term)
+    logger.info("Starting Step 2: UNDERSTAND for '%s'", hebrew_terms)
     try:
         from step_two_understand import understand
 
-        # Try new signature first, fall back to legacy
-        try:
-            strategy = await understand(
-                hebrew_term=hebrew_term,
-                original_query=query,
-                step1_result=step1_result,
-            )
-        except TypeError:
-            logger.warning("Step 2 doesn't support step1_result, using legacy call")
-            strategy = await understand(hebrew_term, query)
+        # FIX: Use correct parameter names matching the function signature
+        # The function expects: hebrew_terms, query, decipher_result
+        strategy = await understand(
+            hebrew_terms=hebrew_terms,
+            query=query,
+            decipher_result=step1_result,
+        )
         
         print_step2_result(strategy)
     except ImportError as exc:
@@ -336,9 +335,7 @@ async def run_pipeline(query: str) -> None:
     print("  ✅ FULL PIPELINE COMPLETE")
     print("=" * 70)
     print(f"  Input:       '{query}'")
-    print(f"  Hebrew:      {hebrew_term}")
-    if hebrew_terms and len(hebrew_terms) > 1:
-        print(f"  All terms:   {hebrew_terms}")
+    print(f"  Hebrew:      {hebrew_terms}")
 
     qtype = getattr(strategy.query_type, "value", strategy.query_type)
     print(f"  Query type:  {qtype}")

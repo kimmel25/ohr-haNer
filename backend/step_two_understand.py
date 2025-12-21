@@ -1,6 +1,11 @@
 """
-Step 2: UNDERSTAND - The Brain of Ohr Haner
-============================================
+Step 2: UNDERSTAND - The Brain of Ohr Haner (V6 Enhanced)
+==========================================================
+
+V6 CHANGES:
+1. Updated search method selection - comparison/shittah/machlokes queries use trickle_down
+2. Fixed parameter naming consistency with console_full_pipeline.py
+3. Better Claude prompting for search method selection
 
 Claude analyzes the query and creates a detailed "datatype" that tells Step 3:
 - WHERE to look (which masechtos)
@@ -33,31 +38,30 @@ settings = get_settings()
 
 class QueryType(str, Enum):
     """What kind of query is this?"""
-    TOPIC = "topic" #general inyan/topic    
-    QUESTION = "question" #specific question with a specific answer
-    SOURCE_REQUEST = "source_request" #asking for sources on a topic
-    COMPARISON = "comparison" #comparing opinions, like rashi vs tosfos... rashba vs ramban etc.
-    SHITTAH = "shittah" #asking for a specific meforshim's shittah on an inyan
-    SUGYA = "sugya" #asking about a specific sugya and its complex web
-    PASUK = "pasuk" #asking about a specific pasuk or set of pesukim
-    HALACHA = "halacha" #asking about a specific halacha lemaysa or halachic topic. psak din
-    MACHLOKES = "machlokes" #asking about a machlokes/dispute between rishonim/achronim
-    MACHLOKET = "machlokes"  # Alias for backwards compatibility
-    UNKNOWN = "unknown" #if unknown we should ask the user for clarification
+    TOPIC = "topic"
+    QUESTION = "question"
+    SOURCE_REQUEST = "source_request"
+    COMPARISON = "comparison"
+    SHITTAH = "shittah"
+    SUGYA = "sugya"
+    PASUK = "pasuk"
+    HALACHA = "halacha"
+    MACHLOKES = "machlokes"
+    MACHLOKET = "machlokes"  # Alias
+    UNKNOWN = "unknown"
 
 
 class Realm(str, Enum):
     """What realm of Torah is this query about?"""
     CHUMASH = "chumash"
     MISHNAH = "mishnah"
-    TANNAIC = "tannaic" # includes tosefta, sifra, sifre, midrashim
-    GEMARA = "gemara"   #stam gemara is bavli
-    YERUSHALMI = "yerushalmi"   #only if clear this is what is needed
-    HALACHA = "halacha"     #psak din   
+    TANNAIC = "tannaic"
+    GEMARA = "gemara"
+    YERUSHALMI = "yerushalmi"
+    HALACHA = "halacha"
     GENERAL = "general"
     UNKNOWN = "unknown"
-    MULTIPLE = "multiple" #if the query spans multiple realms. not sure how to implement this
-
+    MULTIPLE = "multiple"
 
 
 class Breadth(str, Enum):
@@ -98,105 +102,52 @@ class SourceCategories:
 
     @classmethod
     def from_dict(cls, raw: Any) -> "SourceCategories":
-        """Best-effort construction from Claude JSON."""
-        if not isinstance(raw, dict):
-            return cls()
-
-        # Map common variations to field names
-        field_map = {
-            "psukim": ["psukim", "pesukim", "tanach", "nach", "torah"],
-            "mishnayos": ["mishnah", "mishna", "mishnayos", "mishnayot", "mishnayis"],
-            "tosefta": ["tosefta"],
-            "gemara_bavli": ["gemara", "bavli", "gemara_bavli", "talmud"],
-            "gemara_yerushalmi": ["gemara_yerushalmi", "yerushalmi"],
-            "midrash": ["midrash", "midrashim"],
-            "rashi": ["rashi", "reb shlomo yitzchaki", "kuntres", "hakuntres"],
-            "tosfos": ["tosfos", "tosafot", "toysfes", "tos"],
-            "rishonim": ["rishonim", "rishon", "rishonim_meforshim", "rishoynim"],
-            "rambam": ["rambam", "maimonides", "moshe ben maimon"],
-            "tur": ["tur", "toor", "tuur"],
-            "shulchan_aruch": ["shulchan_aruch", "shulchan aruch", "shulchan_arukh", "shulchan arukh"],
-            "nosei_keilim_rambam": ["nosei_keilim_rambam", "nosei keilim", "rambam nosei keilim"],
-            "nosei_keilim_tur": ["nosei_keilim_tur", "nosei keilim tur", "tur nosei keilim"],
-            "nosei_keilim_sa": ["nosei_keilim_sa" , "nosei keilim sa", "shulchan aruch nosei keilim", "nosei keilim shulchan aruch"],
-            "acharonim": ["acharonim", "achroynim"],
-        }
-
-        kwargs: Dict[str, bool] = {}
-        for k, v in raw.items():
-            k_norm = str(k).strip().lower().replace(" ", "_").replace("-", "_")
-            # Find matching field
-            for field_name, aliases in field_map.items():
-                if k_norm in aliases:
-                    kwargs[field_name] = bool(v)
-                    break
-
-        return cls(**kwargs)
+        if isinstance(raw, cls):
+            return raw
+        if isinstance(raw, dict):
+            return cls(**{k: v for k, v in raw.items() if hasattr(cls, k)})
+        return cls()
 
 
-@dataclass 
+@dataclass
 class QueryAnalysis:
-    """
-    The complete analysis - Claude's "datatype" that drives Step 3.
-    
-    CRITICAL DISTINCTION:
-    - search_topics: The INYAN to search for
-    - target_authors: WHOSE COMMENTARY to fetch
-    - target_masechtos: WHERE to look
-    """
+    """Complete analysis of a Torah query."""
     original_query: str
-    hebrew_terms_from_step1: List[str]
+    hebrew_terms_from_step1: Any = None
     
-    query_type: QueryType
-    realm: Realm
-    breadth: Breadth
-    search_method: SearchMethod
+    query_type: QueryType = QueryType.UNKNOWN
+    realm: Realm = Realm.UNKNOWN
+    breadth: Breadth = Breadth.STANDARD
+    search_method: SearchMethod = SearchMethod.HYBRID
     
-    # WHAT to search for
     search_topics: List[str] = field(default_factory=list)
     search_topics_hebrew: List[str] = field(default_factory=list)
     
-    # WHERE to look - expanded for different realms and structures
-    target_masechtos: List[str] = field(default_factory=list)  # Gemara/Mishnah
-    target_perakim: List[str] = field(default_factory=list)    # Chumash/Mishnah chapters
-    target_dapim: List[str] = field(default_factory=list)      # Gemara pages (e.g., "4b")
-    target_simanim: List[str] = field(default_factory=list)    # Shulchan Aruch/Tur simanim
-    target_sefarim: List[str] = field(default_factory=list)    # General sefarim names
-    target_refs: List[str] = field(default_factory=list)       # NEW: Freeform references for any structure
-    
-    # WHOSE commentary to fetch
+    target_masechtos: List[str] = field(default_factory=list)
+    target_perakim: List[str] = field(default_factory=list)
+    target_dapim: List[str] = field(default_factory=list)
+    target_simanim: List[str] = field(default_factory=list)
+    target_sefarim: List[str] = field(default_factory=list)
+    target_refs: List[str] = field(default_factory=list)
     target_authors: List[str] = field(default_factory=list)
     
-    # Which source layers
     source_categories: SourceCategories = field(default_factory=SourceCategories)
     
-    # Confidence & clarification
     confidence: ConfidenceLevel = ConfidenceLevel.MEDIUM
     needs_clarification: bool = False
     clarification_question: Optional[str] = None
     clarification_options: List[str] = field(default_factory=list)
     
-    # Reasoning
     reasoning: str = ""
     search_description: str = ""
-    
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for JSON serialization."""
-        result = asdict(self)
-        result['query_type'] = self.query_type.value
-        result['realm'] = self.realm.value
-        result['breadth'] = self.breadth.value
-        result['search_method'] = self.search_method.value
-        result['confidence'] = self.confidence.value
-        return result
 
 
 # ==============================================================================
-#  HELPERS
+#  HELPER FUNCTIONS
 # ==============================================================================
 
 def _load_author_kb():
-    """Load author helpers."""
+    """Try to load is_author / get_author_matches from torah_authors_master."""
     try:
         from torah_authors_master import is_author, get_author_matches
         return is_author, get_author_matches
@@ -218,33 +169,28 @@ def _load_author_kb():
 
 def _is_meta_term(term: str) -> bool:
     """Check if term is a meta-term (not a search topic)."""
-    # Try to load from smart_gather first (has comprehensive list)
     try:
         from smart_gather import META_TERMS_HEBREW
         return term in META_TERMS_HEBREW
     except Exception:
         pass
     
-    # Fallback: our own comprehensive list
     FALLBACK_META_TERMS = {
-        # Query structure terms
         "שיטה", "שיטות", "שיטת",
         "דעה", "דעות", "דעת",
         "סברא", "סברה", "סברת",
         "מחלוקת", "מחלוקות",
         "טעם", "טעמי", "טעמים",
         "כלל", "כללי", "כללים",
-        # Comparison terms  
         "הבדל", "הבדלים", "חילוק", "חילוקים",
         "דומה", "שונה",
-        # Question words
         "מהו", "מהי", "מה", "למה", "מדוע", "איך", "כיצד",
         "האם", "אם",
-        # Source type terms (not topics themselves)
         "מקור", "מקורות", "ראיה", "ראיות",
-        "פסוק", "גמרא", "משנה",  # When used as "show me the gemara" not as topic
+        "פסוק", "גמרא", "משנה",
     }
     return term in FALLBACK_META_TERMS
+
 
 def _split_terms_into_topics_and_authors(hebrew_terms: List[str]) -> tuple[list[str], list[str]]:
     """Return (topics_hebrew, authors_en)."""
@@ -266,7 +212,6 @@ def _split_terms_into_topics_and_authors(hebrew_terms: List[str]) -> tuple[list[
                 pass
 
         if is_auth:
-            # Convert to canonical English
             en = None
             if callable(get_author_matches):
                 try:
@@ -279,7 +224,6 @@ def _split_terms_into_topics_and_authors(hebrew_terms: List[str]) -> tuple[list[
         else:
             topics.append(t)
 
-    # Deduplicate
     def dedup(seq):
         seen = set()
         return [x for x in seq if not (x in seen or seen.add(x))]
@@ -288,24 +232,17 @@ def _split_terms_into_topics_and_authors(hebrew_terms: List[str]) -> tuple[list[
 
 
 # ==============================================================================
-#  CLAUDE ANALYSIS
+#  CLAUDE ANALYSIS (V6 Updated)
 # ==============================================================================
 
-#some issues with below: 
-# can claude really use an example and apply it correctly every time? what if it hallucinates or misinterprets?
-# do we need more info?
-# how does it know how to answer questions 1-4? do we need to give it more guidance/examples?
-# query type is not shittah, its obviosuly comparison, you can see that from "and how is it different", or/amd the other meforshim mentiond
-# why trickle up? how should it know that from the query? do we need to give it more guidance/examples?
-# target dapim/perakim? lets say the query is chumash, or mishnayos or mechaber, there is no dapim or prakim
-# 
+# V6: Updated system prompt with better search method guidance
 CLAUDE_SYSTEM_PROMPT = """You are a Torah learning assistant analyzing user queries.
 
 Create a detailed search plan that tells the system:
 1. WHAT to search for (the inyan/topic - NOT author names)
 2. WHERE to look (which masechtos/sefarim)  
 3. WHOSE commentary to fetch (which meforshim)
-4. HOW to search (trickle-up or trickle-down)
+4. HOW to search (trickle-up vs trickle-down)
 
 CRITICAL RULES:
 - "search_topics" = the CONCEPT/INYAN only. Never put author names here.
@@ -313,28 +250,33 @@ CRITICAL RULES:
 - If comparing multiple shittos, query_type should be "comparison" or "machlokes"
 - If asking ONE author's view, query_type is "shittah"
 
-SEARCH METHOD GUIDE:
+SEARCH METHOD GUIDE (V6 - IMPORTANT):
+- trickle_down: Search ACHRONIM first to discover which dapim discuss the topic, then fetch rishonim.
+  USE WHEN: 
+    * Comparing shittos (comparison, machlokes)
+    * Asking for a specific shittah 
+    * Complex conceptual questions
+    * When the gemara might use different language than the query
+  WHY: Achronim synthesize and discuss concepts - they're "semantic indices" that help find relevant sugyos.
+
 - trickle_up: Start from base sources (gemara), then get commentaries. 
-  USE WHEN: Looking for meforshim on a sugya, standard research.
-- trickle_down: Start from later sources (halacha sefarim), trace back.
-  USE WHEN: Starting from a halacha question, want to find source in gemara.
+  USE WHEN: 
+    * Simple lookups ("show me Rashi on daf X")
+    * When you know the exact location
+    * Standard reference requests
+
 - hybrid: Both methods, find overlap.
-  USE WHEN: Comprehensive research, or unsure where topic is discussed.
+  USE WHEN: Comprehensive research needed.
+
 - direct: Go straight to specific ref.
   USE WHEN: User gives specific daf/source.
 
 REALM DETERMINES STRUCTURE - Choose appropriate location fields:
-- gemara/yerushalmi: Use target_masechtos + target_dapim (e.g., "Pesachim", "4b")
-- chumash: Use target_perakim for parsha/perek (e.g., "Genesis 1", "Bereishis")
-- mishnah: Use target_masechtos + target_perakim (e.g., "Berachos", "1")
-- halacha: Use target_simanim for Shulchan Aruch/Tur (e.g., "Orach Chaim 1")
-- OTHER SEFARIM: Use target_sefarim for book names + target_refs for any structure
-  Examples:
-  * Sefer HaChinuch: target_sefarim=["Sefer HaChinuch"], target_refs=["Mitzvah 1"]
-  * Kuzari: target_sefarim=["Kuzari"], target_refs=["Ma'amar 1, Section 1"]
-  * Ramban on Torah: target_sefarim=["Ramban on Torah"], target_refs=["Bereishis 1:1"]
-  * Maharal: target_sefarim=["Netzach Yisrael"], target_refs=["Chapter 3"]
-  * Any sefer without standard structure: Just use target_refs with descriptive location
+- gemara/yerushalmi: Use target_masechtos + target_dapim
+- chumash: Use target_perakim for parsha/perek
+- mishnah: Use target_masechtos + target_perakim
+- halacha: Use target_simanim for Shulchan Aruch/Tur
+- OTHER SEFARIM: Use target_sefarim + target_refs
 
 EXAMPLES:
 
@@ -342,25 +284,37 @@ Query: "what is the rans shittah in bittul chometz"
 {
     "query_type": "shittah",
     "realm": "gemara",
-    "search_method": "trickle_up",
+    "search_method": "trickle_down",
     "search_topics": ["bittul chometz"],
     "search_topics_hebrew": ["ביטול חמץ"],
     "target_masechtos": ["Pesachim"],
     "target_dapim": [],
     "target_authors": ["Ran"],
-    "reasoning": "User wants ONE author's (Ran) approach to bittul chometz"
+    "reasoning": "Shittah question - use trickle_down to find where Ran discusses bittul chometz via achronim"
 }
 
 Query: "what is the rans shittah in bittul chometz and how is it different from rashis"
 {
     "query_type": "comparison",
     "realm": "gemara", 
-    "search_method": "trickle_up",
+    "search_method": "trickle_down",
     "search_topics": ["bittul chometz"],
     "search_topics_hebrew": ["ביטול חמץ"],
     "target_masechtos": ["Pesachim"],
-    "target_authors": ["Ran", "Rashi"],
-    "reasoning": "User wants to COMPARE Ran vs Rashi - this is comparison, not just shittah"
+    "target_authors": ["Ran", "Rashi", "Tosafos"],
+    "reasoning": "Comparison of multiple shittos - MUST use trickle_down to discover all relevant dapim"
+}
+
+Query: "show me rashi on pesachim 4b"
+{
+    "query_type": "source_request",
+    "realm": "gemara",
+    "search_method": "direct",
+    "search_topics": [],
+    "target_masechtos": ["Pesachim"],
+    "target_dapim": ["4b"],
+    "target_authors": ["Rashi"],
+    "reasoning": "Direct request for specific location - use direct fetch"
 }
 
 Query: "where does the mechaber discuss carrying on shabbos"
@@ -370,11 +324,10 @@ Query: "where does the mechaber discuss carrying on shabbos"
     "search_method": "direct",
     "search_topics": ["carrying on shabbos", "hotza'ah"],
     "search_topics_hebrew": ["הוצאה", "טלטול בשבת"],
-    "target_masechtos": [],
     "target_sefarim": ["Shulchan Aruch Orach Chaim"],
     "target_simanim": ["301-350"],
     "target_authors": ["Mechaber"],
-    "reasoning": "User asking for location in Shulchan Aruch - use simanim not dapim"
+    "reasoning": "User asking for location in Shulchan Aruch"
 }
 
 Query: "explain rashi on bereishis 1:1"
@@ -387,33 +340,7 @@ Query: "explain rashi on bereishis 1:1"
     "target_perakim": ["Genesis 1"],
     "target_refs": ["Bereishis 1:1"],
     "target_authors": ["Rashi"],
-    "reasoning": "Direct pasuk request - no masechtos or dapim needed"
-}
-
-Query: "what does the kuzari say about loving hashem"
-{
-    "query_type": "topic",
-    "realm": "hashkafa",
-    "search_method": "direct",
-    "search_topics": ["loving hashem", "ahavas hashem"],
-    "search_topics_hebrew": ["אהבת ה'", "אהבה"],
-    "target_sefarim": ["Kuzari"],
-    "target_refs": [],
-    "target_authors": ["Reb Yehuda HaLevi"],
-    "reasoning": "Kuzari doesn't use standard structure - will search by topic in the sefer"
-}
-
-Query: "find me the maharals discussion of free will in derech chaim"
-{
-    "query_type": "topic",
-    "realm": "hashkafa",
-    "search_method": "direct",
-    "search_topics": ["free will", "bechira"],
-    "search_topics_hebrew": ["בחירה", "בחירה חפשית"],
-    "target_sefarim": ["Derech Chaim"],
-    "target_refs": [],
-    "target_authors": ["Maharal"],
-    "reasoning": "Sefer without standard structure - search by topic within the sefer"
+    "reasoning": "Direct pasuk request"
 }
 
 Return ONLY valid JSON with this structure."""
@@ -423,15 +350,20 @@ async def analyze_with_claude(query: str, hebrew_terms: List[str]) -> QueryAnaly
     """Have Claude analyze the query and produce the search plan."""
     logger.info("[UNDERSTAND] Sending query to Claude")
     
+    # Pre-split terms for context
+    topics_hebrew, authors = _split_terms_into_topics_and_authors(hebrew_terms)
+    
     user_prompt = f"""Analyze this Torah query:
 
 Query: {query}
 Hebrew Terms: {hebrew_terms}
+Extracted Topics: {topics_hebrew}
+Detected Authors: {authors}
 
 Create a search plan. Remember:
-- search_topics = the INYAN to search for
-- target_authors = whose COMMENTARY to fetch
-- Use appropriate location fields based on realm (see REALM DETERMINES STRUCTURE guide)
+- search_topics = the INYAN to search for (use the Extracted Topics above)
+- target_authors = whose COMMENTARY to fetch (use the Detected Authors above, plus any others implied)
+- For comparison/shittah/machlokes queries, use trickle_down method
 
 Return ONLY valid JSON."""
 
@@ -448,122 +380,156 @@ Return ONLY valid JSON."""
         client = Anthropic(api_key=settings.anthropic_api_key)
         
         response = client.messages.create(
-            model=settings.claude_model,
+            model="claude-sonnet-4-5-20250929",
             max_tokens=2000,
             temperature=0,
             system=CLAUDE_SYSTEM_PROMPT,
             messages=[{"role": "user", "content": user_prompt}]
         )
         
-        # Extract and log raw Claude response
-        response_text = ""
-        try:
-            content = getattr(response, "content", None)
-            if isinstance(content, (list, tuple)) and len(content) > 0:
-                parts = []
-                for item in content:
-                    if hasattr(item, "text"):
-                        parts.append(item.text)
-                    elif isinstance(item, dict) and "text" in item:
-                        parts.append(item["text"])
-                    else:
-                        parts.append(str(item))
-                response_text = "\n".join(parts).strip()
-            elif hasattr(response, "text"):
-                response_text = response.text.strip()
-            else:
-                response_text = str(response)
-        except Exception as e:
-            logger.debug(f"[UNDERSTAND] Could not extract Anthropic response text: {e}")
-            response_text = str(response)
-
-        logger.info("[UNDERSTAND] Claude raw response:\n%s", response_text)
-
-        # Clean markdown fences
-        if response_text.startswith("```"):
+        raw_text = response.content[0].text.strip()
+        logger.info(f"[UNDERSTAND] Claude raw response:\n{raw_text}")
+        
+        # Parse JSON from response
+        json_text = raw_text
+        if "```json" in raw_text:
+            json_text = raw_text.split("```json")[1].split("```")[0].strip()
+        elif "```" in raw_text:
+            json_text = raw_text.split("```")[1].split("```")[0].strip()
+        
+        # Progressive trimming for JSON parsing
+        parsed = None
+        attempts = [
+            json_text,
+            json_text.rstrip("}") + "}",
+            json_text.rstrip("}").rstrip(",").rstrip() + "}",
+        ]
+        
+        for attempt in attempts:
             try:
-                inner = response_text.split("```", 2)[1]
-                if inner.strip().lower().startswith("json"):
-                    inner = inner.split(None, 1)[1] if len(inner.split(None, 1)) > 1 else ""
-                response_text = inner.strip()
-            except Exception:
-                pass
-
-        # Parse JSON and log it
+                parsed = json.loads(attempt)
+                break
+            except json.JSONDecodeError:
+                continue
+        
+        if not parsed:
+            logger.warning(f"[UNDERSTAND] Could not parse JSON, using fallback")
+            return _create_fallback_analysis(query, hebrew_terms, topics_hebrew, authors, "JSON parse failed")
+        
+        logger.info(f"[UNDERSTAND] Claude parsed JSON:\n{json.dumps(parsed, indent=2, ensure_ascii=False)}")
+        
+        # Build QueryAnalysis from parsed JSON
+        query_type = QueryType.UNKNOWN
         try:
-            result = json.loads(response_text)
-            logger.info("[UNDERSTAND] Claude parsed JSON:\n%s", json.dumps(result, ensure_ascii=False, indent=2))
-        except Exception as e:
-            logger.error("[UNDERSTAND] Failed to parse JSON from Claude response: %s", e)
-            logger.debug("[UNDERSTAND] Response that failed JSON parse:\n%s", response_text)
-            raise
-
-        # Build analysis
+            query_type = QueryType(parsed.get("query_type", "unknown"))
+        except ValueError:
+            pass
+        
+        realm = Realm.UNKNOWN
+        try:
+            realm = Realm(parsed.get("realm", "unknown"))
+        except ValueError:
+            pass
+        
+        search_method = SearchMethod.HYBRID
+        try:
+            search_method = SearchMethod(parsed.get("search_method", "hybrid"))
+        except ValueError:
+            pass
+        
+        # V6: Force trickle_down for comparison/shittah/machlokes
+        if query_type in (QueryType.COMPARISON, QueryType.MACHLOKES, QueryType.SHITTAH, QueryType.SUGYA):
+            if search_method != SearchMethod.TRICKLE_DOWN:
+                logger.info(f"[V6] Forcing trickle_down for query_type={query_type}")
+                search_method = SearchMethod.TRICKLE_DOWN
+        
+        # Build source categories
+        source_cats = SourceCategories()
+        for author in parsed.get("target_authors", []):
+            author_lower = author.lower()
+            if author_lower == "rashi":
+                source_cats.rashi = True
+            elif author_lower in ("tosafos", "tosafot", "tosfos"):
+                source_cats.tosfos = True
+            elif author_lower in ("rambam", "maimonides"):
+                source_cats.rambam = True
+            elif author_lower in RISHONIM_SET:
+                source_cats.rishonim = True
+            elif author_lower in ACHARONIM_SET:
+                source_cats.acharonim = True
+        
+        # Enable gemara for gemara realm
+        if realm == Realm.GEMARA:
+            source_cats.gemara_bavli = True
+        
         analysis = QueryAnalysis(
             original_query=query,
             hebrew_terms_from_step1=hebrew_terms,
-            query_type=QueryType(result.get("query_type", "unknown")),
-            realm=Realm(result.get("realm", "unknown")),
-            breadth=Breadth(result.get("breadth", "standard")),
-            search_method=SearchMethod(result.get("search_method", "trickle_up")),
-            search_topics=[str(t) for t in (result.get("search_topics") or [])],
-            search_topics_hebrew=[str(t) for t in (result.get("search_topics_hebrew") or [])],
-            target_masechtos=[str(m) for m in (result.get("target_masechtos") or [])],
-            target_perakim=[str(p) for p in (result.get("target_perakim") or [])],
-            target_dapim=[str(d) for d in (result.get("target_dapim") or [])],
-            target_simanim=[str(s) for s in (result.get("target_simanim") or [])],
-            target_sefarim=[str(s) for s in (result.get("target_sefarim") or [])],
-            target_refs=[str(r) for r in (result.get("target_refs") or [])],
-            target_authors=[str(a) for a in (result.get("target_authors") or [])],
-            source_categories=SourceCategories.from_dict(result.get("source_categories", {})),
-            confidence=_parse_confidence(result.get("confidence", "medium")),
-            needs_clarification=bool(result.get("needs_clarification", False)),
-            clarification_question=result.get("clarification_question"),
-            clarification_options=[str(o) for o in (result.get("clarification_options") or [])],
-            reasoning=str(result.get("reasoning", "")),
-            search_description=str(result.get("search_description", "")),
+            query_type=query_type,
+            realm=realm,
+            breadth=Breadth.STANDARD,
+            search_method=search_method,
+            search_topics=parsed.get("search_topics", topics_hebrew),
+            search_topics_hebrew=parsed.get("search_topics_hebrew", topics_hebrew),
+            target_masechtos=parsed.get("target_masechtos", []),
+            target_perakim=parsed.get("target_perakim", []),
+            target_dapim=parsed.get("target_dapim", []),
+            target_simanim=parsed.get("target_simanim", []),
+            target_sefarim=parsed.get("target_sefarim", []),
+            target_refs=parsed.get("target_refs", []),
+            target_authors=parsed.get("target_authors", authors),
+            source_categories=source_cats,
+            confidence=_parse_confidence(parsed.get("confidence", "medium")),
+            needs_clarification=parsed.get("needs_clarification", False),
+            clarification_question=parsed.get("clarification_question"),
+            clarification_options=parsed.get("clarification_options", []),
+            reasoning=parsed.get("reasoning", ""),
+            search_description=parsed.get("search_description", "")
         )
-
-        # Post-clean: ensure authors/meta terms don't leak into search_topics
-        step1_topics, step1_authors = _split_terms_into_topics_and_authors(hebrew_terms)
         
-        if not analysis.search_topics_hebrew:
-            analysis.search_topics_hebrew = step1_topics
-
-        cleaned = [t for t in analysis.search_topics_hebrew if t and not _is_meta_term(t)]
-        is_author, _ = _load_author_kb()
-        if callable(is_author):
-            cleaned = [t for t in cleaned if not bool(is_author(t))]
-        analysis.search_topics_hebrew = cleaned
-
-        if not analysis.target_authors and step1_authors:
-            analysis.target_authors = step1_authors
-
-        if analysis.target_authors and any(a.lower() not in {"rashi", "tosfos", "tosafot"} for a in analysis.target_authors):
-            analysis.source_categories.rishonim = True
-        
-        # Log final QueryAnalysis as dict
-        logger.info("[UNDERSTAND] Final QueryAnalysis:\n%s", json.dumps(analysis.to_dict(), ensure_ascii=False, indent=2))
-        logger.info("[UNDERSTAND] Reasoning: %s", analysis.reasoning or "<none>")
-        logger.info("[UNDERSTAND] Search Description: %s", analysis.search_description or "<none>")
+        logger.info(f"[UNDERSTAND] Final QueryAnalysis:\n{json.dumps(asdict(analysis), indent=2, ensure_ascii=False, default=str)}")
+        logger.info(f"[UNDERSTAND] Reasoning: {analysis.reasoning}")
+        logger.info(f"[UNDERSTAND] Search Description: {analysis.search_description or '<none>'}")
         
         return analysis
         
     except Exception as e:
-        logger.error(f"[UNDERSTAND] Error: {e}")
-        return _fallback_analysis(query, hebrew_terms, str(e))
+        logger.error(f"[UNDERSTAND] Claude analysis failed: {e}", exc_info=True)
+        return _create_fallback_analysis(query, hebrew_terms, topics_hebrew, authors, str(e))
 
 
-def _fallback_analysis(query: str, hebrew_terms: List[str], error: str) -> QueryAnalysis:
-    """Create a low-confidence fallback analysis."""
-    topics, authors = _split_terms_into_topics_and_authors(hebrew_terms)
+# Known author sets for classification
+RISHONIM_SET = {
+    'ran', 'rashba', 'ritva', 'ramban', 'rosh', 'meiri', 'ra\'ah',
+    'nimukei yosef', 'mordechai', 'rashbam', 'rabbeinu chananel',
+}
+
+ACHARONIM_SET = {
+    'pnei yehoshua', 'maharsha', 'sfas emes', 'rav akiva eiger',
+    'ketzos', 'nesivos', 'mishna berura', 'aruch hashulchan',
+}
+
+
+def _create_fallback_analysis(
+    query: str,
+    hebrew_terms: List[str],
+    topics: List[str],
+    authors: List[str],
+    error: str
+) -> QueryAnalysis:
+    """Create fallback analysis when Claude fails."""
+    logger.warning(f"[UNDERSTAND] Using fallback analysis due to: {error}")
+    
+    # Default to trickle_down for comparison-like queries
+    search_method = SearchMethod.TRICKLE_DOWN if len(authors) > 1 else SearchMethod.HYBRID
+    
     return QueryAnalysis(
         original_query=query,
         hebrew_terms_from_step1=hebrew_terms,
         query_type=QueryType.UNKNOWN,
-        realm=Realm.UNKNOWN,
+        realm=Realm.GEMARA,  # Default to gemara
         breadth=Breadth.STANDARD,
-        search_method=SearchMethod.HYBRID,
+        search_method=search_method,
         search_topics=topics or hebrew_terms,
         search_topics_hebrew=topics or hebrew_terms,
         target_authors=authors,
@@ -592,6 +558,8 @@ async def understand(
     - WHERE to look (target_masechtos)
     - WHOSE commentary to fetch (target_authors)
     - HOW to search (search_method)
+    
+    V6: Fixed parameter naming to match console_full_pipeline.py
     """
     # Extract from decipher_result if provided
     if decipher_result:
@@ -635,6 +603,7 @@ async def understand(
     logger.info(f"  INYAN: {analysis.search_topics_hebrew}")
     logger.info(f"  WHERE: {analysis.target_masechtos}")
     logger.info(f"  WHOSE: {analysis.target_authors}")
+    logger.info(f"  METHOD: {analysis.search_method}")
     logger.info("=" * 70)
     
     return analysis
@@ -655,8 +624,8 @@ async def test_step_two():
     print("=" * 70)
     
     test_cases = [
-        (["רן", "ביטול חמץ", "תוספות", "רש\"י"], 
-         "what is the rans shittah in bittul chometz"),
+        (["רן", "ביטול חמץ", "תוספות", 'רש"י'], 
+         "what is the rans shittah in bittul chometz and how is it different than tosfos and rashis"),
     ]
     
     for hebrew_terms, query in test_cases:
