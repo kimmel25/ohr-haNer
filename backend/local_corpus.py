@@ -516,60 +516,103 @@ class LocalCorpus:
         return all_hits
     
     def get_nosei_keilim_for_siman(self, chelek: str, siman: int) -> Dict[str, str]:
-        """Get all nosei keilim text for a specific SA siman."""
-        result = {}
-        commentary_base = self.corpus_root / "Halakhah" / "Shulchan Arukh" / "Commentary"
-        
-        if not commentary_base.exists():
-            return result
-        
-        try:
-            for author_dir in commentary_base.iterdir():
-                if not author_dir.is_dir():
-                    continue
-                
-                author_name = author_dir.name
-                
-                # Find merged.json at any depth (handles duplicate folder structure)
-                found_json = None
-                for json_file in author_dir.rglob("merged.json"):
-                    if "Hebrew" in str(json_file):
-                        found_json = json_file
-                        break
-                    elif found_json is None:
-                        found_json = json_file
-                
-                if not found_json:
-                    continue
-                
-                try:
-                    relative_path = str(found_json.relative_to(self.corpus_root))
-                    data = self._load_json(relative_path)
-                    if not data:
+            """
+            Get all nosei keilim text for a specific SA siman.
+            
+            V8 FIX: Properly matches chelek names in folder paths.
+            """
+            result = {}
+            commentary_base = self.corpus_root / "Halakhah" / "Shulchan Arukh" / "Commentary"
+            
+            if not commentary_base.exists():
+                return result
+            
+            # Map chelek codes to possible folder name patterns
+            chelek_patterns = {
+                "oc": ["orach chaim", "orach_chaim"],
+                "yd": ["yoreh de'ah", "yoreh deah", "yoreh_deah"],
+                "eh": ["even haezer", "even ha'ezer", "even_haezer"],
+                "cm": ["choshen mishpat", "choshen_mishpat"],
+            }
+            
+            patterns = chelek_patterns.get(chelek.lower(), [chelek.lower()])
+            
+            try:
+                for author_dir in commentary_base.iterdir():
+                    if not author_dir.is_dir():
                         continue
                     
-                    text_array = self._get_text_array(data)
+                    author_name = author_dir.name
                     
-                    if isinstance(text_array, list) and 0 < siman <= len(text_array):
-                        siman_text = self._flatten_text(text_array[siman - 1])
-                        if siman_text and len(siman_text) > 10:
-                            result[author_name] = siman_text
-                    elif isinstance(text_array, dict):
-                        for key in [str(siman), str(siman - 1)]:
-                            if key in text_array:
-                                siman_text = self._flatten_text(text_array[key])
-                                if siman_text and len(siman_text) > 10:
-                                    result[author_name] = siman_text
+                    # V8: Find merged.json that matches our chelek
+                    found_json = None
+                    
+                    for json_file in author_dir.rglob("merged.json"):
+                        json_path_lower = str(json_file).lower()
+                        
+                        # Check if this file is for the right chelek
+                        chelek_match = False
+                        for pattern in patterns:
+                            if pattern in json_path_lower:
+                                chelek_match = True
                                 break
-                except Exception as e:
-                    continue
-        except Exception as e:
-            logger.warning(f"[LocalCorpus] Error getting nosei keilim: {e}")
-        
-        if result:
-            logger.info(f"[LocalCorpus] Found {len(result)} nosei keilim for SA {chelek.upper()} {siman}")
-        
-        return result
+                        
+                        if chelek_match:
+                            # Prefer Hebrew version
+                            if "hebrew" in json_path_lower:
+                                found_json = json_file
+                                break
+                            elif found_json is None:
+                                found_json = json_file
+                    
+                    # If no chelek-specific file, fall back to author-level file
+                    if found_json is None:
+                        for json_file in author_dir.rglob("merged.json"):
+                            json_path_str = str(json_file).lower()
+                            # Only use if NOT chelek-specific
+                            has_any_chelek = any(
+                                any(p in json_path_str for p in chelek_patterns[c])
+                                for c in chelek_patterns
+                            )
+                            if not has_any_chelek:
+                                if "hebrew" in json_path_str:
+                                    found_json = json_file
+                                    break
+                                elif found_json is None:
+                                    found_json = json_file
+                    
+                    if not found_json:
+                        continue
+                    
+                    try:
+                        relative_path = str(found_json.relative_to(self.corpus_root))
+                        data = self._load_json(relative_path)
+                        if not data:
+                            continue
+                        
+                        text_array = self._get_text_array(data)
+                        
+                        if isinstance(text_array, list) and 0 < siman <= len(text_array):
+                            siman_text = self._flatten_text(text_array[siman - 1])
+                            if siman_text and len(siman_text) > 10:
+                                result[author_name] = siman_text
+                        elif isinstance(text_array, dict):
+                            for key in [str(siman), str(siman - 1)]:
+                                if key in text_array:
+                                    siman_text = self._flatten_text(text_array[key])
+                                    if siman_text and len(siman_text) > 10:
+                                        result[author_name] = siman_text
+                                    break
+                    except Exception:
+                        continue
+                        
+            except Exception as e:
+                logger.warning(f"[LocalCorpus] Error getting nosei keilim: {e}")
+            
+            if result:
+                logger.info(f"[LocalCorpus] Found {len(result)} nosei keilim for SA {chelek.upper()} {siman}: {list(result.keys())}")
+            
+            return result
     
     def extract_citations_from_siman(self, chelek: str, siman: int, default_masechta: str = None) -> List[GemaraCitation]:
         """Extract all gemara citations from a siman's nosei keilim."""

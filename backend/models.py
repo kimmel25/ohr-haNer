@@ -324,6 +324,7 @@ class MareiMekomosResult(BaseModel):
     confidence: ConfidenceLevel
     needs_clarification: bool = False
     clarification_prompt: Optional[str] = None
+    clarification_options: List[str] = []
     message: str = ""
 
     # Timestamp

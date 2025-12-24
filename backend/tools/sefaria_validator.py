@@ -95,12 +95,17 @@ class SefariaValidator:
             return self._author_names
         
         try:
-            from torah_authors_master import AUTHOR_LOOKUP_INDEX
-            self._author_names = {self._normalize_for_author_check(k) for k in AUTHOR_LOOKUP_INDEX.keys()}
-            logger.debug(f"[VALIDATOR] Loaded {len(self._author_names)} author names from Master KB")
+            from .torah_authors_master import AUTHOR_LOOKUP_INDEX
         except ImportError:
-            logger.warning("[VALIDATOR] Could not import Master KB - author detection disabled")
-            self._author_names = set()
+            try:
+                from tools.torah_authors_master import AUTHOR_LOOKUP_INDEX
+            except ImportError:
+                logger.warning("[VALIDATOR] Could not import Master KB - author detection disabled")
+                self._author_names = set()
+                return self._author_names
+
+        self._author_names = {self._normalize_for_author_check(k) for k in AUTHOR_LOOKUP_INDEX.keys()}
+        logger.debug(f"[VALIDATOR] Loaded {len(self._author_names)} author names from Master KB")
         
         return self._author_names
     
@@ -257,16 +262,24 @@ class SefariaValidator:
                 author_candidates = []
                 if is_author:
                     try:
-                        from torah_authors_master import get_author_matches
-                        matches = get_author_matches(hebrew_term)
-                        for a in matches:
-                            author_candidates.append({
-                                "id": a.get("id", ""),
-                                "primary_name_en": a.get("primary_name_en", ""),
-                                "primary_name_he": a.get("primary_name_he", ""),
-                            })
+                        from .torah_authors_master import get_author_matches
                     except Exception:
-                        author_candidates = []
+                        try:
+                            from tools.torah_authors_master import get_author_matches
+                        except Exception:
+                            get_author_matches = None
+
+                    if get_author_matches:
+                        try:
+                            matches = get_author_matches(hebrew_term)
+                            for a in matches:
+                                author_candidates.append({
+                                    "id": a.get("id", ""),
+                                    "primary_name_en": a.get("primary_name_en", ""),
+                                    "primary_name_he": a.get("primary_name_he", ""),
+                                })
+                        except Exception:
+                            author_candidates = []
                 
                 result = {
                     "found": hits > 0,

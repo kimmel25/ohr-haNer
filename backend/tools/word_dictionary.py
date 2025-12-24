@@ -294,30 +294,41 @@ class WordDictionary:
             json.dump(dictionary, f, ensure_ascii=False, indent=2)
     
     def lookup(self, query: str) -> Optional[Dict]:
-        """
-        Look up a transliteration in the dictionary.
-        
-        Returns:
-            {
-                "hebrew": "חזקת הגוף",
-                "confidence": "high",
-                "usage_count": 5
-            }
-            or None if not found
-        """
-        query = query.lower().strip()
-        
-        if query in self.dictionary:
-            entry = self.dictionary[query]
+            """
+            Look up a transliteration in the dictionary.
             
-            # Update usage stats
-            entry["usage_count"] += 1
-            entry["last_used"] = self._get_timestamp()
-            self._save()
+            V8: Tries sub-phrases if full query not found.
             
-            return entry
-        
-        return None
+            Returns entry dict or None if not found.
+            """
+            query = query.lower().strip()
+            
+            # Try exact match first
+            if query in self.dictionary:
+                return self._update_and_return(query)
+            
+            # Try sub-phrases (longest first)
+            words = query.split()
+            for phrase_len in range(len(words), 1, -1):
+                for start in range(len(words) - phrase_len + 1):
+                    phrase = ' '.join(words[start:start + phrase_len])
+                    if phrase in self.dictionary:
+                        return self._update_and_return(phrase)
+            
+            # Try individual words
+            for word in words:
+                if word in self.dictionary:
+                    return self._update_and_return(word)
+            
+            return None
+    
+    def _update_and_return(self, key: str) -> Dict:
+        """Update usage stats and return entry."""
+        entry = self.dictionary[key]
+        entry["usage_count"] += 1
+        entry["last_used"] = self._get_timestamp()
+        self._save()
+        return entry
     
     def _confidence_from_hits(self, hits: Optional[int]) -> str:
         """Map Sefaria hit counts to a confidence string."""

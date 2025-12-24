@@ -3,7 +3,7 @@
  * ===========================
  * 
  * Step 1 (DECIPHER) Integration:
- * - Shows transliteration → Hebrew conversion
+ * - Shows transliteration -> Hebrew conversion
  * - Handles validation scenarios (CLARIFY/CHOOSE/UNKNOWN)
  * - Allows user to confirm or reject translations
  * - Per-word breakdown for multi-word queries
@@ -276,6 +276,17 @@ function App() {
     document.querySelector('.query-input')?.focus()
   }
 
+  const handleClarificationSelect = useCallback((suggestion) => {
+    if (!suggestion) return
+    setQuery(suggestion)
+    setSearchResult(null)
+    setError('')
+    setShowValidation(false)
+    setShowFeedback(false)
+    setConfirmedHebrew(null)
+    document.querySelector('.query-input')?.focus()
+  }, [])
+
   // ==========================================
   //  RENDER
   // ==========================================
@@ -288,6 +299,7 @@ function App() {
       <ResultBox 
         originalQuery={decipherResult?.original_query} 
         confirmedHebrew={confirmedHebrew} 
+        decipherResult={decipherResult}
         handleNotWhatIMeant={handleNotWhatIMeant} 
       />
       <ValidationBox 
@@ -307,7 +319,11 @@ function App() {
         />
       )}
       {/* Search Results */}
-      <SearchResults searchResult={searchResult} />
+      <SearchResults 
+        searchResult={searchResult} 
+        apiBase={API_BASE}
+        onSuggestionSelect={handleClarificationSelect}
+      />
       {/* Search Loading Indicator */}
       {searchLoading && (
         <div className="loading-box">

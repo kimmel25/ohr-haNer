@@ -20,6 +20,56 @@ from typing import List, Dict, Tuple, Optional, Set
 import re
 from dataclasses import dataclass
 
+# ==============================================================================
+# V8 FIX: Word-Final Sav Handling
+# ==============================================================================
+
+def expand_word_final_sav_variants(query: str) -> list:
+    """
+    Handle yeshivish pronunciation where word-final ת (sav) sounds like 's' or 'z'.
+    
+    Examples:
+        chezkaz -> [chezkaz, chezkas, chezkat]
+        shabbos -> [shabbos] (kept as-is, ends in 'os')
+        mishnas -> [mishnas, mishnat]
+    """
+    variants = [query]
+    words = query.split()
+    
+    for i, word in enumerate(words):
+        word_lower = word.lower()
+        word_variants = [word]
+        
+        if len(word_lower) >= 3:
+            # Case 1: ends in 'z' - might be 's' or 't'
+            if word_lower.endswith('z'):
+                word_variants.append(word[:-1] + 's')
+                word_variants.append(word[:-1] + 't')
+                if len(word) > 4:
+                    word_variants.append(word[:-1])
+            
+            # Case 2: ends in 'as' - might be 'at' (Hebrew feminine)
+            elif word_lower.endswith('as') and not word_lower.endswith('oas'):
+                word_variants.append(word[:-1] + 't')
+            
+            # Case 3: ends in 'es' - might be 'et'
+            elif word_lower.endswith('es') and not word_lower.endswith('oes'):
+                word_variants.append(word[:-1] + 't')
+            
+            # Case 4: ends in 's' but not common endings
+            elif word_lower.endswith('s') and not word_lower.endswith(('os', 'is', 'us', 'as', 'es')):
+                word_variants.append(word[:-1] + 't')
+        
+        # Create query variants for this word
+        if len(word_variants) > 1:
+            for wv in word_variants[1:]:
+                new_words = words.copy()
+                new_words[i] = wv
+                new_query = " ".join(new_words)
+                if new_query not in variants:
+                    variants.append(new_query)
+    
+    return variants
 
 # ==========================================
 #  SECTION 1: INPUT NORMALIZATION
@@ -1098,52 +1148,68 @@ def _transliterate_chunk(text: str) -> List[str]:
 #  SECTION 8: MAIN API
 # ==========================================
 
+# OLD CODE at start of function:
+# NEW CODE - replace the start of the function:
 def generate_smart_variants(query: str, max_variants: int = 15) -> List[str]:
     """
     Main entry point: Generate Hebrew variants for a query.
     
-    Handles:
-    - Multi-word phrases
-    - Prefix detection
-    - Rule-based transliteration
-    - Sofit application
+    V8: Now handles word-final sav variants (chezkaz -> chezkat)
     """
     query = normalize_input(query)
     
     if not query:
         return []
     
-    # Check if entire query is in exceptions (for common phrases)
-    if query in MINIMAL_EXCEPTIONS:
-        return MINIMAL_EXCEPTIONS[query]
+    # V8 FIX: Expand word-final sav variants FIRST
+    query_variants = expand_word_final_sav_variants(query)
     
-    words = query.split()
-    if not words:
-        return []
+    all_results = []
     
-    # Process each word
-    all_word_variants: List[List[str]] = []
-    
-    for word in words:
-        # Split prefixes
-        prefix_hebrew, root = split_all_prefixes(word)
+    for q_variant in query_variants:
+        # Check if entire query is in exceptions
+        if q_variant in MINIMAL_EXCEPTIONS:
+            all_results.extend(MINIMAL_EXCEPTIONS[q_variant])
+            continue
         
-        # Check if root is in exceptions
-        if root in MINIMAL_EXCEPTIONS:
-            root_variants = MINIMAL_EXCEPTIONS[root]
-        else:
-            root_variants = generate_word_variants(root)
+        words = q_variant.split()
+        if not words:
+            continue
         
-        # Combine prefix with root variants
-        if prefix_hebrew:
-            word_variants = [prefix_hebrew + rv for rv in root_variants]
-        else:
-            word_variants = root_variants
+        # Process each word (rest of existing code)
+        all_word_variants: List[List[str]] = []
         
-        all_word_variants.append(word_variants if word_variants else [word])
+        for word in words:
+            # Split prefixes
+            prefix_hebrew, root = split_all_prefixes(word)
+            
+            # Check if root is in exceptions
+            if root in MINIMAL_EXCEPTIONS:
+                root_variants = MINIMAL_EXCEPTIONS[root]
+            else:
+                root_variants = generate_word_variants(root)
+            
+            # Combine prefix with root variants
+            if prefix_hebrew:
+                word_variants = [prefix_hebrew + rv for rv in root_variants]
+            else:
+                word_variants = root_variants
+            
+            all_word_variants.append(word_variants if word_variants else [word])
+        
+        # Combine into phrases
+        phrase_variants = _combine_words(all_word_variants, max_variants // len(query_variants))
+        all_results.extend(phrase_variants)
     
-    # Combine into phrases
-    return _combine_words(all_word_variants, max_variants)
+    # Deduplicate while preserving order
+    seen = set()
+    final = []
+    for r in all_results:
+        if r not in seen:
+            seen.add(r)
+            final.append(r)
+    
+    return final[:max_variants]
 
 
 def _combine_words(all_variants: List[List[str]], max_total: int) -> List[str]:

@@ -877,9 +877,9 @@
   "chezkas haguf": {
     "hebrew": "חזקת הגוף",
     "confidence": "high",
-    "usage_count": 21,
+    "usage_count": 29,
     "source": "manual",
-    "last_used": "2025-12-10T23:27:38.763716"
+    "last_used": "2025-12-23T21:56:35.101391"
   },
   "chezka haguf": {
     "hebrew": "חזקת הגוף",
@@ -1128,6 +1128,13 @@
   },
   "sfek sfeka lkula": {
     "hebrew": "ספק ספיקא לקולא",
+    "confidence": "high",
+    "usage_count": 2,
+    "source": "manual",
+    "last_used": "2025-12-03T22:24:26.325641"
+  },
+  "sfeka": {
+    "hebrew": "ספיקא",
     "confidence": "high",
     "usage_count": 2,
     "source": "manual",
@@ -1687,9 +1694,9 @@
   "bari veshema": {
     "hebrew": "ברי ושמא",
     "confidence": "high",
-    "usage_count": 11,
+    "usage_count": 18,
     "source": "sefaria",
-    "last_used": "2025-12-08T18:26:05.111074"
+    "last_used": "2025-12-21T22:32:36.810622"
   },
   "chezkas kashrut": {
     "hebrew": "כשרות",
@@ -1736,9 +1743,9 @@
   "bari vishema": {
     "hebrew": "ברי ושמא",
     "confidence": "low",
-    "usage_count": 1,
+    "usage_count": 4,
     "source": "sefaria",
-    "last_used": "2025-12-08T18:25:27.020526"
+    "last_used": "2025-12-21T22:32:28.972389"
   },
   "קמא": {
     "hebrew": "קמא",
@@ -1963,5 +1970,69 @@
     "usage_count": 0,
     "source": "manual_fix",
     "last_used": null
+  },
+  "deorysa": {
+    "hebrew": "דאורייתא",
+    "confidence": "low",
+    "usage_count": 1,
+    "source": "runtime",
+    "last_used": "2025-12-21T17:35:12.492306",
+    "hits": 5
+  },
+  "de'orysa": {
+    "hebrew": "דאורייתא",
+    "confidence": "low",
+    "usage_count": 1,
+    "source": "runtime",
+    "last_used": "2025-12-21T17:35:12.492306",
+    "hits": 5
+  },
+  "deoryssa": {
+    "hebrew": "דאורייתא",
+    "confidence": "low",
+    "usage_count": 1,
+    "source": "runtime",
+    "last_used": "2025-12-21T17:35:12.492306",
+    "hits": 5
+  },
+  "deohrysah": {
+    "hebrew": "דאורייתא",
+    "confidence": "low",
+    "usage_count": 1,
+    "source": "runtime",
+    "last_used": "2025-12-21T17:35:12.492306",
+    "hits": 5
+  },
+  "deorysah": {
+    "hebrew": "דאורייתא",
+    "confidence": "low",
+    "usage_count": 1,
+    "source": "runtime",
+    "last_used": "2025-12-21T17:35:12.492306",
+    "hits": 5
+  },
+  "derabbanan": {
+    "hebrew": "דרבנן",
+    "confidence": "low",
+    "usage_count": 1,
+    "source": "runtime",
+    "last_used": "2025-12-21T17:35:12.492306",
+    "hits": 5
+  },
+  "derabannan": {
+    "hebrew": "דרבנן",
+    "confidence": "low",
+    "usage_count": 1,
+    "source": "runtime",
+    "last_used": "2025-12-21T17:35:12.492306",
+    "hits": 5
+  },
+  "derabanan": {
+    "hebrew": "דרבנן",
+    "confidence": "low",
+    "usage_count": 1,
+    "source": "runtime",
+    "last_used": "2025-12-21T17:35:12.492306",
+    "hits": 5
   }
 }

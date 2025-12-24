@@ -13,17 +13,30 @@ import React from 'react';
 const ValidationBox = ({ decipherResult, handleOptionSelect, handleNoneOfThese, loading }) => {
   if (!decipherResult || !decipherResult.needs_validation) return null;
 
+  const validationType = String(decipherResult.validation_type || '').toUpperCase();
+  const chooseOptions = decipherResult.choose_options?.length
+    ? decipherResult.choose_options
+    : decipherResult.alternatives || [];
+  const clarifyOptions = decipherResult.clarify_options?.length
+    ? decipherResult.clarify_options
+    : validationType === 'CLARIFY'
+    ? chooseOptions.map((opt) => ({ hebrew: opt, description: '' }))
+    : [];
+  const wordValidations = decipherResult.word_validations || [];
+
   return (
     <div className="validation-box">
       <h3>
-        {decipherResult.validation_type === 'CLARIFY' 
+        {validationType === 'CLARIFY' 
           ? 'Did you mean...'
-          : decipherResult.validation_type === 'UNKNOWN'
+          : validationType === 'UNKNOWN'
           ? "I'm not sure about this term"
           : 'Please select the correct option'}
       </h3>
       
-      <p className="validation-message">{decipherResult.message}</p>
+      {decipherResult.message && (
+        <p className="validation-message">{decipherResult.message}</p>
+      )}
       
       <div className="validation-query">
         <span className="query-label">Your input:</span>
@@ -31,9 +44,9 @@ const ValidationBox = ({ decipherResult, handleOptionSelect, handleNoneOfThese, 
       </div>
       
       {/* CLARIFY type - "Did you mean X or Y?" buttons */}
-      {decipherResult.validation_type === 'CLARIFY' && decipherResult.clarify_options?.length > 0 && (
+      {validationType === 'CLARIFY' && clarifyOptions.length > 0 && (
         <div className="clarify-options">
-          {decipherResult.clarify_options.map((opt, idx) => (
+          {clarifyOptions.map((opt, idx) => (
             <button 
               key={idx}
               className="clarify-btn"
@@ -48,10 +61,10 @@ const ValidationBox = ({ decipherResult, handleOptionSelect, handleNoneOfThese, 
       )}
       
       {/* CHOOSE type - numbered list */}
-      {(decipherResult.validation_type === 'CHOOSE' || decipherResult.validation_type === 'UNKNOWN') && 
-       decipherResult.choose_options?.length > 0 && (
+      {(validationType === 'CHOOSE' || validationType === 'UNKNOWN') && 
+       chooseOptions.length > 0 && (
         <div className="choose-options">
-          {decipherResult.choose_options.map((opt, idx) => (
+          {chooseOptions.map((opt, idx) => (
             <button 
               key={idx}
               className="choose-btn"
@@ -61,6 +74,28 @@ const ValidationBox = ({ decipherResult, handleOptionSelect, handleNoneOfThese, 
               <span className="option-number">{idx + 1}.</span>
               <span className="hebrew-option" dir="rtl">{opt}</span>
             </button>
+          ))}
+        </div>
+      )}
+
+      {wordValidations.length > 0 && (
+        <div className="word-validation-breakdown">
+          <h4>Word confidence</h4>
+          {wordValidations.map((word, idx) => (
+            <div
+              key={`${word.original}-${idx}`}
+              className={`word-validation-item ${word.needs_validation ? 'uncertain' : 'confident'}`}
+            >
+              <span className="word-indicator">{word.needs_validation ? '!' : 'OK'}</span>
+              <span className="word-original">{word.original}</span>
+              <span className="word-arrow">-&gt;</span>
+              <span className="word-hebrew" dir="rtl">{word.best_match}</span>
+              {word.alternatives?.length > 0 && (
+                <span className="word-alternatives">
+                  {word.alternatives.slice(0, 3).join(', ')}
+                </span>
+              )}
+            </div>
           ))}
         </div>
       )}

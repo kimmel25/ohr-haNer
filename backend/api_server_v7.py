@@ -1,6 +1,10 @@
 """
-Marei Mekomos V7 - API Server (Full Pipeline)
-==============================================
+Marei Mekomos V7 - API Server (Full Pipeline) - FIXED
+======================================================
+
+BUGS FIXED:
+1. FastAPI app was created twice - lifespan was on first app, but second app overwrote it
+2. Logging path was relative - now uses absolute path from settings
 
 Serves the complete 3-step pipeline to the frontend:
 1. DECIPHER: transliteration -> Hebrew
@@ -17,6 +21,7 @@ Endpoints:
 
 import logging
 import sys
+from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
@@ -25,7 +30,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 # Ensure backend/ is on the path for imports
-sys.path.insert(0, str(Path(__file__).parent))
+THIS_DIR = Path(__file__).parent.resolve()
+sys.path.insert(0, str(THIS_DIR))
 
 # Import centralized models and config
 from config import get_settings
@@ -43,10 +49,13 @@ from utils.serialization import enum_value, serialize_word_validations
 
 
 # ==========================================
-#  LOGGING
+#  SETTINGS & LOGGING SETUP
 # ==========================================
 
 settings = get_settings()
+
+# FIXED: Use absolute path for logs
+LOG_DIR = THIS_DIR / "logs"
 
 
 def _configure_logging() -> None:
@@ -62,19 +71,45 @@ def _configure_logging() -> None:
     )
 
 
-_configure_logging()
-logger = logging.getLogger("api_server")
+# Import async-safe logging
+from logging_async_safe import setup_logging, stop_logging
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan - startup and shutdown."""
+    # Startup - FIXED: Use absolute path
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
+    setup_logging(LOG_DIR)
+    
+    # Get logger after setup
+    startup_logger = logging.getLogger("api_server")
+    startup_logger.info("=" * 60)
+    startup_logger.info("Marei Mekomos API Server Starting")
+    startup_logger.info(f"Log directory: {LOG_DIR}")
+    startup_logger.info(f"Environment: {settings.environment}")
+    startup_logger.info("=" * 60)
+    
+    yield
+    
+    # Shutdown
+    startup_logger.info("Marei Mekomos API Server Shutting Down")
+    stop_logging()
 
 
 # ==========================================
-#  FASTAPI APP
+#  FASTAPI APP - FIXED: Only create ONCE with lifespan
 # ==========================================
 
 app = FastAPI(
     title=f"{settings.app_name} API",
     description="Torah source finder with intelligent understanding",
     version=settings.app_version,
+    lifespan=lifespan,  # FIXED: Include lifespan here
 )
+
+_configure_logging()
+logger = logging.getLogger("api_server")
 
 # CORS for frontend
 app.add_middleware(
@@ -97,6 +132,7 @@ async def health_check() -> Dict[str, Any]:
         "status": "healthy",
         "version": settings.app_version,
         "environment": settings.environment,
+        "log_dir": str(LOG_DIR),
         "pipeline": {
             "step_1": "active",
             "step_2": "active",
@@ -107,346 +143,165 @@ async def health_check() -> Dict[str, Any]:
 
 
 # ==========================================
-#  FULL SEARCH ENDPOINT
+#  SESSION STATE (for decipher workflow)
+# ==========================================
+
+_pending_sessions: Dict[str, Any] = {}
+
+
+# ==========================================
+#  SEARCH ENDPOINT (Full Pipeline)
 # ==========================================
 
 @app.post("/search")
-async def search_endpoint(request: SearchRequest) -> Dict[str, Any]:
+async def search_endpoint(request: SearchRequest) -> MareiMekomosResult:
     """
-    Full search pipeline: Steps 1 -> 2 -> 3.
-
-    Takes a query and returns organized Torah sources.
+    Full search pipeline (Steps 1-2-3).
+    
+    Takes user query, returns organized Torah sources.
     """
-    start = datetime.utcnow()
-    logger.info("=" * 80)
-    logger.info("[/search] STARTING FULL PIPELINE")
-    logger.info("=" * 80)
+    logger.info("=" * 60)
     logger.info(f"[/search] Query: '{request.query}'")
-    logger.info(f"[/search] Timestamp: {start.isoformat()}")
-
+    logger.info("=" * 60)
+    
     try:
         from main_pipeline import search_sources
-
-        logger.info("[/search] Calling main pipeline...")
-        result: MareiMekomosResult = await search_sources(request.query)
-        duration = (datetime.utcnow() - start).total_seconds()
-        conf = enum_value(result.confidence)
-
-        logger.info("=" * 80)
-        logger.info("[/search] PIPELINE COMPLETE")
-        logger.info("=" * 80)
-        logger.info(f"[/search] Duration: {duration:.2f}s")
-        logger.info(f"[/search] Total sources: {result.total_sources}")
-        logger.info(f"[/search] Confidence: {conf}")
-        logger.info(f"[/search] Levels found: {getattr(result, 'levels_found', [])}")
+        result = await search_sources(request.query)
         
-        # Log source breakdown
-        if hasattr(result, 'sources_by_level'):
-            logger.info("[/search] Sources by level:")
-            for level, sources in getattr(result, 'sources_by_level', {}).items():
-                logger.info(f"  {level}: {len(sources)} sources")
+        logger.info(f"[/search] Complete: {result.total_sources} sources")
+        return result
         
-        logger.info("=" * 80)
-
-        return result.model_dump()
-
-    except Exception as exc:
-        logger.exception("[/search] PIPELINE FAILED")
-        logger.error(f"[/search] Error type: {type(exc).__name__}")
-        logger.error(f"[/search] Error message: {str(exc)}")
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    except Exception as e:
+        logger.exception(f"[/search] Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ==========================================
-#  DECIPHER ENDPOINT (Step 1 only)
+#  DECIPHER ENDPOINTS (Step 1)
 # ==========================================
 
 @app.post("/decipher")
 async def decipher_endpoint(request: DecipherRequest) -> Dict[str, Any]:
     """
-    Step 1 only: transliteration -> Hebrew.
-
-    For when you just need to validate the transliteration.
+    Step 1 only: Transliteration -> Hebrew.
+    
+    Returns the deciphered Hebrew term(s) for validation.
     """
-    logger.info("[/decipher] query=%s | strict=%s", request.query, request.strict)
-
+    logger.info(f"[/decipher] Query: '{request.query}'")
+    
     try:
         from step_one_decipher import decipher
-        from user_validation import analyze_query
+        result = await decipher(request.query)
+        
+        # Store for confirm/reject
+        _pending_sessions[request.query] = result
+        
+        response = {
+            "success": result.success,
+            "hebrew_term": result.hebrew_term,
+            "hebrew_terms": result.hebrew_terms,
+            "confidence": enum_value(result.confidence),
+            "method": result.method,
+            "message": result.message,
+            "needs_validation": result.needs_validation,
+            "validation_type": enum_value(result.validation_type),
+            "alternatives": result.alternatives,
+            "choose_options": result.choose_options,
+            "word_validations": serialize_word_validations(result.word_validations),
+        }
+        
+        logger.info(f"[/decipher] Result: {result.hebrew_term} ({result.method})")
+        return response
+        
+    except Exception as e:
+        logger.exception(f"[/decipher] Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-        result: DecipherResult = await decipher(request.query)
-        result_confidence = enum_value(result.confidence)
-        logger.info(
-            "[/decipher] method=%s | confidence=%s | term=%s",
-            result.method,
-            result_confidence,
-            result.hebrew_term,
-        )
-
-        # Skip validation if we are confident and have a full term
-        if result.hebrew_term and result_confidence == ConfidenceLevel.HIGH.value:
-            validation = analyze_query(request.query, strict=False)
-
-            response = result.model_copy(
-                update={
-                    "hebrew_term": result.hebrew_term,
-                    "needs_validation": False,
-                    "validation_type": ValidationMode.NONE.value,
-                    "choose_options": [],
-                    "word_validations": serialize_word_validations(
-                        validation.word_validations
-                    ),
-                    "message": "High-confidence dictionary hit. No validation needed.",
-                }
-            )
-
-            response_dict = response.model_dump()
-            response_dict["original_query"] = request.query
-            return response_dict
-
-        # Otherwise, perform validation and rebuild the Hebrew phrase if needed
-        validation = analyze_query(request.query, strict=request.strict)
-
-        if result.hebrew_term and result.method == "dictionary":
-            complete_hebrew = result.hebrew_term
-        elif validation.word_validations:
-            complete_hebrew = " ".join(
-                wv.best_match for wv in validation.word_validations
-            )
-        else:
-            complete_hebrew = result.hebrew_term
-
-        response = result.model_copy(
-            update={
-                "hebrew_term": complete_hebrew,
-                "needs_validation": validation.needs_validation,
-                "validation_type": validation.validation_type.value
-                if hasattr(validation.validation_type, "value")
-                else validation.validation_type,
-                "choose_options": validation.choose_options,
-                "word_validations": serialize_word_validations(
-                    validation.word_validations
-                ),
-            }
-        )
-
-        response_dict = response.model_dump()
-        response_dict["original_query"] = request.query
-        return response_dict
-
-    except ImportError as exc:
-        logger.warning("[/decipher] step 1 unavailable: %s", exc)
-        error_result = DecipherResult(
-            success=False,
-            hebrew_term=None,
-            confidence=ConfidenceLevel.LOW,
-            method="unavailable",
-            needs_validation=True,
-            validation_type=ValidationMode.UNKNOWN,
-            choose_options=[],
-            message="Transliteration service not available",
-        )
-        return error_result.model_dump()
-
-    except Exception as exc:  # noqa: BLE001
-        logger.exception("[/decipher] error")
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
-
-
-# ==========================================
-#  CONFIRM/REJECT ENDPOINTS
-# ==========================================
 
 @app.post("/decipher/confirm")
-async def confirm_selection(request: ConfirmRequest) -> Dict[str, Any]:
-    """Confirm user's transliteration selection and store it in the dictionary."""
-    logger.info(
-        "[/decipher/confirm] index=%s | manual=%s",
-        request.selection_index,
-        bool(request.selected_hebrew),
-    )
-
+async def confirm_decipher(request: ConfirmRequest) -> Dict[str, Any]:
+    """User confirms a transliteration selection."""
+    logger.info(f"[/decipher/confirm] '{request.original_query}' -> '{request.selected_hebrew}'")
+    
     try:
-        from user_validation import analyze_query, apply_user_selection
-        from tools.word_dictionary import get_dictionary
-
-        validation = analyze_query(request.original_query)
-
-        if request.selected_hebrew:
-            selected = request.selected_hebrew
-        elif request.selection_index > 0:
-            selected = apply_user_selection(validation, request.selection_index)
-        else:
-            logger.warning("[/decipher/confirm] no selection provided")
-            return {"success": False, "message": "No selection made"}
-
-        if not selected:
-            logger.warning("[/decipher/confirm] invalid selection")
-            return {"success": False, "message": "Invalid selection"}
-
-        dictionary = get_dictionary()
-        dictionary.add_entry(
-            transliteration=validation.normalized,
-            hebrew=selected,
-            confidence="high",
-            source="user_confirmed",
-        )
-
-        updated_word_validations = []
-        hebrew_words = []
-
-        if validation.word_validations:
-            for idx, word_val in enumerate(validation.word_validations):
-                if idx in validation.uncertain_word_indices:
-                    hebrew_words.append(selected)
-                    updated_word_validations.append(
-                        {
-                            "original": word_val.original,
-                            "best_match": selected,
-                            "alternatives": word_val.alternatives,
-                            "confidence": 1.0,
-                            "needs_validation": False,
-                            "validation_type": ValidationMode.NONE.value,
-                        }
-                    )
-                else:
-                    hebrew_words.append(word_val.best_match)
-                    updated_word_validations.append(
-                        {
-                            "original": word_val.original,
-                            "best_match": word_val.best_match,
-                            "alternatives": word_val.alternatives,
-                            "confidence": word_val.confidence,
-                            "needs_validation": word_val.needs_validation,
-                            "validation_type": word_val.validation_type.value
-                            if hasattr(word_val.validation_type, "value")
-                            else word_val.validation_type,
-                        }
-                    )
-            full_hebrew_phrase = " ".join(hebrew_words)
-        else:
-            full_hebrew_phrase = selected
-
-        logger.info("[/decipher/confirm] confirmed term=%s", full_hebrew_phrase)
-
+        # Update dictionary for learning
+        try:
+            from word_dictionary import get_dictionary
+            dictionary = get_dictionary()
+            
+            words = request.original_query.lower().split()
+            if request.word_index is not None and 0 <= request.word_index < len(words):
+                word = words[request.word_index]
+            else:
+                word = request.original_query.lower()
+            
+            dictionary.add_entry(word, request.selected_hebrew, boost=True)
+            logger.info(f"[/decipher/confirm] Dictionary updated: {word} -> {request.selected_hebrew}")
+            
+        except ImportError:
+            logger.warning("[/decipher/confirm] Dictionary not available")
+        
         return {
             "success": True,
-            "hebrew_term": full_hebrew_phrase,
-            "word_validations": updated_word_validations,
-            "message": f"Got it! Using: {full_hebrew_phrase}",
-            "learned": True,
+            "message": f"Confirmed: {request.selected_hebrew}",
+            "hebrew_term": request.selected_hebrew,
         }
-
-    except Exception as exc:  # noqa: BLE001
-        logger.exception("[/decipher/confirm] error")
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        
+    except Exception as e:
+        logger.exception(f"[/decipher/confirm] Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/decipher/reject")
-async def reject_translation(request: RejectRequest) -> Dict[str, Any]:
-    """Reject a transliteration and return alternative options."""
-    logger.info("[/decipher/reject] rejected='%s'", request.incorrect_hebrew)
+async def reject_decipher(request: RejectRequest) -> Dict[str, Any]:
+    """User rejected all transliteration options."""
+    logger.info(f"[/decipher/reject] Query: '{request.original_query}'")
+    if request.feedback:
+        logger.info(f"[/decipher/reject] Feedback: {request.feedback}")
+    
+    _pending_sessions.pop(request.original_query, None)
+    
+    return {
+        "success": True,
+        "message": "Thank you for the feedback.",
+    }
 
-    try:
-        from user_validation import analyze_query
 
-        validation = analyze_query(request.original_query, strict=True)
-        suggestions = [
-            option
-            for option in validation.choose_options
-            if option != request.incorrect_hebrew
-        ][:5]
+# ==========================================
+#  DEBUG ENDPOINTS (development only)
+# ==========================================
 
+if settings.is_development:
+    
+    @app.get("/debug/pending")
+    async def debug_pending():
+        """Show pending decipher sessions."""
         return {
-            "success": True,
-            "message": "Thanks for the feedback! Here are other options:",
-            "suggestions": suggestions,
+            "pending_count": len(_pending_sessions),
+            "queries": list(_pending_sessions.keys()),
         }
-
-    except Exception as exc:  # noqa: BLE001
-        logger.exception("[/decipher/reject] error")
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
-
-
-# ==========================================
-#  SOURCES ENDPOINT (for expanding)
-# ==========================================
-
-@app.get("/sources/{ref:path}")
-async def get_source_text(ref: str) -> Dict[str, Any]:
-    """
-    Get the full text for a specific source reference.
-
-    Used for expanding/collapsing sources in the UI.
-    """
-    logger.info("[/sources] ref=%s", ref)
-
-    try:
-        from tools.sefaria_client import get_sefaria_client
-
-        client = get_sefaria_client()
-        text = await client.get_text(ref)
-
-        if text:
-            return {
-                "success": True,
-                "ref": text.ref,
-                "he_ref": text.he_ref,
-                "hebrew_text": text.hebrew,
-                "english_text": text.english,
-                "level": text.level.name,
-                "categories": text.categories,
-            }
-
-        return {"success": False, "message": f"Could not fetch text for: {ref}"}
-
-    except Exception as exc:  # noqa: BLE001
-        logger.exception("[/sources] error")
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
-
-
-# ==========================================
-#  RELATED ENDPOINT
-# ==========================================
-
-@app.get("/related/{ref:path}")
-async def get_related(ref: str) -> Dict[str, Any]:
-    """
-    Get related content for a reference.
-
-    Returns commentaries and cross-references.
-    """
-    logger.info("[/related] ref=%s", ref)
-
-    try:
-        from tools.sefaria_client import get_sefaria_client
-
-        client = get_sefaria_client()
-        related = await client.get_related(ref)
-
+    
+    @app.get("/debug/config")
+    async def debug_config():
+        """Show current configuration."""
         return {
-            "success": True,
-            "base_ref": ref,
-            "commentaries": [
-                {
-                    "ref": commentary.ref,
-                    "he_ref": commentary.he_ref,
-                    "level": commentary.level.name,
-                    "category": commentary.category,
-                    "snippet": commentary.text_snippet[:200],
-                }
-                for commentary in related.commentaries
-            ],
-            "links": [
-                {"ref": link.ref, "relationship": link.relationship}
-                for link in related.links[:10]
-            ],
-            "sheets_count": related.sheets,
+            "environment": settings.environment,
+            "log_level": settings.log_level,
+            "log_dir": str(LOG_DIR),
+            "cache_dir": str(settings.cache_dir),
+            "claude_model": settings.claude_model,
+            "sefaria_base_url": settings.sefaria_base_url,
         }
-
-    except Exception as exc:  # noqa: BLE001
-        logger.exception("[/related] error")
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    
+    @app.get("/debug/logs")
+    async def debug_logs():
+        """Check if logs exist."""
+        log_files = list(LOG_DIR.glob("*.log")) if LOG_DIR.exists() else []
+        return {
+            "log_dir": str(LOG_DIR),
+            "exists": LOG_DIR.exists(),
+            "log_files": [f.name for f in log_files],
+        }
 
 
 # ==========================================
@@ -455,20 +310,18 @@ async def get_related(ref: str) -> Dict[str, Any]:
 
 if __name__ == "__main__":
     import uvicorn
-
-    print("=" * 80)
-    print("Marei Mekomos V7 - API Server")
-    print("=" * 80)
-    print("Endpoints:")
-    print("  POST /search              - Full pipeline")
-    print("  POST /decipher            - Step 1 only")
-    print("  POST /decipher/confirm    - Confirm selection")
-    print("  POST /decipher/reject     - Reject translation")
-    print("  GET  /sources/{ref}       - Get source text")
-    print("  GET  /related/{ref}       - Get related content")
-    print("  GET  /health              - Health check")
-    print()
-    print("Starting server on http://%s:%s" % (settings.host, settings.port))
-    print("=" * 80)
-
-    uvicorn.run(app, host=settings.host, port=settings.port)
+    
+    print(f"\n{'='*60}")
+    print(f"Marei Mekomos API Server")
+    print(f"{'='*60}")
+    print(f"Log directory: {LOG_DIR}")
+    print(f"Environment: {settings.environment}")
+    print(f"URL: http://{settings.host}:{settings.port}")
+    print(f"{'='*60}\n")
+    
+    uvicorn.run(
+        "api_server_v7:app",
+        host=settings.host,
+        port=settings.port,
+        reload=settings.is_development,
+    )
