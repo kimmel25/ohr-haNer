@@ -65,6 +65,7 @@ class QueryType(str, Enum):
     SHITTAH = "shittah"
     SUGYA = "sugya"
     PASUK = "pasuk"
+    CHUMASH_SUGYA = "chumash_sugya"
     HALACHA = "halacha"
     MACHLOKES = "machlokes"
     MACHLOKET = "machlokes"  # Alias
@@ -272,15 +273,15 @@ STEP-BY-STEP ANALYSIS:
 3. DETERMINE WHERE TO LOOK
    Think about which masechtos would logically discuss this topic:
    - Monetary law → Bava Kamma, Bava Metzia, Bava Basra, Choshen Mishpat
-   - Marriage/divorce → Kesubos, Kiddushin, Gittin, Even HaEzer
-   - Shabbos → Shabbat, Eruvin, Orach Chaim
-   - Kashrus → Chullin, Yoreh Deah
+   - Marriage/divorce → Kesubos, Kiddushin, Gittin, Even HaEzer, Ishut/Ishus
+   - Holidays → Shabbat, Eruvin, Psachim, Orach Chaim, Zmanim
+   - Kashrus → Chullin, Zvachim, Yoreh Deah
    - etc.
 
 4. CHOOSE SEARCH METHOD
    - trickle_down: For complex queries, comparisons, conceptual questions
-     * Search achronim (Mishnah Berurah, Ketzos, Nesivos, etc.) first
-     * They cite the relevant gemaras, helping us find the right dapim
+     * Search Shulchan Aruch, Tur, and Rambam with nosei keilim and other Achronim (Mishnah Berurah, Ketzos, Nesivos, etc.) first
+     * They cite the relevant gemaras, and Rishonim, helping us find the right dapim
      * USE THIS for multi-concept queries like "chezkas haguf vs chezkas mammon"
    
    - trickle_up: For simple, single-topic queries
@@ -288,10 +289,12 @@ STEP-BY-STEP ANALYSIS:
      * Good for direct lookups
    
    - direct: When user gives specific location
+   - hybrid: can use each to confirm
 
 IMPORTANT WARNINGS:
 
 1. MULTIPLE MEANINGS: Many Torah terms have multiple meanings in different contexts!
+    For example but absolutley not limited too...
    - "חזקה" could mean:
      * חזקת הגוף (bodily/status presumption)
      * חזקת ממון (monetary possession presumption)  
