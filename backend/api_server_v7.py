@@ -72,7 +72,7 @@ def _configure_logging() -> None:
 
 
 # Import async-safe logging
-from logging_async_safe import setup_logging, stop_logging
+from logging.logging_async_safe import setup_logging, stop_logging
 
 
 @asynccontextmanager
