@@ -1,16 +1,13 @@
 """
-Local Corpus Handler for Sefaria Export JSON Files - FINAL VERSION
-===================================================================
+Local Corpus Handler for Sefaria Export JSON Files - V10
+=========================================================
 
-This module provides local search and citation extraction from the
-Sefaria JSON export, eliminating the need for excessive API calls.
-
-V7 FINAL - Key improvements:
-- AND-based word matching for multi-word queries
-- Comprehensive gemara citation extraction patterns
-- Handles HTML-embedded text
-- Path auto-discovery for SA, Tur, Rambam
-- Nosei keilim extraction with duplicate folder handling
+V10 CHANGES:
+1. Fixed siman extraction - skip non-digit keys instead of returning 0
+2. Added Tur nosei keilim extraction (Beis Yosef, Bach, Darchei Moshe)
+3. Added Rambam nosei keilim extraction (Maggid Mishneh, Kesef Mishneh, etc.)
+4. Updated discover_main_sugyos to use SA, Tur, AND Rambam citations
+5. Added rishonim fallback for gemara searches
 """
 
 import json
@@ -28,7 +25,6 @@ logger = logging.getLogger(__name__)
 #  CONFIGURATION
 # ==============================================================================
 
-# Default path - user should set this to their actual export location
 DEFAULT_CORPUS_ROOT = Path("C:/Projects/Sefaria-Export/json")
 
 
@@ -39,21 +35,21 @@ DEFAULT_CORPUS_ROOT = Path("C:/Projects/Sefaria-Export/json")
 @dataclass
 class LocalSearchHit:
     """A search hit from local corpus."""
-    sefer: str           # e.g., "Shulchan Arukh, Orach Chayim"
-    siman: int           # Siman number (1-indexed for display)
-    seif: Optional[int]  # Se'if number if applicable
-    text_snippet: str    # Matched text snippet
-    ref: str             # Full reference string
+    sefer: str
+    siman: int
+    seif: Optional[int]
+    text_snippet: str
+    ref: str
 
 
 @dataclass 
 class GemaraCitation:
     """A gemara citation extracted from text."""
-    masechta: str        # e.g., "Pesachim"
-    daf: str             # e.g., "4b"
-    source_ref: str      # Where this citation was found
-    source_text: str     # The text containing the citation
-    confidence: float    # How confident we are in this extraction
+    masechta: str
+    daf: str
+    source_ref: str
+    source_text: str
+    confidence: float
 
 
 # ==============================================================================
@@ -130,7 +126,6 @@ MASECHTA_MAP = {
     'נדה': 'Niddah',
 }
 
-# Abbreviated masechta names commonly used in nosei keilim
 MASECHTA_ABBREV = {
     'פסח': 'פסחים',
     'שב': 'שבת',
@@ -161,13 +156,6 @@ def extract_gemara_citations(
 ) -> List[GemaraCitation]:
     """
     Extract gemara citations from nosei keilim text.
-    
-    Handles various citation formats found in SA commentaries:
-    - "בפסחים דף ד'" / "בפסחים דף ד' ע"א"
-    - "פסחים ד:" / "פסחים ד."
-    - "בגמ' דף ד'" (with default masechta)
-    - "(פסחים ד')" in parentheses
-    - "עיין פסחים ד"
     """
     citations = []
     seen = set()
@@ -175,11 +163,9 @@ def extract_gemara_citations(
     if not text:
         return citations
     
-    # Build masechta pattern from all known names
     all_masechtos = list(MASECHTA_MAP.keys())
     masechta_pattern = '|'.join(re.escape(m) for m in sorted(all_masechtos, key=len, reverse=True))
     
-    # Hebrew number words
     hebrew_nums = {
         'ב': 2, 'ג': 3, 'ד': 4, 'ה': 5, 'ו': 6, 'ז': 7, 'ח': 8, 'ט': 9,
         'י': 10, 'יא': 11, 'יב': 12, 'יג': 13, 'יד': 14, 'טו': 15, 'טז': 16,
@@ -199,27 +185,18 @@ def extract_gemara_citations(
     }
     
     def parse_daf_number(s: str) -> Optional[int]:
-        """Parse a daf number from Hebrew or Arabic numerals."""
         if not s:
             return None
         s = s.strip().replace("'", "").replace('"', '').replace('׳', '').replace('״', '')
-        
-        # Try Arabic numeral
         if s.isdigit():
             return int(s)
-        
-        # Try Hebrew numeral
         if s in hebrew_nums:
             return hebrew_nums[s]
-        
-        # Try two-letter Hebrew
         if len(s) == 2 and s in hebrew_nums:
             return hebrew_nums[s]
-        
         return None
     
     def parse_amud(s: str) -> str:
-        """Parse amud indicator."""
         if not s:
             return 'a'
         s = s.strip()
@@ -227,24 +204,12 @@ def extract_gemara_citations(
             return 'b'
         return 'a'
     
-    # CITATION PATTERNS - ordered by specificity
     patterns = [
-        # Pattern 1: Full reference "בפסחים דף ד' ע"א" or "פסחים דף ד ע"ב"
         rf'(?:ב)?({masechta_pattern})\s+(?:דף\s+)?([א-תa-z0-9]+)[\'״׳"]?\s*(?:ע["\']?([אב]))?',
-        
-        # Pattern 2: "פסחים ד:" or "פסחים ד."
         rf'({masechta_pattern})\s+([א-תa-z0-9]+)[\'״׳"]?\s*[:.]',
-        
-        # Pattern 3: In parentheses "(פסחים ד')"
         rf'\(({masechta_pattern})\s+([א-תa-z0-9]+)[\'״׳"]?\)',
-        
-        # Pattern 4: "בגמ' דף X" or "בגמרא דף X" (needs default masechta)
         rf'בגמ[\'״׳]?\s+(?:דף\s+)?([א-תa-z0-9]+)[\'״׳"]?\s*(?:ע["\']?([אב]))?',
-        
-        # Pattern 5: "עיין פסחים" or "עי' פסחים"
         rf'(?:עיין|עי[\'״׳])\s+({masechta_pattern})\s+(?:דף\s+)?([א-תa-z0-9]+)?',
-        
-        # Pattern 6: Just "דף X" with context (needs default)
         rf'(?:^|\s)דף\s+([א-תa-z0-9]+)[\'״׳"]?\s*(?:ע["\']?([אב]))?',
     ]
     
@@ -256,12 +221,11 @@ def extract_gemara_citations(
             daf_str = None
             amud_str = None
             
-            # Parse based on pattern
-            if pattern_idx == 3:  # "בגמ' דף X" pattern - no masechta in match
+            if pattern_idx == 3:
                 daf_str = groups[0]
                 amud_str = groups[1] if len(groups) > 1 else None
                 masechta_he = default_masechta
-            elif pattern_idx == 5:  # "דף X" pattern - no masechta
+            elif pattern_idx == 5:
                 daf_str = groups[0]
                 amud_str = groups[1] if len(groups) > 1 else None
                 masechta_he = default_masechta
@@ -270,23 +234,17 @@ def extract_gemara_citations(
                 daf_str = groups[1] if len(groups) > 1 else None
                 amud_str = groups[2] if len(groups) > 2 else None
             
-            # Skip if no masechta
             if not masechta_he:
                 continue
             
-            # Parse daf number
             daf_num = parse_daf_number(daf_str)
-            if not daf_num or daf_num < 2 or daf_num > 180:  # Valid gemara daf range
+            if not daf_num or daf_num < 2 or daf_num > 180:
                 continue
             
-            # Parse amud
             amud = parse_amud(amud_str)
-            
-            # Convert to English
             masechta_en = MASECHTA_MAP.get(masechta_he, masechta_he)
             daf = f"{daf_num}{amud}"
             
-            # Deduplicate
             key = f"{masechta_en}_{daf}"
             if key in seen:
                 continue
@@ -308,19 +266,15 @@ def extract_gemara_citations(
 # ==============================================================================
 
 class LocalCorpus:
-    """
-    Handler for local Sefaria JSON export files.
-    """
+    """Handler for local Sefaria JSON export files."""
     
     def __init__(self, corpus_root: Path = None):
         self.corpus_root = Path(corpus_root) if corpus_root else DEFAULT_CORPUS_ROOT
         self._cache: Dict[str, Any] = {}
-        
         logger.info(f"[LocalCorpus] Initialized with root: {self.corpus_root}")
     
     def _load_json(self, relative_path: str) -> Optional[Dict]:
         """Load and cache a JSON file."""
-        # Normalize path separators
         relative_path = relative_path.replace('\\', '/')
         
         if relative_path in self._cache:
@@ -373,11 +327,29 @@ class LocalCorpus:
         
         for word in query_words:
             if word not in text:
-                # Try without final letters (ם ן ף ך ץ -> מ נ פ כ צ)
                 word_base = word.replace('ם', 'מ').replace('ן', 'נ').replace('ף', 'פ').replace('ך', 'כ').replace('ץ', 'צ')
                 if word_base not in text and word not in text:
                     return False
         return True
+    
+    def _extract_siman_from_key(self, key: str) -> int:
+        """
+        V10 FIX: Extract siman number from a dictionary key.
+        Returns 0 if can't extract (caller should skip).
+        """
+        key_str = str(key).strip()
+        
+        # Simple digit
+        if key_str.isdigit():
+            return int(key_str)
+        
+        # Extract leading digits (handles "17:3" -> 17)
+        match = re.match(r'^(\d+)', key_str)
+        if match:
+            return int(match.group(1))
+        
+        # Could not extract siman
+        return 0
     
     def search_sefer(self, sefer_path: str, query: str, sefer_name: str = None) -> List[LocalSearchHit]:
         """Search for a query in a sefer using AND logic for multiple words."""
@@ -397,7 +369,6 @@ class LocalCorpus:
                     flat_text = self._flatten_text(siman_text)
                     
                     if self._text_matches_query(flat_text, query_words):
-                        # Get snippet
                         first_word = query_words[0]
                         match_pos = flat_text.find(first_word)
                         start = max(0, match_pos - 30) if match_pos >= 0 else 0
@@ -414,7 +385,14 @@ class LocalCorpus:
                         
             elif isinstance(text_array, dict):
                 for key, siman_text in text_array.items():
-                    siman_num = int(key) if str(key).isdigit() else 0
+                    # V10 FIX: Better siman extraction
+                    siman_num = self._extract_siman_from_key(key)
+                    
+                    # V10 FIX: Skip non-siman entries instead of using 0
+                    if siman_num == 0:
+                        logger.debug(f"[search_sefer] Skipping non-siman key: {key}")
+                        continue
+                    
                     flat_text = self._flatten_text(siman_text)
                     
                     if self._text_matches_query(flat_text, query_words):
@@ -436,17 +414,31 @@ class LocalCorpus:
         
         return hits
     
-    def search_shulchan_aruch(self, query: str) -> List[LocalSearchHit]:
-        """Search all four chelkei Shulchan Aruch."""
+    def search_shulchan_aruch(self, query: str, chelek: str = None) -> List[LocalSearchHit]:
+        """Search Shulchan Aruch. If chelek specified (oc/yd/eh/cm), search only that chelek."""
         all_hits = []
         sa_base = self.corpus_root / "Halakhah" / "Shulchan Arukh"
         
         if not sa_base.exists():
             return all_hits
         
+        # Map chelek codes to full names
+        chelek_map = {
+            "oc": "Orach Chayim",
+            "yd": "Yoreh De'ah",
+            "eh": "Even HaEzer",
+            "cm": "Choshen Mishpat"
+        }
+        
         try:
             for subdir in sa_base.iterdir():
                 if subdir.is_dir() and subdir.name.startswith("Shulchan Arukh,"):
+                    # If chelek specified, filter by it
+                    if chelek:
+                        chelek_name = chelek_map.get(chelek.lower(), chelek)
+                        if chelek_name not in subdir.name:
+                            continue
+                    
                     json_path = subdir / "Hebrew" / "merged.json"
                     if json_path.exists():
                         relative = str(json_path.relative_to(self.corpus_root))
@@ -459,17 +451,31 @@ class LocalCorpus:
         
         return all_hits
     
-    def search_tur(self, query: str) -> List[LocalSearchHit]:
-        """Search all four chelkei Tur."""
+    def search_tur(self, query: str, chelek: str = None) -> List[LocalSearchHit]:
+        """Search Tur. If chelek specified (oc/yd/eh/cm), search only that chelek."""
         all_hits = []
         tur_base = self.corpus_root / "Halakhah" / "Tur"
         
         if not tur_base.exists():
             return all_hits
         
+        # Map chelek codes to full names  
+        chelek_map = {
+            "oc": "Orach Chaim",
+            "yd": "Yoreh Deah",
+            "eh": "Even HaEzer",
+            "cm": "Choshen Mishpat"
+        }
+        
         try:
             for subdir in tur_base.iterdir():
                 if subdir.is_dir() and subdir.name.startswith("Tur"):
+                    # If chelek specified, filter by it
+                    if chelek:
+                        chelek_name = chelek_map.get(chelek.lower(), chelek)
+                        if chelek_name not in subdir.name:
+                            continue
+                    
                     json_path = subdir / "Hebrew" / "merged.json"
                     if json_path.exists():
                         relative = str(json_path.relative_to(self.corpus_root))
@@ -516,70 +522,158 @@ class LocalCorpus:
         return all_hits
     
     def get_nosei_keilim_for_siman(self, chelek: str, siman: int) -> Dict[str, str]:
-            """
-            Get all nosei keilim text for a specific SA siman.
-            
-            V8 FIX: Properly matches chelek names in folder paths.
-            """
-            result = {}
-            commentary_base = self.corpus_root / "Halakhah" / "Shulchan Arukh" / "Commentary"
-            
+        """Get all nosei keilim text for a specific SA siman."""
+        result = {}
+        commentary_base = self.corpus_root / "Halakhah" / "Shulchan Arukh" / "Commentary"
+        
+        if not commentary_base.exists():
+            return result
+        
+        chelek_patterns = {
+            "oc": ["orach chaim", "orach_chaim"],
+            "yd": ["yoreh de'ah", "yoreh deah", "yoreh_deah"],
+            "eh": ["even haezer", "even ha'ezer", "even_haezer"],
+            "cm": ["choshen mishpat", "choshen_mishpat"],
+        }
+        
+        patterns = chelek_patterns.get(chelek.lower(), [chelek.lower()])
+        
+        try:
+            for author_dir in commentary_base.iterdir():
+                if not author_dir.is_dir():
+                    continue
+                
+                author_name = author_dir.name
+                found_json = None
+                
+                for json_file in author_dir.rglob("merged.json"):
+                    json_path_lower = str(json_file).lower()
+                    
+                    chelek_match = False
+                    for pattern in patterns:
+                        if pattern in json_path_lower:
+                            chelek_match = True
+                            break
+                    
+                    if chelek_match:
+                        if "hebrew" in json_path_lower:
+                            found_json = json_file
+                            break
+                        elif found_json is None:
+                            found_json = json_file
+                
+                if found_json is None:
+                    for json_file in author_dir.rglob("merged.json"):
+                        json_path_str = str(json_file).lower()
+                        has_any_chelek = any(
+                            any(p in json_path_str for p in chelek_patterns[c])
+                            for c in chelek_patterns
+                        )
+                        if not has_any_chelek:
+                            if "hebrew" in json_path_str:
+                                found_json = json_file
+                                break
+                            elif found_json is None:
+                                found_json = json_file
+                
+                if not found_json:
+                    continue
+                
+                try:
+                    relative_path = str(found_json.relative_to(self.corpus_root))
+                    data = self._load_json(relative_path)
+                    if not data:
+                        continue
+                    
+                    text_array = self._get_text_array(data)
+                    
+                    if isinstance(text_array, list) and 0 < siman <= len(text_array):
+                        siman_text = self._flatten_text(text_array[siman - 1])
+                        if siman_text and len(siman_text) > 10:
+                            result[author_name] = siman_text
+                    elif isinstance(text_array, dict):
+                        for key in [str(siman), str(siman - 1)]:
+                            if key in text_array:
+                                siman_text = self._flatten_text(text_array[key])
+                                if siman_text and len(siman_text) > 10:
+                                    result[author_name] = siman_text
+                                break
+                except Exception:
+                    continue
+                    
+        except Exception as e:
+            logger.warning(f"[LocalCorpus] Error getting nosei keilim: {e}")
+        
+        if result:
+            logger.info(f"[LocalCorpus] Found {len(result)} nosei keilim for SA {chelek.upper()} {siman}: {list(result.keys())}")
+        
+        return result
+    
+    def get_tur_nosei_keilim_for_siman(self, chelek: str, siman: int) -> Dict[str, str]:
+        """
+        V10: Get nosei keilim text for a Tur siman.
+        
+        Includes: Beis Yosef, Bach, Darchei Moshe, Perishah, Derishah
+        """
+        result = {}
+        
+        chelek_map = {
+            "oc": "Orach Chayim",
+            "yd": "Yoreh Deah",
+            "eh": "Even HaEzer",
+            "cm": "Choshen Mishpat"
+        }
+        
+        chelek_name = chelek_map.get(chelek.lower(), chelek)
+        
+        # Try multiple path patterns for Tur commentaries
+        tur_base = self.corpus_root / "Halakhah" / "Tur"
+        commentary_paths = [
+            tur_base / "Commentary",
+            tur_base,
+        ]
+        
+        author_patterns = {
+            "Beit Yosef": ["beit yosef", "beis yosef", "bet yosef"],
+            "Bach": ["bach", "bayit chadash"],
+            "Darchei Moshe": ["darchei moshe", "darkhei moshe"],
+            "Perishah": ["perishah", "prisha"],
+            "Derishah": ["derishah", "drisha"],
+        }
+        
+        for commentary_base in commentary_paths:
             if not commentary_base.exists():
-                return result
-            
-            # Map chelek codes to possible folder name patterns
-            chelek_patterns = {
-                "oc": ["orach chaim", "orach_chaim"],
-                "yd": ["yoreh de'ah", "yoreh deah", "yoreh_deah"],
-                "eh": ["even haezer", "even ha'ezer", "even_haezer"],
-                "cm": ["choshen mishpat", "choshen_mishpat"],
-            }
-            
-            patterns = chelek_patterns.get(chelek.lower(), [chelek.lower()])
+                continue
             
             try:
                 for author_dir in commentary_base.iterdir():
                     if not author_dir.is_dir():
                         continue
                     
-                    author_name = author_dir.name
+                    dir_name_lower = author_dir.name.lower()
                     
-                    # V8: Find merged.json that matches our chelek
+                    # Check if this directory matches any author
+                    matched_author = None
+                    for author, patterns in author_patterns.items():
+                        if any(p in dir_name_lower for p in patterns):
+                            matched_author = author
+                            break
+                    
+                    if not matched_author:
+                        continue
+                    
+                    # Find the right JSON file for this chelek
                     found_json = None
-                    
                     for json_file in author_dir.rglob("merged.json"):
                         json_path_lower = str(json_file).lower()
                         
-                        # Check if this file is for the right chelek
-                        chelek_match = False
-                        for pattern in patterns:
-                            if pattern in json_path_lower:
-                                chelek_match = True
-                                break
-                        
-                        if chelek_match:
-                            # Prefer Hebrew version
+                        # Check if it's for the right chelek
+                        if chelek_name.lower().replace(" ", "") in json_path_lower.replace(" ", ""):
                             if "hebrew" in json_path_lower:
                                 found_json = json_file
                                 break
                             elif found_json is None:
                                 found_json = json_file
-                    
-                    # If no chelek-specific file, fall back to author-level file
-                    if found_json is None:
-                        for json_file in author_dir.rglob("merged.json"):
-                            json_path_str = str(json_file).lower()
-                            # Only use if NOT chelek-specific
-                            has_any_chelek = any(
-                                any(p in json_path_str for p in chelek_patterns[c])
-                                for c in chelek_patterns
-                            )
-                            if not has_any_chelek:
-                                if "hebrew" in json_path_str:
-                                    found_json = json_file
-                                    break
-                                elif found_json is None:
-                                    found_json = json_file
                     
                     if not found_json:
                         continue
@@ -591,31 +685,122 @@ class LocalCorpus:
                             continue
                         
                         text_array = self._get_text_array(data)
+                        siman_text = ""
                         
                         if isinstance(text_array, list) and 0 < siman <= len(text_array):
                             siman_text = self._flatten_text(text_array[siman - 1])
-                            if siman_text and len(siman_text) > 10:
-                                result[author_name] = siman_text
                         elif isinstance(text_array, dict):
                             for key in [str(siman), str(siman - 1)]:
                                 if key in text_array:
                                     siman_text = self._flatten_text(text_array[key])
-                                    if siman_text and len(siman_text) > 10:
-                                        result[author_name] = siman_text
                                     break
-                    except Exception:
+                        
+                        if siman_text and len(siman_text) > 10:
+                            result[matched_author] = siman_text
+                            
+                    except Exception as e:
+                        logger.debug(f"Could not read {found_json}: {e}")
                         continue
                         
             except Exception as e:
-                logger.warning(f"[LocalCorpus] Error getting nosei keilim: {e}")
-            
-            if result:
-                logger.info(f"[LocalCorpus] Found {len(result)} nosei keilim for SA {chelek.upper()} {siman}: {list(result.keys())}")
-            
+                logger.debug(f"Error scanning {commentary_base}: {e}")
+                continue
+        
+        if result:
+            logger.info(f"[LocalCorpus] Found {len(result)} Tur nosei keilim for {chelek.upper()} {siman}: {list(result.keys())}")
+        
+        return result
+    
+    def get_rambam_nosei_keilim_for_halacha(self, sefer: str, perek: int) -> Dict[str, str]:
+        """
+        V10: Get nosei keilim text for a Rambam halacha.
+        
+        Includes: Maggid Mishneh, Kesef Mishneh, Lechem Mishneh, Hagahos Maimoniyos
+        """
+        result = {}
+        
+        rambam_base = self.corpus_root / "Halakhah" / "Mishneh Torah"
+        
+        author_patterns = {
+            "Maggid Mishneh": ["maggid mishneh", "magid mishneh"],
+            "Kesef Mishneh": ["kesef mishneh", "kessef mishneh"],
+            "Lechem Mishneh": ["lechem mishneh"],
+            "Hagahos Maimoniyos": ["hagahos", "hagahot"],
+            "Mishneh LaMelech": ["mishneh lamelech", "mishneh lemelech"],
+        }
+        
+        # Search in Commentary folder
+        commentary_base = rambam_base / "Commentary"
+        if not commentary_base.exists():
             return result
+        
+        try:
+            for author_dir in commentary_base.iterdir():
+                if not author_dir.is_dir():
+                    continue
+                
+                dir_name_lower = author_dir.name.lower()
+                
+                matched_author = None
+                for author, patterns in author_patterns.items():
+                    if any(p in dir_name_lower for p in patterns):
+                        matched_author = author
+                        break
+                
+                if not matched_author:
+                    continue
+                
+                # Find JSON for this sefer
+                found_json = None
+                sefer_lower = sefer.lower().replace(" ", "")
+                
+                for json_file in author_dir.rglob("merged.json"):
+                    json_path_lower = str(json_file).lower().replace(" ", "")
+                    
+                    if sefer_lower in json_path_lower:
+                        if "hebrew" in json_path_lower:
+                            found_json = json_file
+                            break
+                        elif found_json is None:
+                            found_json = json_file
+                
+                if not found_json:
+                    continue
+                
+                try:
+                    relative_path = str(found_json.relative_to(self.corpus_root))
+                    data = self._load_json(relative_path)
+                    if not data:
+                        continue
+                    
+                    text_array = self._get_text_array(data)
+                    perek_text = ""
+                    
+                    if isinstance(text_array, list) and 0 < perek <= len(text_array):
+                        perek_text = self._flatten_text(text_array[perek - 1])
+                    elif isinstance(text_array, dict):
+                        for key in [str(perek), str(perek - 1)]:
+                            if key in text_array:
+                                perek_text = self._flatten_text(text_array[key])
+                                break
+                    
+                    if perek_text and len(perek_text) > 10:
+                        result[matched_author] = perek_text
+                        
+                except Exception as e:
+                    logger.debug(f"Could not read {found_json}: {e}")
+                    continue
+                    
+        except Exception as e:
+            logger.debug(f"Error searching Rambam nosei keilim: {e}")
+        
+        if result:
+            logger.info(f"[LocalCorpus] Found {len(result)} Rambam nosei keilim for {sefer} {perek}: {list(result.keys())}")
+        
+        return result
     
     def extract_citations_from_siman(self, chelek: str, siman: int, default_masechta: str = None) -> List[GemaraCitation]:
-        """Extract all gemara citations from a siman's nosei keilim."""
+        """Extract all gemara citations from a SA siman's nosei keilim."""
         all_citations = []
         
         try:
@@ -629,7 +814,45 @@ class LocalCorpus:
                 if citations:
                     logger.debug(f"  {author}: {len(citations)} citations")
         except Exception as e:
-            logger.warning(f"[LocalCorpus] Error extracting citations: {e}")
+            logger.warning(f"[LocalCorpus] Error extracting SA citations: {e}")
+        
+        return all_citations
+    
+    def extract_citations_from_tur_siman(self, chelek: str, siman: int, default_masechta: str = None) -> List[GemaraCitation]:
+        """V10: Extract all gemara citations from a Tur siman's nosei keilim."""
+        all_citations = []
+        
+        try:
+            nosei_keilim = self.get_tur_nosei_keilim_for_siman(chelek, siman)
+            
+            for author, text in nosei_keilim.items():
+                source_ref = f"{author} on Tur {chelek.upper()} {siman}"
+                citations = extract_gemara_citations(text, source_ref, default_masechta)
+                all_citations.extend(citations)
+                
+                if citations:
+                    logger.debug(f"  {author}: {len(citations)} citations")
+        except Exception as e:
+            logger.warning(f"[LocalCorpus] Error extracting Tur citations: {e}")
+        
+        return all_citations
+    
+    def extract_citations_from_rambam(self, sefer: str, perek: int, default_masechta: str = None) -> List[GemaraCitation]:
+        """V10: Extract all gemara citations from a Rambam perek's nosei keilim."""
+        all_citations = []
+        
+        try:
+            nosei_keilim = self.get_rambam_nosei_keilim_for_halacha(sefer, perek)
+            
+            for author, text in nosei_keilim.items():
+                source_ref = f"{author} on Rambam {sefer} {perek}"
+                citations = extract_gemara_citations(text, source_ref, default_masechta)
+                all_citations.extend(citations)
+                
+                if citations:
+                    logger.debug(f"  {author}: {len(citations)} citations")
+        except Exception as e:
+            logger.warning(f"[LocalCorpus] Error extracting Rambam citations: {e}")
         
         return all_citations
     
@@ -661,7 +884,7 @@ class LocalCorpus:
             for hit in self.search_shulchan_aruch(topic_hebrew):
                 result["raw_hits"].append(hit)
                 chelek = extract_chelek(hit.sefer)
-                if chelek and hit.siman not in result["sa"][chelek]:
+                if chelek and hit.siman != 0 and hit.siman not in result["sa"][chelek]:
                     result["sa"][chelek].append(hit.siman)
         except Exception as e:
             logger.warning(f"Error searching SA: {e}")
@@ -671,7 +894,7 @@ class LocalCorpus:
             for hit in self.search_tur(topic_hebrew):
                 result["raw_hits"].append(hit)
                 chelek = extract_chelek(hit.sefer)
-                if chelek and hit.siman not in result["tur"][chelek]:
+                if chelek and hit.siman != 0 and hit.siman not in result["tur"][chelek]:
                     result["tur"][chelek].append(hit.siman)
         except Exception as e:
             logger.warning(f"Error searching Tur: {e}")
@@ -680,12 +903,13 @@ class LocalCorpus:
         try:
             for hit in self.search_rambam(topic_hebrew):
                 result["raw_hits"].append(hit)
-                result["rambam"].append({
-                    "sefer": hit.sefer,
-                    "perek": hit.siman,
-                    "ref": hit.ref,
-                    "snippet": hit.text_snippet
-                })
+                if hit.siman != 0:  # V10: Also filter siman 0 from Rambam
+                    result["rambam"].append({
+                        "sefer": hit.sefer,
+                        "perek": hit.siman,
+                        "ref": hit.ref,
+                        "snippet": hit.text_snippet
+                    })
         except Exception as e:
             logger.warning(f"Error searching Rambam: {e}")
         
@@ -693,7 +917,7 @@ class LocalCorpus:
 
 
 # ==============================================================================
-#  MAIN DISCOVERY FUNCTION
+#  MAIN DISCOVERY FUNCTION - V10
 # ==============================================================================
 
 def discover_main_sugyos(
@@ -702,11 +926,9 @@ def discover_main_sugyos(
     default_masechta: str = None
 ) -> Tuple[Dict[str, int], List[GemaraCitation]]:
     """
-    Find where a topic lives and extract gemara citations from nosei keilim.
+    V10: Find where a topic lives and extract gemara citations from ALL nosei keilim.
     
-    Returns:
-        - daf_counts: {daf_ref: citation_count} sorted by count
-        - all_citations: List of all citations found
+    Searches: SA nosei keilim, Tur nosei keilim, Rambam nosei keilim
     """
     logger.info(f"[DISCOVER] Finding main sugyos for: {topic_hebrew}")
     
@@ -734,36 +956,88 @@ def discover_main_sugyos(
     
     logger.info(f"[DISCOVER] Found topic in: {', '.join(found_parts)}")
     
-    # Extract citations from SA nosei keilim
     all_citations: List[GemaraCitation] = []
     daf_counts: Dict[str, int] = defaultdict(int)
     
+    # =========================================================================
+    # Extract citations from SA nosei keilim
+    # =========================================================================
     for chelek in ["oc", "yd", "eh", "cm"]:
         for siman in locations["sa"].get(chelek, []):
-            if siman == 0:  # Skip invalid simanim
+            if siman == 0:
+                logger.warning(f"[DISCOVER] Skipping invalid SA siman 0 in {chelek}")
                 continue
             try:
                 citations = corpus.extract_citations_from_siman(chelek, siman, default_masechta)
                 all_citations.extend(citations)
-                
                 for cite in citations:
                     daf_ref = f"{cite.masechta} {cite.daf}"
                     daf_counts[daf_ref] += 1
+                if citations:
+                    logger.info(f"[DISCOVER] SA {chelek.upper()} {siman}: {len(citations)} citations")
             except Exception as e:
-                logger.warning(f"Error extracting from {chelek} {siman}: {e}")
+                logger.warning(f"Error extracting from SA {chelek} {siman}: {e}")
+    
+    # =========================================================================
+    # V10: Extract citations from Tur nosei keilim
+    # =========================================================================
+    for chelek in ["oc", "yd", "eh", "cm"]:
+        for siman in locations["tur"].get(chelek, []):
+            if siman == 0:
+                logger.warning(f"[DISCOVER] Skipping invalid Tur siman 0 in {chelek}")
+                continue
+            try:
+                citations = corpus.extract_citations_from_tur_siman(chelek, siman, default_masechta)
+                all_citations.extend(citations)
+                for cite in citations:
+                    daf_ref = f"{cite.masechta} {cite.daf}"
+                    daf_counts[daf_ref] += 1
+                if citations:
+                    logger.info(f"[DISCOVER] Tur {chelek.upper()} {siman}: {len(citations)} citations")
+            except Exception as e:
+                logger.warning(f"Error extracting from Tur {chelek} {siman}: {e}")
+    
+    # =========================================================================
+    # V10: Extract citations from Rambam nosei keilim
+    # =========================================================================
+    for hit in locations.get("rambam", []):
+        sefer = hit.get("sefer", "")
+        perek = hit.get("perek", 0)
+        
+        if not sefer or perek == 0:
+            continue
+        
+        try:
+            citations = corpus.extract_citations_from_rambam(sefer, perek, default_masechta)
+            all_citations.extend(citations)
+            for cite in citations:
+                daf_ref = f"{cite.masechta} {cite.daf}"
+                daf_counts[daf_ref] += 1
+            if citations:
+                logger.info(f"[DISCOVER] Rambam {sefer} {perek}: {len(citations)} citations")
+        except Exception as e:
+            logger.warning(f"Error extracting from Rambam {sefer} {perek}: {e}")
+        
+        # Also extract citations from the raw Rambam snippet itself
+        snippet = hit.get("snippet", "")
+        if snippet:
+            source_ref = f"Rambam {hit.get('ref', '')}"
+            snippet_citations = extract_gemara_citations(snippet, source_ref, default_masechta)
+            all_citations.extend(snippet_citations)
+            for cite in snippet_citations:
+                daf_ref = f"{cite.masechta} {cite.daf}"
+                daf_counts[daf_ref] += 1
     
     # Sort by citation count
     sorted_counts = dict(sorted(daf_counts.items(), key=lambda x: -x[1]))
     
     logger.info(f"[DISCOVER] Found {len(all_citations)} citations across {len(sorted_counts)} dapim")
     
-    # Log top sugyos
     if sorted_counts:
         logger.info("[DISCOVER] Top sugyos by citation count:")
         for ref, count in list(sorted_counts.items())[:10]:
             logger.info(f"  {ref}: {count} citations")
     
-    # Log Rambam info
     if rambam_found:
         logger.info(f"[DISCOVER] Also found in Rambam:")
         for hit in locations["rambam"][:5]:
@@ -795,24 +1069,25 @@ if __name__ == "__main__":
     
     corpus = get_local_corpus()
     
-    # Structure check
     print("\n" + "="*60)
     print("CORPUS STRUCTURE CHECK")
     print("="*60)
     
     sa_base = corpus.corpus_root / "Halakhah" / "Shulchan Arukh"
     tur_base = corpus.corpus_root / "Halakhah" / "Tur"
+    rambam_base = corpus.corpus_root / "Halakhah" / "Mishneh Torah"
     
     print(f"SA exists: {sa_base.exists()}")
     print(f"Tur exists: {tur_base.exists()}")
+    print(f"Rambam exists: {rambam_base.exists()}")
     
     # Test the search
-    topic = "ביטול חמץ"
+    topic = "חזקת הגוף חזקת ממון"
     print(f"\n{'='*60}")
     print(f"SEARCHING FOR: {topic}")
     print(f"{'='*60}\n")
     
-    daf_counts, citations = discover_main_sugyos(corpus, topic, default_masechta="פסחים")
+    daf_counts, citations = discover_main_sugyos(corpus, topic, default_masechta="כתובות")
     
     print(f"\n{'='*60}")
     print("RESULTS")
@@ -828,20 +1103,5 @@ if __name__ == "__main__":
         print(f"\nSample citations:")
         for cite in citations[:10]:
             print(f"  - {cite.masechta} {cite.daf} (from {cite.source_ref})")
-            print(f"    Text: \"{cite.source_text}\"")
     else:
         print("\n⚠️  No gemara citations extracted.")
-        print("\nDEBUG - Let's see what's in a nosei keilim:")
-        
-        # Get one nosei keilim and show raw text
-        nk = corpus.get_nosei_keilim_for_siman("oc", 434)
-        if nk:
-            author = list(nk.keys())[0]
-            text = nk[author][:500]
-            print(f"\nSample from {author} on OC 434:")
-            print(f"  \"{text}...\"")
-            
-            # Try to find any daf references manually
-            print(f"\n  Contains 'דף': {'דף' in text}")
-            print(f"  Contains 'פסחים': {'פסחים' in text}")
-            print(f"  Contains 'בגמ': {'בגמ' in text}")

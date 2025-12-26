@@ -429,9 +429,9 @@
   "mammon": {
     "hebrew": "ממון",
     "confidence": "medium",
-    "usage_count": 0,
+    "usage_count": 1,
     "source": "notes",
-    "last_used": null
+    "last_used": "2025-12-25T09:09:32.531434"
   },
   "haisha": {
     "hebrew": "האשה",
@@ -821,9 +821,9 @@
   "shaviya anafshe": {
     "hebrew": "שוייא אנפשיה",
     "confidence": "high",
-    "usage_count": 8,
+    "usage_count": 10,
     "source": "manual",
-    "last_used": "2025-12-07T21:19:31.040395"
+    "last_used": "2025-12-23T23:30:41.161407"
   },
   "shavya anafshe": {
     "hebrew": "שוייא אנפשיה",
@@ -877,9 +877,9 @@
   "chezkas haguf": {
     "hebrew": "חזקת הגוף",
     "confidence": "high",
-    "usage_count": 29,
+    "usage_count": 37,
     "source": "manual",
-    "last_used": "2025-12-23T21:56:35.101391"
+    "last_used": "2025-12-25T22:34:16.623959"
   },
   "chezka haguf": {
     "hebrew": "חזקת הגוף",
@@ -889,7 +889,7 @@
     "last_used": null
   },
   "chezkas mamon": {
-    "hebrew": "ממון",
+    "hebrew": "חזקת ממון",
     "confidence": "high",
     "usage_count": 3,
     "source": "manual",
@@ -1699,7 +1699,7 @@
     "last_used": "2025-12-21T22:32:36.810622"
   },
   "chezkas kashrut": {
-    "hebrew": "כשרות",
+    "hebrew": "חזקת כשרות",
     "confidence": "high",
     "usage_count": 2,
     "source": "sefaria",
@@ -1719,26 +1719,19 @@
     "source": "user_confirmed",
     "last_used": "2025-12-07T22:42:42.656117"
   },
-  "חזקת הגוף": {
+  "chekas haguf": {
     "hebrew": "חזקת הגוף",
     "confidence": "high",
     "usage_count": 2,
     "source": "sefaria",
     "last_used": "2025-12-08T23:15:31.029837"
   },
-  "ממון": {
-    "hebrew": "ממון",
+  "chekas mammon": {
+    "hebrew": "חזקת ממון",
     "confidence": "high",
     "usage_count": 3,
     "source": "sefaria",
     "last_used": "2025-12-08T17:35:36.762996"
-  },
-  "ברי ושמא": {
-    "hebrew": "ברי ושמא",
-    "confidence": "high",
-    "usage_count": 6,
-    "source": "sefaria",
-    "last_used": "2025-12-08T18:26:05.128789"
   },
   "bari vishema": {
     "hebrew": "ברי ושמא",
@@ -1747,19 +1740,12 @@
     "source": "sefaria",
     "last_used": "2025-12-21T22:32:28.972389"
   },
-  "קמא": {
+  "kamma": {
     "hebrew": "קמא",
     "confidence": "high",
     "usage_count": 1,
     "source": "sefaria",
     "last_used": "2025-12-08T21:40:10.563146"
-  },
-  "חזקת מרא קמא": {
-    "hebrew": "חזקת מרא קמא",
-    "confidence": "high",
-    "usage_count": 10,
-    "source": "sefaria",
-    "last_used": "2025-12-09T21:54:44.350458"
   },
   "bari vshema beissurin": {
     "hebrew": "ברי בשמא באיסורין",
