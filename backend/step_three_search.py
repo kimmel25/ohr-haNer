@@ -1,27 +1,32 @@
 """
-Step 3: SEARCH - V11 Architecture
-==================================
+Step 3: SEARCH - V17 Improved Trickle-Down Logic
+=================================================
 
-V11 VISION (from Doyv):
-- Determine trickle up vs down based on query type
-- Cast a WIDE net - don't filter early, sweep up with confirmation later
-- CONFIRMATION LOOPS: Verify results by going the opposite direction
-- No rigidity - let Claude's understanding guide us
+V17 FIXES (building on V16):
+1. Filters out GENERIC ROOT WORDS when specific phrases exist
+   - If topics = ["חזקת הגוף", "חזקת ממון", "חזקה"], removes "חזקה"
+   - Prevents generic matches from polluting intersection logic
+2. For comparison queries: Requires BOTH PRIMARY concepts to intersect
+   - Not just "any 2 topics" but "the specific concepts being compared"
+   - e.g., for "chezkas haguf vs chezkas mammon", only uses simanim
+     that mention BOTH "חזקת הגוף" AND "חזקת ממון"
 
-TRICKLE DOWN (for complex/multi-topic/sugya queries):
-1. Search BROADLY in SA, Tur, Rambam, Achronim for the inyan
-2. Extract ALL gemara citations from nosei keilim
-3. Rank by citation count
-4. Claude validates
-5. TRICKLE UP from found gemaras: get Rashi, Tosfos, Rishonim
-6. CONFIRMATION: Check if rishonim trace back UP to achronim/SA/Tur/Rambam
-7. Keep sources that confirm, flag ones that don't
+V16 FIXES:
+1. Searches for SPECIFIC PHRASES (e.g., "חזקת הגוף") not just root words ("חזקה")
+2. For comparison queries: Requires BOTH concepts to appear in source before extracting citations
+3. Filters extracted citations by Claude's target_masechtos
+4. Prioritizes sources that mention multiple query concepts
+5. Uses Claude's picks as ground truth anchors
 
-TRICKLE UP (for simple/single-word/halacha/chumash queries):
-1. Find earliest source (pasuk → mishna → gemara → psak)
-2. Follow chain upward through rishonim → achronim
-3. CONFIRMATION: Trickle down from highest source to verify
-4. Keep sources that form complete chains
+V17 FLOW:
+1. Get Claude's info from Step 2 (locations, topics, synonyms, target_masechtos)
+2. FILTER OUT generic root words from topics (V17 new)
+3. For comparison queries: Search for sources mentioning BOTH PRIMARY topics
+4. Extract citations ONLY from matching sources
+5. Filter citations by target_masechtos
+6. Priority 1: Claude's picks + search results in proximity
+7. Validate remaining with trickle-up and word search
+8. Claude reviews Priority 2 and 3
 """
 
 import logging
@@ -30,12 +35,14 @@ import json
 from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
-from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Tuple
 
 from anthropic import Anthropic
-
 from config import get_settings
+
+# =============================================================================
+#  IMPORTS
+# =============================================================================
 
 try:
     from models import ConfidenceLevel
@@ -45,11 +52,9 @@ except ImportError:
         MEDIUM = "medium"
         LOW = "low"
 
-# Import local corpus handler
 try:
     from local_corpus import (
         get_local_corpus,
-        discover_main_sugyos,
         LocalCorpus,
         GemaraCitation,
         LocalSearchHit,
@@ -60,6 +65,10 @@ try:
 except ImportError:
     LOCAL_CORPUS_AVAILABLE = False
     logging.warning("local_corpus module not available")
+    
+    def extract_gemara_citations(text: str) -> List:
+        """Fallback citation extractor."""
+        return []
 
 if TYPE_CHECKING:
     from step_two_understand import QueryAnalysis, SearchMethod, Realm, QueryType
@@ -73,12 +82,39 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 
 
-# ==============================================================================
+# =============================================================================
+#  CONFIGURATION
+# =============================================================================
+
+PROXIMITY_RADIUS = 2
+WORD_CONTEXT_WINDOW = 50
+MIN_TERM_MATCH_RATIO = 0.5
+
+# V16: Masechta name variations for filtering
+MASECHTA_ALIASES = {
+    'kesubos': ['ketubot', 'kesubos', 'כתובות'],
+    'ketubot': ['ketubot', 'kesubos', 'כתובות'],
+    'bava kamma': ['bava kamma', 'bava kama', 'בבא קמא'],
+    'bava metzia': ['bava metzia', 'bava metziah', 'בבא מציעא'],
+    'bava basra': ['bava batra', 'bava basra', 'בבא בתרא'],
+    'bava batra': ['bava batra', 'bava basra', 'בבא בתרא'],
+    'gittin': ['gittin', 'גיטין'],
+    'kiddushin': ['kiddushin', 'kidushin', 'קידושין'],
+    'sanhedrin': ['sanhedrin', 'סנהדרין'],
+    'yevamot': ['yevamot', 'yevamos', 'יבמות'],
+    'nedarim': ['nedarim', 'נדרים'],
+    'shabbat': ['shabbat', 'shabbos', 'שבת'],
+    'pesachim': ['pesachim', 'psachim', 'פסחים'],
+    'chullin': ['chullin', 'chulin', 'חולין'],
+}
+
+
+# =============================================================================
 #  SOURCE LEVELS
-# ==============================================================================
+# =============================================================================
 
 class SourceLevel(Enum):
-    """Source levels - order represents typical trickle-up flow."""
+    """Source levels in traditional trickle-up order."""
     PASUK = "pasuk"
     TARGUM = "targum"
     MISHNA = "mishna"
@@ -100,14 +136,10 @@ class SourceLevel(Enum):
         return _LEVEL_HEBREW.get(self, self.value)
 
 
-_LEVEL_HEBREW: Dict[SourceLevel, str] = {
+_LEVEL_HEBREW = {
     SourceLevel.PASUK: "פסוק",
-    SourceLevel.TARGUM: "תרגום",
     SourceLevel.MISHNA: "משנה",
-    SourceLevel.TOSEFTA: "תוספתא",
     SourceLevel.GEMARA_BAVLI: "גמרא בבלי",
-    SourceLevel.GEMARA_YERUSHALMI: "ירושלמי",
-    SourceLevel.MIDRASH: "מדרש",
     SourceLevel.RASHI: 'רש"י',
     SourceLevel.TOSFOS: "תוספות",
     SourceLevel.RISHONIM: "ראשונים",
@@ -119,13 +151,20 @@ _LEVEL_HEBREW: Dict[SourceLevel, str] = {
 }
 
 
-# ==============================================================================
+class Priority(Enum):
+    """Source priority levels."""
+    P1 = 1
+    P2 = 2
+    P3 = 3
+
+
+# =============================================================================
 #  DATA STRUCTURES
-# ==============================================================================
+# =============================================================================
 
 @dataclass
 class Source:
-    """A single source with its text and metadata."""
+    """A single source with text and metadata."""
     ref: str
     he_ref: str
     level: SourceLevel
@@ -136,8 +175,9 @@ class Source:
     relevance_description: str = ""
     is_primary: bool = False
     citation_count: int = 0
-    confirmed: bool = False  # V11: Did this source pass confirmation?
-    confirmation_path: List[str] = field(default_factory=list)  # V11: How was it confirmed?
+    priority: Priority = Priority.P3
+    source_origin: str = ""
+    validation_method: str = ""
 
     @property
     def level_hebrew(self) -> str:
@@ -145,61 +185,55 @@ class Source:
 
 
 @dataclass
-class ConfirmationResult:
-    """V11: Result of confirmation loop."""
-    sugya: str
-    confirmed: bool
-    path_up: List[str] = field(default_factory=list)  # rishonim found
-    path_down: List[str] = field(default_factory=list)  # achronim that cite it
-    confidence: float = 0.0
-    reason: str = ""
+class CandidateSource:
+    """A candidate source before final validation."""
+    ref: str
+    hebrew_text: str = ""
+    citation_count: int = 0
+    source_origin: str = ""
+    priority: Priority = Priority.P3
+    validation_method: str = ""
+    in_claude_proximity: bool = False
+    validated_by_trickle_up: bool = False
+    passed_word_search: bool = False
+    claude_confidence: float = 0.0
+    claude_reason: str = ""
+    matched_terms: List[str] = field(default_factory=list)
+    missing_terms: List[str] = field(default_factory=list)
+    # V16: Track which topics this source matched
+    topics_matched: List[str] = field(default_factory=list)
 
 
-@dataclass
-class DiscoveryResult:
-    """Result of the discovery process."""
-    topic: str
-    topic_hebrew: str
-    
-    sa_simanim: Dict[str, List[int]] = field(default_factory=dict)
-    tur_simanim: Dict[str, List[int]] = field(default_factory=dict)
-    rambam_halachos: List[str] = field(default_factory=list)
-    
-    all_citations: List[GemaraCitation] = field(default_factory=list)
-    daf_counts: Dict[str, int] = field(default_factory=dict)
-    
-    main_sugyos: List[str] = field(default_factory=list)
-    confirmed_sugyos: List[str] = field(default_factory=list)  # V11
-    search_method_used: str = ""
-
-
-@dataclass
+@dataclass 
 class SearchResult:
     """Complete search result."""
     original_query: str
     search_topics: List[str]
-    
     sources: List[Source] = field(default_factory=list)
     sources_by_level: Dict[str, List[Source]] = field(default_factory=dict)
+    sources_by_priority: Dict[int, List[Source]] = field(default_factory=dict)
     
-    discovery: Optional[DiscoveryResult] = None
-    discovered_dapim: List[str] = field(default_factory=list)
-    confirmed_dapim: List[str] = field(default_factory=list)  # V11
+    claude_picks: List[str] = field(default_factory=list)
+    priority_1_refs: List[str] = field(default_factory=list)
+    priority_2_refs: List[str] = field(default_factory=list)
+    priority_3_refs: List[str] = field(default_factory=list)
+    rejected_refs: List[Tuple[str, str]] = field(default_factory=list)
     
     total_sources: int = 0
     levels_found: List[str] = field(default_factory=list)
     search_description: str = ""
-    
     confidence: ConfidenceLevel = ConfidenceLevel.MEDIUM
     needs_clarification: bool = False
     clarification_question: Optional[str] = None
 
 
-# ==============================================================================
-#  SEFARIA CLIENT (cached singleton)
-# ==============================================================================
+# =============================================================================
+#  CLIENTS
+# =============================================================================
 
 _sefaria_client = None
+_anthropic_client = None
+
 
 def _get_sefaria_client():
     global _sefaria_client
@@ -209,944 +243,1206 @@ def _get_sefaria_client():
             _sefaria_client = SefariaClient()
         except ImportError:
             logger.warning("SefariaClient not available")
-            return None
     return _sefaria_client
 
 
-# ==============================================================================
-#  V11: DETERMINE SEARCH DIRECTION
-# ==============================================================================
-
-def determine_search_direction(analysis: "QueryAnalysis") -> str:
-    """
-    V11: Determine whether to start with trickle-down or trickle-up.
-    
-    TRICKLE DOWN for:
-    - Multiple topics (comparison queries)
-    - Complex conceptual questions
-    - Sugya explorations
-    - Machlokes/shittah queries
-    
-    TRICKLE UP for:
-    - Simple single-word queries
-    - Halacha psak requests
-    - Chumash/pasuk questions
-    - Known specific locations
-    """
-    query_type = getattr(analysis.query_type, 'value', str(analysis.query_type))
-    realm = getattr(analysis.realm, 'value', str(analysis.realm))
-    method = getattr(analysis.search_method, 'value', str(analysis.search_method))
-    
-    # Check if Claude already decided
-    if method == "trickle_up":
-        return "trickle_up"
-    if method == "trickle_down":
-        return "trickle_down"
-    if method == "direct":
-        return "direct"
-    
-    # Use query characteristics to decide
-    topics = analysis.search_topics_hebrew or []
-    
-    # Multiple distinct topics → trickle down
-    if len(topics) >= 2:
-        logger.info(f"[V11] Multiple topics ({len(topics)}) → trickle_down")
-        return "trickle_down"
-    
-    # Complex query types → trickle down
-    complex_types = ["comparison", "machlokes", "shittah", "sugya"]
-    if query_type in complex_types:
-        logger.info(f"[V11] Complex query type ({query_type}) → trickle_down")
-        return "trickle_down"
-    
-    # Simple realms → trickle up
-    simple_realms = ["chumash", "mishna", "halacha"]
-    if realm in simple_realms:
-        logger.info(f"[V11] Simple realm ({realm}) → trickle_up")
-        return "trickle_up"
-    
-    # Single simple topic → trickle up
-    if len(topics) == 1 and len(topics[0].split()) <= 2:
-        logger.info(f"[V11] Single simple topic → trickle_up")
-        return "trickle_up"
-    
-    # Default to trickle down for gemara realm
-    logger.info(f"[V11] Default for gemara → trickle_down")
-    return "trickle_down"
-
-
-# ==============================================================================
-#  V11: BROAD SEARCH - Cast a Wide Net
-# ==============================================================================
-
-def broad_search_all_sources(
-    corpus: "LocalCorpus",
-    topics_hebrew: List[str]
-) -> Tuple[Dict[str, int], List[GemaraCitation], Dict[str, List[str]]]:
-    """
-    V11: Search BROADLY across ALL sources. Don't filter early.
-    
-    Returns:
-        - daf_counts: {daf_ref: citation_count}
-        - all_citations: List of all citations found
-        - source_locations: {source_type: [locations found]}
-    """
-    logger.info("=" * 60)
-    logger.info("[V11 BROAD SEARCH] Casting wide net across all sources")
-    logger.info(f"  Topics: {topics_hebrew}")
-    logger.info("=" * 60)
-    
-    all_citations: List[GemaraCitation] = []
-    daf_counts: Dict[str, int] = defaultdict(int)
-    source_locations: Dict[str, List[str]] = {
-        "sa": [],
-        "tur": [],
-        "rambam": [],
-    }
-    
-    # Search for EACH topic separately (don't combine with AND logic)
-    for topic in topics_hebrew:
-        logger.info(f"\n[V11] Searching for topic: '{topic}'")
-        
-        # =================================================================
-        # SHULCHAN ARUCH - Search ALL cheleks
-        # =================================================================
-        for chelek in ["oc", "yd", "eh", "cm"]:
-            try:
-                hits = corpus.search_shulchan_aruch(topic, chelek)
-                if hits:
-                    logger.info(f"  SA {chelek.upper()}: {len(hits)} simanim")
-                    for hit in hits:
-                        siman = hit.siman
-                        source_locations["sa"].append(f"{chelek.upper()} {siman}")
-                        
-                        # Extract citations from nosei keilim
-                        citations = corpus.extract_citations_from_siman(chelek, siman)
-                        for cite in citations:
-                            daf_ref = f"{cite.masechta} {cite.daf}"
-                            daf_counts[daf_ref] += 1
-                        all_citations.extend(citations)
-            except Exception as e:
-                logger.debug(f"  SA {chelek.upper()} error: {e}")
-        
-        # =================================================================
-        # TUR - Search ALL cheleks
-        # =================================================================
-        for chelek in ["oc", "yd", "eh", "cm"]:
-            try:
-                hits = corpus.search_tur(topic, chelek)
-                if hits:
-                    logger.info(f"  Tur {chelek.upper()}: {len(hits)} simanim")
-                    for hit in hits:
-                        siman = hit.siman
-                        source_locations["tur"].append(f"{chelek.upper()} {siman}")
-                        
-                        # Extract citations from Tur nosei keilim
-                        citations = corpus.extract_citations_from_tur_siman(chelek, siman)
-                        for cite in citations:
-                            daf_ref = f"{cite.masechta} {cite.daf}"
-                            daf_counts[daf_ref] += 1
-                        all_citations.extend(citations)
-            except Exception as e:
-                logger.debug(f"  Tur {chelek.upper()} error: {e}")
-        
-        # =================================================================
-        # RAMBAM - Search all sefarim
-        # =================================================================
+def _get_anthropic_client():
+    global _anthropic_client
+    if _anthropic_client is None:
         try:
-            rambam_hits = corpus.search_rambam(topic)
-            if rambam_hits:
-                logger.info(f"  Rambam: {len(rambam_hits)} halachos")
-                for hit in rambam_hits:
-                    source_locations["rambam"].append(hit.ref)
-                    
-                    # Extract perek number for nosei keilim lookup
-                    # Format is typically "Hilchot X, Perek Y"
-                    try:
-                        sefer = hit.sefer if hasattr(hit, 'sefer') else ""
-                        perek = hit.seif if hasattr(hit, 'seif') else 1
-                        if sefer and perek:
-                            citations = corpus.extract_citations_from_rambam(sefer, perek)
-                            for cite in citations:
-                                daf_ref = f"{cite.masechta} {cite.daf}"
-                                daf_counts[daf_ref] += 1
-                            all_citations.extend(citations)
-                    except Exception as e:
-                        logger.debug(f"  Rambam citation extraction error: {e}")
+            _anthropic_client = Anthropic(api_key=settings.anthropic_api_key)
         except Exception as e:
-            logger.debug(f"  Rambam error: {e}")
-    
-    # Sort by citation count
-    sorted_counts = dict(sorted(daf_counts.items(), key=lambda x: -x[1]))
-    
-    logger.info("\n" + "=" * 60)
-    logger.info(f"[V11 BROAD SEARCH] Complete")
-    logger.info(f"  Total citations: {len(all_citations)}")
-    logger.info(f"  Unique dapim: {len(sorted_counts)}")
-    logger.info(f"  SA locations: {len(source_locations['sa'])}")
-    logger.info(f"  Tur locations: {len(source_locations['tur'])}")
-    logger.info(f"  Rambam locations: {len(source_locations['rambam'])}")
-    
-    if sorted_counts:
-        logger.info("\n  Top 10 dapim by citation count:")
-        for i, (ref, count) in enumerate(list(sorted_counts.items())[:10], 1):
-            logger.info(f"    {i}. {ref}: {count} citations")
-    
-    return sorted_counts, all_citations, source_locations
+            logger.warning(f"Could not create Anthropic client: {e}")
+    return _anthropic_client
 
 
-# ==============================================================================
-#  V11: CLAUDE VALIDATION WITH INYAN UNDERSTANDING
-# ==============================================================================
+# =============================================================================
+#  HELPER FUNCTIONS
+# =============================================================================
 
-def validate_sugyos_with_claude_v11(
-    candidate_sugyos: List[str],
-    daf_counts: Dict[str, int],
-    analysis: "QueryAnalysis",
-    source_locations: Dict[str, List[str]],
-    max_candidates: int = 20
-) -> List[str]:
+def parse_gemara_ref(ref: str) -> Optional[Tuple[str, int, str]]:
+    """Parse a gemara ref into (masechta, daf_number, amud)."""
+    match = re.match(r'^([A-Za-z\s]+)\s+(\d+)([ab])$', ref.strip())
+    if match:
+        return (match.group(1).strip(), int(match.group(2)), match.group(3))
+    return None
+
+
+def refs_in_proximity(ref1: str, ref2: str, radius: int = PROXIMITY_RADIUS) -> bool:
+    """Check if two gemara refs are within radius dafim of each other."""
+    parsed1 = parse_gemara_ref(ref1)
+    parsed2 = parse_gemara_ref(ref2)
+    
+    if not parsed1 or not parsed2:
+        return False
+    
+    masechta1, daf1, amud1 = parsed1
+    masechta2, daf2, amud2 = parsed2
+    
+    if masechta1.lower() != masechta2.lower():
+        return False
+    
+    pos1 = daf1 * 2 + (0 if amud1 == 'a' else 1)
+    pos2 = daf2 * 2 + (0 if amud2 == 'a' else 1)
+    
+    return abs(pos1 - pos2) <= radius * 2
+
+
+def normalize_hebrew(text: str) -> str:
+    """Normalize Hebrew text for matching."""
+    if not text:
+        return ""
+    text = re.sub(r'[\u0591-\u05C7]', '', text)
+    sofit_map = {'ם': 'מ', 'ן': 'נ', 'ך': 'כ', 'ף': 'פ', 'ץ': 'צ'}
+    for sofit, regular in sofit_map.items():
+        text = text.replace(sofit, regular)
+    return text.lower()
+
+
+def extract_daf_refs_from_text(text: str) -> List[str]:
+    """Extract gemara daf references from free text."""
+    refs = []
+    masechtos = [
+        'Kesubos', 'Ketubot', 'Bava Kamma', 'Bava Metzia', 'Bava Basra', 'Bava Batra',
+        'Gittin', 'Kiddushin', 'Sanhedrin', 'Shabbat', 'Shabbos', 'Eruvin',
+        'Pesachim', 'Yoma', 'Sukkah', 'Beitzah', 'Rosh Hashanah', 'Taanis',
+        'Megillah', 'Moed Katan', 'Chagigah', 'Yevamot', 'Nedarim', 'Nazir',
+        'Sotah', 'Makkot', 'Shevuot', 'Avodah Zarah', 'Horayot', 'Zevachim',
+        'Menachot', 'Chullin', 'Bechorot', 'Arachin', 'Temurah', 'Keritot',
+        'Meilah', 'Niddah'
+    ]
+    
+    for masechta in masechtos:
+        pattern = rf'\b{masechta}\s+(\d+)\s*([ab])\b'
+        for match in re.finditer(pattern, text, re.IGNORECASE):
+            refs.append(f"{masechta} {match.group(1)}{match.group(2).lower()}")
+    
+    return refs
+
+
+# =============================================================================
+#  V16: IMPROVED MATCHING FUNCTIONS
+# =============================================================================
+
+def _filter_generic_roots(topics: List[str]) -> List[str]:
     """
-    V11: Have Claude review candidates with FULL context about the inyan.
+    V17: Filter out generic root words when specific phrases containing them exist.
     
-    Claude gets:
-    - The original query and what the user wants
-    - Which SA/Tur/Rambam simanim mentioned the topic
-    - The candidate sugyos
+    Example:
+        Input:  ["חזקת הגוף", "חזקת ממון", "חזקה"]
+        Output: ["חזקת הגוף", "חזקת ממון"]
+        
+    Why: For comparison queries, we want simanim that mention BOTH specific concepts,
+    not just any siman that mentions the generic root. If we keep "חזקה", then
+    a siman matching "חזקה" + "חזקת הגוף" counts as 2 topics, but that's wrong -
+    it's really just discussing חזקת הגוף.
     
-    Claude returns which sugyos are actually relevant.
+    The rule: If topic A is a substring of topic B (or vice versa), keep only the longer one.
     """
-    if not candidate_sugyos:
-        return []
+    if not topics or len(topics) <= 1:
+        return topics
     
-    candidates_to_check = candidate_sugyos[:max_candidates]
-    logger.info(f"[V11 CLAUDE] Reviewing {len(candidates_to_check)} candidates")
+    # Normalize for comparison
+    def norm(s):
+        return normalize_hebrew(s.strip())
     
-    # Build rich context for Claude
-    query_context = f"""
-ORIGINAL QUERY: {analysis.original_query}
-QUERY TYPE: {getattr(analysis.query_type, 'value', str(analysis.query_type))}
-REALM: {getattr(analysis.realm, 'value', str(analysis.realm))}
-
-HEBREW TOPICS (what the user is looking for):
-{chr(10).join(f'  - {t}' for t in analysis.search_topics_hebrew)}
-
-ENGLISH TOPICS:
-{chr(10).join(f'  - {t}' for t in analysis.search_topics)}
-
-WHERE WE FOUND THE TOPIC MENTIONED:
-- Shulchan Aruch: {', '.join(source_locations.get('sa', [])[:10]) or 'None found'}
-- Tur: {', '.join(source_locations.get('tur', [])[:10]) or 'None found'}
-- Rambam: {', '.join(source_locations.get('rambam', [])[:5]) or 'None found'}
-
-CLAUDE'S REASONING FROM STEP 2:
-{analysis.reasoning}
-"""
+    filtered = []
+    for topic in topics:
+        topic_norm = norm(topic)
+        
+        # Check if this topic is a substring of any other topic
+        is_substring_of_another = False
+        for other in topics:
+            if other == topic:
+                continue
+            other_norm = norm(other)
+            # If this topic is contained within another (longer) topic, skip it
+            if topic_norm in other_norm and len(topic_norm) < len(other_norm):
+                is_substring_of_another = True
+                break
+        
+        if not is_substring_of_another:
+            filtered.append(topic)
     
-    candidates_info = "\n".join([
-        f"  {i+1}. {sugya} ({daf_counts.get(sugya, 0)} citations from nosei keilim)"
-        for i, sugya in enumerate(candidates_to_check)
-    ])
-    
-    prompt = f"""You are a Torah research assistant validating gemara search results.
-
-{query_context}
-
-CANDIDATE SUGYOS (found by extracting gemara citations from nosei keilim):
-{candidates_info}
-
-YOUR TASK:
-Determine which gemaras are ACTUALLY relevant to what the user wants.
-
-IMPORTANT CONSIDERATIONS:
-1. Many words have multiple meanings in different contexts
-   - "חזקה" can mean: chezkas haguf, chezkas mammon, chazakah (3-year possession), chezkas kashrus
-   - Make sure the sugya discusses the SPECIFIC concept the user asked about
-   
-2. Think about WHICH masechtos would logically discuss this topic
-   - Monetary presumptions → Kesubos, Bava Kamma, Bava Basra
-   - Shabbos laws → Shabbat, Eruvin
-   - Marriage laws → Kesubos, Kiddushin, Gittin
-   
-3. Consider the citation count - higher counts suggest more relevance
-
-4. Be INCLUSIVE rather than exclusive - if a sugya MIGHT be relevant, keep it
-   - We will do a confirmation step later
-   - Better to include a marginal source than miss a good one
-
-Return a JSON object:
-{{
-    "relevant_sugyos": ["Sugya 1", "Sugya 2", ...],
-    "definitely_irrelevant": [
-        {{"sugya": "Sugya Name", "reason": "Brief explanation"}}
-    ],
-    "reasoning": "Your overall assessment of which sugyos are most important"
-}}
-
-Return ONLY valid JSON, no markdown.
-"""
-    
-    try:
-        client = Anthropic()
-        response = client.messages.create(
-            model="claude-sonnet-4-5-20250929",
-            max_tokens=2000,
-            temperature=0,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        
-        response_text = response.content[0].text.strip()
-        logger.debug(f"[V11 CLAUDE] Raw response: {response_text[:500]}...")
-        
-        # Clean markdown if present
-        if response_text.startswith("```"):
-            response_text = re.sub(r'^```(?:json)?\s*', '', response_text)
-            response_text = re.sub(r'\s*```$', '', response_text)
-        
-        result = json.loads(response_text)
-        
-        relevant = result.get("relevant_sugyos", [])
-        irrelevant = result.get("definitely_irrelevant", [])
-        reasoning = result.get("reasoning", "")
-        
-        logger.info(f"[V11 CLAUDE] Kept {len(relevant)}, removed {len(irrelevant)}")
-        logger.info(f"[V11 CLAUDE] Reasoning: {reasoning[:200]}...")
-        
-        # Match against our candidates
-        validated = []
-        for sugya in candidates_to_check:
-            sugya_lower = sugya.lower()
-            for r in relevant:
-                if r.lower() in sugya_lower or sugya_lower in r.lower():
-                    validated.append(sugya)
-                    break
-        
-        if not validated and candidates_to_check:
-            # If Claude rejected everything, keep top 5 by citation count
-            # This is a safety net - don't return empty
-            logger.warning("[V11 CLAUDE] All rejected - keeping top 5 as fallback")
-            validated = candidates_to_check[:5]
-        
-        return validated
-        
-    except Exception as e:
-        logger.error(f"[V11 CLAUDE] Error: {e}")
-        return candidates_to_check[:10]
+    return filtered
 
 
-# ==============================================================================
-#  V11: TRICKLE UP FROM GEMARAS - Get Rishonim
-# ==============================================================================
-
-async def trickle_up_from_gemaras(
-    main_sugyos: List[str],
-    target_authors: Set[str]
-) -> Dict[str, List[Source]]:
+def matches_target_masechtos(ref: str, target_masechtos: List[str]) -> bool:
     """
-    V11: For each gemara, fetch the rishonim/commentaries.
-    
-    Returns: {daf_ref: [list of sources]}
+    Check if a gemara ref matches one of the target masechtos.
+    Uses aliases to handle spelling variations.
     """
-    logger.info("\n[V11 TRICKLE UP] Getting rishonim for discovered gemaras")
+    if not target_masechtos:
+        return True  # No filter
     
-    result: Dict[str, List[Source]] = {}
-    client = _get_sefaria_client()
+    parsed = parse_gemara_ref(ref)
+    if not parsed:
+        return False
     
-    if not client:
-        logger.warning("No Sefaria client available")
-        return result
+    masechta = parsed[0].lower()
     
-    for daf_ref in main_sugyos[:10]:  # Limit to top 10
-        logger.info(f"  Fetching commentaries for: {daf_ref}")
-        
-        sources = []
-        
-        # Fetch gemara text first
-        try:
-            gemara_source = await fetch_source_text(daf_ref)
-            if gemara_source:
-                sources.append(gemara_source)
-        except Exception as e:
-            logger.debug(f"    Gemara fetch error: {e}")
-        
-        # Fetch commentaries
-        try:
-            commentaries = await fetch_commentaries_on_daf(daf_ref, target_authors)
-            sources.extend(commentaries)
-            logger.info(f"    Found {len(commentaries)} commentaries")
-        except Exception as e:
-            logger.debug(f"    Commentary fetch error: {e}")
-        
-        result[daf_ref] = sources
-    
-    return result
-
-
-# ==============================================================================
-#  V11: CONFIRMATION LOOP - Verify with Opposite Direction
-# ==============================================================================
-
-async def confirm_sugyos_with_trickle_down(
-    sugyos: List[str],
-    rishonim_by_daf: Dict[str, List[Source]],
-    source_locations: Dict[str, List[str]],
-    analysis: "QueryAnalysis"
-) -> List[ConfirmationResult]:
-    """
-    V11 CONFIRMATION: Check if rishonim on these gemaras trace back to achronim.
-    
-    Logic:
-    - We found gemaras by trickle-down (extracting citations from nosei keilim)
-    - Now we trickle-up: get rishonim on those gemaras
-    - CONFIRM: Do any of those rishonim cite concepts that appear in SA/Tur?
-    
-    This ensures we didn't just find keyword matches but actual relevant sugyos.
-    """
-    logger.info("\n[V11 CONFIRMATION] Verifying sugyos trace back to achronim")
-    
-    results: List[ConfirmationResult] = []
-    topics_hebrew = analysis.search_topics_hebrew or []
-    
-    for sugya in sugyos:
-        sources = rishonim_by_daf.get(sugya, [])
-        
-        # Check if topic appears in rishonim text
-        topic_found_in_rishonim = False
-        rishonim_mentioning_topic = []
-        
-        for source in sources:
-            text = source.hebrew_text or ""
-            for topic in topics_hebrew:
-                # Check if any of the topic words appear
-                topic_words = topic.split()
-                if any(word in text for word in topic_words if len(word) > 2):
-                    topic_found_in_rishonim = True
-                    rishonim_mentioning_topic.append(source.ref)
-                    break
-        
-        # Build confirmation result
-        conf = ConfirmationResult(
-            sugya=sugya,
-            confirmed=topic_found_in_rishonim,
-            path_up=rishonim_mentioning_topic[:5],
-            path_down=source_locations.get("sa", [])[:3],
-            confidence=0.8 if topic_found_in_rishonim else 0.3,
-            reason="Topic found in rishonim" if topic_found_in_rishonim else "Topic not found in rishonim text"
-        )
-        
-        results.append(conf)
-        
-        if topic_found_in_rishonim:
-            logger.info(f"  ✓ {sugya} CONFIRMED - topic in {len(rishonim_mentioning_topic)} rishonim")
-        else:
-            logger.info(f"  ? {sugya} UNCONFIRMED - topic not in rishonim text")
-    
-    return results
-
-
-# ==============================================================================
-#  HELPER FUNCTIONS (from original)
-# ==============================================================================
-
-async def fetch_source_text(ref: str) -> Optional[Source]:
-    """Fetch a source text from Sefaria."""
-    client = _get_sefaria_client()
-    if not client:
-        return None
-    
-    try:
-        result = await client.get_text(ref)
-        if not result:
-            return None
-        
-        # Determine source level
-        level = SourceLevel.GEMARA_BAVLI
-        ref_lower = ref.lower()
-        if "rashi" in ref_lower:
-            level = SourceLevel.RASHI
-        elif "tosafot" in ref_lower or "tosfos" in ref_lower:
-            level = SourceLevel.TOSFOS
-        elif any(r in ref_lower for r in ["ran", "rashba", "ritva", "ramban", "meiri"]):
-            level = SourceLevel.RISHONIM
-        
-        # Get text
-        he_text = ""
-        if hasattr(result, 'he') and result.he:
-            if isinstance(result.he, list):
-                he_text = " ".join(str(x) for x in result.he if x)
-            else:
-                he_text = str(result.he)
-        
-        # Skip English for likely copyrighted content
-        en_text = ""
-        categories = getattr(result, 'categories', []) or []
-        if not should_skip_english(categories, ref):
-            if hasattr(result, 'text') and result.text:
-                if isinstance(result.text, list):
-                    en_text = " ".join(str(x) for x in result.text if x)
-                else:
-                    en_text = str(result.text)
-        
-        he_ref = getattr(result, 'heRef', ref) or ref
-        
-        return Source(
-            ref=ref,
-            he_ref=he_ref,
-            level=level,
-            hebrew_text=he_text,
-            english_text=en_text,
-            categories=categories,
-        )
-        
-    except Exception as e:
-        logger.debug(f"Error fetching {ref}: {e}")
-        return None
-
-
-async def fetch_commentaries_on_daf(daf_ref: str, target_authors: Set[str]) -> List[Source]:
-    """Fetch commentaries on a specific daf."""
-    client = _get_sefaria_client()
-    if not client:
-        return []
-    
-    sources = []
-    
-    # Build list of refs to fetch
-    commentary_refs = []
-    
-    # Standard gemara commentaries
-    if "rashi" in target_authors or not target_authors:
-        commentary_refs.append(f"Rashi on {daf_ref}")
-    if "tosafot" in target_authors or "tosfos" in target_authors or not target_authors:
-        commentary_refs.append(f"Tosafot on {daf_ref}")
-    
-    # Rishonim
-    rishonim = ["Ran", "Rashba", "Ritva", "Ramban", "Meiri", "Rashbam", "Rabbeinu Gershom"]
-    for rishon in rishonim:
-        if rishon.lower() in target_authors or not target_authors:
-            commentary_refs.append(f"{rishon} on {daf_ref}")
-    
-    # Try to fetch each
-    for ref in commentary_refs:
-        try:
-            source = await fetch_source_text(ref)
-            if source and source.hebrew_text and len(source.hebrew_text) > 50:
-                sources.append(source)
-        except Exception as e:
-            logger.debug(f"Could not fetch {ref}: {e}")
-    
-    return sources
-
-
-def should_skip_english(categories: List[str], ref: str) -> bool:
-    """Determine if English text should be skipped due to copyright."""
-    cats_lower = [c.lower() for c in categories]
-    skip_cats = {"talmud", "bavli", "yerushalmi"}
-    
-    if any(cat in cats_lower for cat in skip_cats):
-        return True
-    
-    # Skip if it looks like a daf reference
-    ref_lower = ref.lower()
-    if re.search(r'\s\d+[ab](?:$|:|\s)', ref_lower):
-        return True
+    for target in target_masechtos:
+        target_lower = target.lower()
+        # Direct match
+        if target_lower in masechta or masechta in target_lower:
+            return True
+        # Check aliases
+        if target_lower in MASECHTA_ALIASES:
+            for alias in MASECHTA_ALIASES[target_lower]:
+                if alias.lower() in masechta or masechta in alias.lower():
+                    return True
     
     return False
 
 
-# ==============================================================================
-#  V11: MAIN TRICKLE DOWN SEARCH
-# ==============================================================================
+def text_contains_phrase(text: str, phrase: str) -> bool:
+    """
+    Check if text contains the phrase (or close variant).
+    More lenient than exact match - allows for nikud and sofit variations.
+    """
+    if not text or not phrase:
+        return False
+    
+    norm_text = normalize_hebrew(text)
+    norm_phrase = normalize_hebrew(phrase)
+    
+    # Direct substring match
+    if norm_phrase in norm_text:
+        return True
+    
+    # Split phrase into words and check if all appear
+    phrase_words = norm_phrase.split()
+    if len(phrase_words) > 1:
+        return all(word in norm_text for word in phrase_words if len(word) > 2)
+    
+    return False
 
-async def trickle_down_search_v11(analysis: "QueryAnalysis") -> SearchResult:
+
+def count_topic_matches(text: str, topics: List[str]) -> Tuple[int, List[str]]:
     """
-    V11 Trickle-Down Search with Confirmation Loop.
-    
-    Flow:
-    1. BROAD SEARCH: Search SA, Tur, Rambam for ALL topics
-    2. EXTRACT: Get gemara citations from nosei keilim
-    3. RANK: Sort by citation count
-    4. VALIDATE: Claude reviews candidates
-    5. TRICKLE UP: Get rishonim on validated gemaras
-    6. CONFIRM: Check if rishonim trace back to achronim
-    7. ORGANIZE: Return confirmed sources
+    Count how many topics appear in the text.
+    Returns (count, list_of_matched_topics).
+    """
+    matched = []
+    for topic in topics:
+        if text_contains_phrase(text, topic):
+            matched.append(topic)
+    return len(matched), matched
+
+
+# =============================================================================
+#  STEP 1: EXTRACT CLAUDE'S INFO FROM STEP 2
+# =============================================================================
+
+def extract_claude_info(analysis: "QueryAnalysis") -> Dict[str, Any]:
+    """
+    Extract all relevant info from Step 2's QueryAnalysis.
+    V16: Also extract query_type for intersection logic.
     """
     logger.info("=" * 70)
-    logger.info("[V11] STEP 3: SEARCH - Trickle-Down with Confirmation")
+    logger.info("[PHASE 1] EXTRACTING CLAUDE'S INFO FROM STEP 2")
     logger.info("=" * 70)
     
-    topics_hebrew = analysis.search_topics_hebrew or []
-    topic = analysis.search_topics[0] if analysis.search_topics else ""
+    info = {
+        "claude_picks": [],
+        "search_topics_hebrew": [],
+        "synonyms": [],
+        "search_method": "trickle_down",
+        "target_masechtos": [],
+        "target_authors": [],
+        "inyan_description": "",
+        "query_type": "topic",  # V16: Added for intersection logic
+    }
+    
+    # Extract Hebrew topics
+    if analysis.search_topics_hebrew:
+        info["search_topics_hebrew"] = list(analysis.search_topics_hebrew)
+        logger.info(f"  Topics (Hebrew): {info['search_topics_hebrew']}")
+    
+    # V16: Extract query type
+    query_type = getattr(analysis, 'query_type', None)
+    if query_type:
+        info["query_type"] = str(query_type.value) if hasattr(query_type, 'value') else str(query_type)
+    logger.info(f"  Query type: {info['query_type']}")
+    
+    # Extract synonyms and inyan
+    reasoning = getattr(analysis, 'reasoning', '') or ''
+    inyan = getattr(analysis, 'inyan_description', '') or ''
+    info["inyan_description"] = inyan
+    
+    # Extract daf references
+    picks = set()
+    
+    if analysis.target_dapim:
+        for daf in analysis.target_dapim:
+            if parse_gemara_ref(daf):
+                picks.add(daf)
+                logger.info(f"  [target_dapim] {daf}")
+    
+    for ref in extract_daf_refs_from_text(reasoning):
+        picks.add(ref)
+        logger.info(f"  [reasoning] {ref}")
+    
+    for ref in extract_daf_refs_from_text(inyan):
+        picks.add(ref)
+        logger.info(f"  [inyan] {ref}")
+    
+    info["claude_picks"] = list(picks)
+    
+    # Search method
+    search_method = getattr(analysis, 'search_method', None)
+    if search_method:
+        info["search_method"] = str(search_method.value) if hasattr(search_method, 'value') else str(search_method)
+    logger.info(f"  Search method: {info['search_method']}")
+    
+    # Target masechtos - V16: Important for filtering
+    if analysis.target_masechtos:
+        info["target_masechtos"] = list(analysis.target_masechtos)
+        logger.info(f"  Target masechtos: {info['target_masechtos']}")
+    
+    # Target authors
+    if analysis.target_authors:
+        info["target_authors"] = list(analysis.target_authors)
+        logger.info(f"  Target authors: {info['target_authors']}")
+    
+    logger.info(f"\n  Total Claude picks: {len(info['claude_picks'])}")
+    if info['claude_picks']:
+        logger.info(f"  Picks: {info['claude_picks']}")
+    
+    return info
+
+
+# =============================================================================
+#  STEP 2: V16 IMPROVED TRICKLE-DOWN SEARCH
+# =============================================================================
+
+async def run_search(
+    info: Dict[str, Any],
+    corpus: Optional["LocalCorpus"] = None
+) -> Tuple[List[CandidateSource], Dict[str, int]]:
+    """
+    V17 Improved trickle-down search.
+    
+    KEY CHANGES from V16:
+    1. Filter out generic root words when specific phrases exist
+       (e.g., remove "חזקה" when we have "חזקת הגוף" and "חזקת ממון")
+    2. For comparison queries: Require the SPECIFIC concepts to intersect
+    3. Filter citations by target_masechtos
+    4. Search for full phrases, not just root words
+    """
+    logger.info("\n" + "=" * 70)
+    logger.info("[PHASE 2] V17 IMPROVED TRICKLE-DOWN SEARCH")
+    logger.info("=" * 70)
+    
+    candidates: List[CandidateSource] = []
+    daf_counts: Dict[str, int] = defaultdict(int)
+    seen_refs: Set[str] = set()
+    
+    topics = info["search_topics_hebrew"]
+    target_masechtos = info.get("target_masechtos", [])
+    query_type = info.get("query_type", "topic")
+    
+    # V17: Filter out generic root words when specific phrases exist
+    # If we have ["חזקת הגוף", "חזקת ממון", "חזקה"], remove "חזקה" because it's just noise
+    original_topics = list(topics)
+    filtered_topics = _filter_generic_roots(topics)
+    
+    if len(filtered_topics) < len(original_topics):
+        logger.info(f"  V17: Filtered generic roots: {original_topics} -> {filtered_topics}")
+    
+    topics = filtered_topics if filtered_topics else original_topics
+    
+    # V17: For comparison queries, identify the PRIMARY concepts to intersect
+    is_comparison = query_type in ("comparison", "machlokes")
+    
+    # For comparison, we want simanim that mention BOTH primary concepts
+    # Take the first 2 specific topics as the primary comparison targets
+    primary_topics = topics[:2] if is_comparison and len(topics) >= 2 else topics
+    min_topics_required = 2 if is_comparison and len(primary_topics) >= 2 else 1
+    
+    logger.info(f"  Original topics: {original_topics}")
+    logger.info(f"  Filtered topics: {topics}")
+    logger.info(f"  Primary topics for intersection: {primary_topics}")
+    logger.info(f"  Target masechtos: {target_masechtos}")
+    logger.info(f"  Query type: {query_type}")
+    logger.info(f"  Is comparison: {is_comparison}")
+    logger.info(f"  Min topics required for intersection: {min_topics_required}")
+    
+    if not topics:
+        logger.warning("  No search topics provided")
+        return candidates, dict(daf_counts)
+    
+    # TRICKLE-DOWN: Search acharonim, extract citations
+    if info["search_method"] in ("trickle_down", "hybrid"):
+        logger.info("\n  [TRICKLE-DOWN V16] Searching with phrase matching...")
+        
+        if corpus:
+            # V16: Search for EACH specific topic phrase
+            # For comparisons, we'll track which simanim mention multiple topics
+            siman_topic_hits: Dict[str, Set[str]] = defaultdict(set)  # siman -> set of topics
+            siman_texts: Dict[str, str] = {}  # siman -> text content
+            siman_citations: Dict[str, List] = {}  # siman -> list of citations
+            
+            for topic in topics:
+                logger.info(f"\n    Searching for FULL PHRASE: '{topic}'")
+                
+                try:
+                    for chelek in ["cm", "eh", "yd", "oc"]:
+                        try:
+                            hits = corpus.search_shulchan_aruch(topic, chelek)
+                            if hits:
+                                logger.info(f"      SA {chelek.upper()}: {len(hits)} simanim for '{topic}'")
+                                for hit in hits[:20]:
+                                    siman_key = f"SA_{chelek}_{getattr(hit, 'siman', str(hit))}"
+                                    siman_topic_hits[siman_key].add(topic)
+                                    
+                                    # Store text and citations
+                                    if siman_key not in siman_texts:
+                                        text = getattr(hit, 'text', '') or getattr(hit, 'content', '') or ''
+                                        siman_texts[siman_key] = text
+                                        
+                                        # Try to get citations
+                                        citations = []
+                                        if hasattr(corpus, 'extract_citations_from_siman'):
+                                            try:
+                                                siman = getattr(hit, 'siman', None)
+                                                if siman:
+                                                    citations = corpus.extract_citations_from_siman(chelek, siman)
+                                            except:
+                                                pass
+                                        if not citations and text:
+                                            citations = extract_gemara_citations(text)
+                                        siman_citations[siman_key] = citations or []
+                                        
+                        except TypeError:
+                            pass
+                        except Exception as e:
+                            logger.debug(f"      Error: {e}")
+                    
+                    # Also search Tur
+                    for chelek in ["cm", "eh", "yd", "oc"]:
+                        try:
+                            hits = corpus.search_tur(topic, chelek)
+                            if hits:
+                                logger.info(f"      Tur {chelek.upper()}: {len(hits)} simanim for '{topic}'")
+                                for hit in hits[:15]:
+                                    siman_key = f"Tur_{chelek}_{getattr(hit, 'siman', str(hit))}"
+                                    siman_topic_hits[siman_key].add(topic)
+                                    
+                                    if siman_key not in siman_texts:
+                                        text = getattr(hit, 'text', '') or getattr(hit, 'content', '') or ''
+                                        siman_texts[siman_key] = text
+                                        
+                                        citations = []
+                                        if hasattr(corpus, 'extract_citations_from_tur_siman'):
+                                            try:
+                                                siman = getattr(hit, 'siman', None)
+                                                if siman:
+                                                    citations = corpus.extract_citations_from_tur_siman(chelek, siman)
+                                            except:
+                                                pass
+                                        if not citations and text:
+                                            citations = extract_gemara_citations(text)
+                                        siman_citations[siman_key] = citations or []
+                                        
+                        except TypeError:
+                            pass
+                        except Exception as e:
+                            logger.debug(f"      Tur error: {e}")
+                            
+                except Exception as e:
+                    logger.warning(f"      Error searching for '{topic}': {e}")
+            
+            # V17: Now filter simanim by how many PRIMARY topics they match
+            # For comparison queries, we need simanim that discuss BOTH primary concepts
+            logger.info(f"\n  [V17 INTERSECTION LOGIC]")
+            logger.info(f"    Total simanim found: {len(siman_topic_hits)}")
+            logger.info(f"    Primary topics for intersection: {primary_topics}")
+            
+            # V17: For comparisons, check if siman matches the PRIMARY topics specifically
+            # Not just "any 2 topics" but "the 2 concepts being compared"
+            if is_comparison and len(primary_topics) >= 2:
+                # A siman qualifies if it matches BOTH primary topics
+                simanim_with_both_primary = {}
+                for siman_key, matched_topics in siman_topic_hits.items():
+                    # Check how many of the PRIMARY topics this siman matches
+                    primary_matched = [t for t in primary_topics if t in matched_topics]
+                    if len(primary_matched) >= min_topics_required:
+                        simanim_with_both_primary[siman_key] = matched_topics
+                
+                logger.info(f"    Simanim matching BOTH primary topics: {len(simanim_with_both_primary)}")
+                
+                if simanim_with_both_primary:
+                    logger.info(f"    Using STRICT INTERSECTION - only simanim with BOTH primary concepts")
+                    simanim_to_use = simanim_with_both_primary
+                else:
+                    # Fallback: try simanim with at least one primary topic
+                    simanim_with_any_primary = {
+                        k: v for k, v in siman_topic_hits.items()
+                        if any(t in v for t in primary_topics)
+                    }
+                    logger.info(f"    FALLBACK - simanim with at least one primary topic: {len(simanim_with_any_primary)}")
+                    simanim_to_use = simanim_with_any_primary if simanim_with_any_primary else siman_topic_hits
+            else:
+                # Non-comparison: original logic
+                simanim_with_multiple = {k: v for k, v in siman_topic_hits.items() if len(v) >= min_topics_required}
+                logger.info(f"    Simanim with >= {min_topics_required} topics: {len(simanim_with_multiple)}")
+                
+                if simanim_with_multiple:
+                    logger.info(f"    Using INTERSECTION - only simanim with multiple topics")
+                    simanim_to_use = simanim_with_multiple
+                else:
+                    logger.info(f"    FALLBACK - using ALL simanim (no intersection found)")
+                    simanim_to_use = siman_topic_hits
+            
+            # Extract citations from selected simanim
+            for siman_key, matched_topics in simanim_to_use.items():
+                citations = siman_citations.get(siman_key, [])
+                
+                # V16: Give bonus to citations from multi-topic simanim
+                bonus = len(matched_topics)
+                
+                for cite in citations:
+                    if hasattr(cite, 'masechta'):
+                        ref = f"{cite.masechta} {cite.daf}"
+                    elif isinstance(cite, str):
+                        ref = cite
+                    else:
+                        continue
+                    
+                    # V16: FILTER by target_masechtos
+                    if target_masechtos and not matches_target_masechtos(ref, target_masechtos):
+                        logger.debug(f"      Filtered out {ref} - not in target masechtos")
+                        continue
+                    
+                    # Add with bonus weighting
+                    daf_counts[ref] += bonus
+                    
+                    if ref not in seen_refs:
+                        seen_refs.add(ref)
+                        candidates.append(CandidateSource(
+                            ref=ref,
+                            citation_count=bonus,
+                            source_origin=f"trickle_down_{siman_key.split('_')[0].lower()}",
+                            topics_matched=list(matched_topics)
+                        ))
+                        
+                        if len(matched_topics) >= min_topics_required:
+                            logger.info(f"      ✓ {ref} (from {siman_key}, matched: {matched_topics})")
+            
+            logger.info(f"\n    Citations extracted: {len(candidates)}")
+            
+            # V16: Show top candidates with their topic matches
+            sorted_by_count = sorted(candidates, key=lambda c: c.citation_count, reverse=True)[:10]
+            if sorted_by_count:
+                logger.info(f"    Top candidates:")
+                for c in sorted_by_count[:5]:
+                    logger.info(f"      {c.ref}: count={c.citation_count}, topics={c.topics_matched}")
+    
+    # TRICKLE-UP: Search gemara directly
+    if info["search_method"] in ("trickle_up", "hybrid"):
+        logger.info("\n  [TRICKLE-UP] Searching gemara directly...")
+        
+        client = _get_sefaria_client()
+        if client:
+            for topic in topics[:2]:
+                try:
+                    results = await client.search(topic, filters=["Talmud"])
+                    if results and hasattr(results, 'hits'):
+                        for hit in results.hits[:20]:
+                            ref = hit.ref
+                            
+                            # V16: Filter by target masechtos
+                            if target_masechtos and not matches_target_masechtos(ref, target_masechtos):
+                                continue
+                                
+                            if ref and ref not in seen_refs:
+                                seen_refs.add(ref)
+                                candidates.append(CandidateSource(
+                                    ref=ref,
+                                    source_origin="trickle_up_search"
+                                ))
+                except Exception as e:
+                    logger.warning(f"      Trickle-up search error: {e}")
+    
+    # Update citation counts
+    for c in candidates:
+        if c.citation_count == 0:
+            c.citation_count = daf_counts.get(c.ref, 0)
+    
+    logger.info(f"\n  Total candidates found: {len(candidates)}")
+    logger.info(f"  Unique dafim with citations: {len(daf_counts)}")
+    
+    # Log top cited dafim
+    sorted_dafim = sorted(daf_counts.items(), key=lambda x: -x[1])[:10]
+    if sorted_dafim:
+        logger.info(f"  Top cited: {sorted_dafim}")
+    
+    return candidates, dict(daf_counts)
+
+
+# =============================================================================
+#  STEP 3: CLASSIFY BY PROXIMITY TO CLAUDE'S PICKS
+# =============================================================================
+
+def classify_by_proximity(
+    candidates: List[CandidateSource],
+    claude_picks: List[str]
+) -> Tuple[List[CandidateSource], List[CandidateSource]]:
+    """
+    Classify candidates based on proximity to Claude's picks.
+    Claude's picks themselves are ALWAYS Priority 1.
+    """
+    logger.info("\n" + "=" * 70)
+    logger.info("[PHASE 3] CLASSIFYING BY PROXIMITY TO CLAUDE'S PICKS")
+    logger.info(f"  Claude's picks: {claude_picks}")
+    logger.info("=" * 70)
+    
+    priority_1: List[CandidateSource] = []
+    list_x: List[CandidateSource] = []
+    seen_refs: Set[str] = set()
+    
+    # Claude's picks are ALWAYS Priority 1
+    for pick in claude_picks:
+        if pick not in seen_refs:
+            seen_refs.add(pick)
+            priority_1.append(CandidateSource(
+                ref=pick,
+                source_origin="claude_pick",
+                priority=Priority.P1,
+                validation_method="claude_pick",
+                in_claude_proximity=True,
+            ))
+            logger.info(f"  ✓ PRIORITY 1: {pick} (Claude's pick)")
+    
+    # Check search candidates for proximity
+    for candidate in candidates:
+        if candidate.ref in seen_refs:
+            continue
+            
+        in_proximity = False
+        for pick in claude_picks:
+            if refs_in_proximity(candidate.ref, pick, PROXIMITY_RADIUS):
+                in_proximity = True
+                break
+        
+        if in_proximity:
+            seen_refs.add(candidate.ref)
+            candidate.in_claude_proximity = True
+            candidate.priority = Priority.P1
+            candidate.validation_method = "proximity"
+            priority_1.append(candidate)
+            logger.info(f"  ✓ PRIORITY 1: {candidate.ref} (near Claude's pick)")
+        else:
+            list_x.append(candidate)
+    
+    logger.info(f"\n  Priority 1 (Claude's picks + proximity): {len(priority_1)}")
+    logger.info(f"  List[X] (needs validation): {len(list_x)}")
+    
+    return priority_1, list_x
+
+
+# =============================================================================
+#  STEP 4: VALIDATE LIST[X] WITH TRICKLE-UP
+# =============================================================================
+
+async def validate_with_trickle_up(
+    list_x: List[CandidateSource],
+    topics_hebrew: List[str],
+    corpus: Optional["LocalCorpus"] = None
+) -> Tuple[List[CandidateSource], List[CandidateSource]]:
+    """
+    Validate List[X] candidates using trickle-up search.
+    """
+    logger.info("\n" + "=" * 70)
+    logger.info("[PHASE 4] VALIDATING LIST[X] WITH TRICKLE-UP")
+    logger.info("=" * 70)
+    
+    if not list_x:
+        return [], []
+    
+    trickle_up_refs: Set[str] = set()
+    
+    client = _get_sefaria_client()
+    if client:
+        for topic in topics_hebrew[:2]:
+            logger.info(f"  Trickle-up search for: '{topic}'")
+            try:
+                results = await client.search(topic, filters=["Talmud"])
+                if results and hasattr(results, 'hits'):
+                    for hit in results.hits[:30]:
+                        ref = hit.ref
+                        if ref:
+                            parsed = parse_gemara_ref(ref)
+                            if parsed:
+                                trickle_up_refs.add(f"{parsed[0]} {parsed[1]}{parsed[2]}")
+                    logger.info(f"    Found {len(results.hits)} hits")
+            except Exception as e:
+                logger.warning(f"    Search error: {e}")
+    
+    logger.info(f"  Trickle-up found {len(trickle_up_refs)} unique dafim")
+    
+    priority_2: List[CandidateSource] = []
+    priority_3: List[CandidateSource] = []
+    
+    for candidate in list_x:
+        validated = False
+        for tu_ref in trickle_up_refs:
+            if refs_in_proximity(candidate.ref, tu_ref, radius=1):
+                validated = True
+                break
+        
+        if validated:
+            candidate.validated_by_trickle_up = True
+            candidate.priority = Priority.P2
+            candidate.validation_method = "trickle_up"
+            priority_2.append(candidate)
+            logger.info(f"  ✓ PRIORITY 2: {candidate.ref} (validated by trickle-up)")
+        else:
+            candidate.priority = Priority.P3
+            priority_3.append(candidate)
+            logger.debug(f"  → PRIORITY 3: {candidate.ref} (not in trickle-up)")
+    
+    logger.info(f"\n  Priority 2 (validated): {len(priority_2)}")
+    logger.info(f"  Priority 3 (unvalidated): {len(priority_3)}")
+    
+    return priority_2, priority_3
+
+
+# =============================================================================
+#  STEP 5: WORD SEARCH ON PRIORITY 3
+# =============================================================================
+
+async def word_search_validation(
+    priority_3: List[CandidateSource],
+    topics_hebrew: List[str],
+    synonyms: List[str]
+) -> Tuple[List[CandidateSource], List[CandidateSource]]:
+    """
+    Do word search on Priority 3 candidates.
+    """
+    logger.info("\n" + "=" * 70)
+    logger.info("[PHASE 5] WORD SEARCH ON PRIORITY 3")
+    logger.info(f"  Candidates: {len(priority_3)}")
+    logger.info("=" * 70)
+    
+    if not priority_3:
+        return [], []
+    
+    all_terms = list(set(topics_hebrew + synonyms))
+    
+    promoted: List[CandidateSource] = []
+    remaining: List[CandidateSource] = []
+    
+    client = _get_sefaria_client()
+    if not client:
+        return [], priority_3
+    
+    for candidate in priority_3[:20]:
+        try:
+            result = await client.get_text(candidate.ref)
+            if not result or not hasattr(result, 'hebrew') or not result.hebrew:
+                remaining.append(candidate)
+                continue
+            
+            hebrew_text = result.hebrew
+            if isinstance(hebrew_text, list):
+                hebrew_text = " ".join(str(x) for x in hebrew_text if x)
+            
+            candidate.hebrew_text = hebrew_text
+            normalized_text = normalize_hebrew(hebrew_text)
+            
+            matched = []
+            missing = []
+            
+            for term in all_terms:
+                normalized_term = normalize_hebrew(term)
+                if normalized_term and len(normalized_term) > 2:
+                    if normalized_term in normalized_text:
+                        matched.append(term)
+                    else:
+                        missing.append(term)
+            
+            candidate.matched_terms = matched
+            candidate.missing_terms = missing
+            
+            total_terms = len([t for t in all_terms if len(normalize_hebrew(t)) > 2])
+            match_ratio = len(matched) / total_terms if total_terms > 0 else 0
+            
+            logger.debug(f"  {candidate.ref}: matched {len(matched)}/{total_terms} ({match_ratio:.1%})")
+            
+            if match_ratio >= MIN_TERM_MATCH_RATIO:
+                candidate.passed_word_search = True
+                candidate.priority = Priority.P2
+                candidate.validation_method = "word_search"
+                promoted.append(candidate)
+                logger.info(f"  ↑ PROMOTED to P2: {candidate.ref} ({match_ratio:.1%} terms matched)")
+            else:
+                remaining.append(candidate)
+                
+        except Exception as e:
+            logger.debug(f"  Error fetching {candidate.ref}: {e}")
+            remaining.append(candidate)
+    
+    remaining.extend(priority_3[20:])
+    
+    logger.info(f"\n  Promoted to P2: {len(promoted)}")
+    logger.info(f"  Remaining P3: {len(remaining)}")
+    
+    return promoted, remaining
+
+
+# =============================================================================
+#  STEP 6: CLAUDE REVIEW OF PRIORITY 2 AND 3
+# =============================================================================
+
+CLAUDE_REVIEW_PROMPT = """You are reviewing Torah sources for relevance to a user's query.
+
+ORIGINAL QUERY: {query}
+TOPIC DESCRIPTION: {inyan}
+SEARCH TERMS: {terms}
+
+Below are candidate sources in two groups:
+
+## PRIORITY 2 (Already partially validated - be generous, don't throw these out unless clearly irrelevant)
+{priority_2_text}
+
+## PRIORITY 3 (Unvalidated - be more strict, only keep if clearly relevant)
+{priority_3_text}
+
+For each source, evaluate if it genuinely discusses the topic the user asked about.
+
+IMPORTANT:
+- For Priority 2: Keep unless CLEARLY irrelevant. Give benefit of the doubt.
+- For Priority 3: Only keep if you're confident it's relevant. Reject if unsure.
+
+Return a JSON object:
+{{
+  "keep": [
+    {{"ref": "...", "reason": "brief reason to keep"}},
+    ...
+  ],
+  "reject": [
+    {{"ref": "...", "reason": "brief reason to reject"}},
+    ...
+  ]
+}}
+
+Return ONLY the JSON, no other text."""
+
+
+async def claude_review(
+    priority_2: List[CandidateSource],
+    priority_3: List[CandidateSource],
+    query: str,
+    inyan: str,
+    topics: List[str]
+) -> Tuple[List[CandidateSource], List[Tuple[str, str]]]:
+    """
+    Have Claude review Priority 2 and Priority 3 sources.
+    """
+    logger.info("\n" + "=" * 70)
+    logger.info("[PHASE 6] CLAUDE REVIEW OF PRIORITY 2 AND 3")
+    logger.info(f"  Priority 2: {len(priority_2)}")
+    logger.info(f"  Priority 3: {len(priority_3)}")
+    logger.info("=" * 70)
+    
+    if not priority_2 and not priority_3:
+        return [], []
+    
+    client = _get_anthropic_client()
+    if not client:
+        logger.warning("  No Anthropic client - keeping all P2, rejecting all P3")
+        rejected = [(c.ref, "No Claude review available") for c in priority_3]
+        return priority_2, rejected
+    
+    def format_sources(sources: List[CandidateSource]) -> str:
+        if not sources:
+            return "(none)"
+        
+        text = ""
+        for c in sources[:10]:
+            snippet = c.hebrew_text[:300] + "..." if len(c.hebrew_text) > 300 else c.hebrew_text
+            text += f"\n[{c.ref}]\n"
+            text += f"Matched terms: {c.matched_terms}\n"
+            text += f"Text: {snippet}\n"
+            text += "-" * 30 + "\n"
+        return text
+    
+    prompt = CLAUDE_REVIEW_PROMPT.format(
+        query=query,
+        inyan=inyan,
+        terms=", ".join(topics),
+        priority_2_text=format_sources(priority_2),
+        priority_3_text=format_sources(priority_3)
+    )
+    
+    try:
+        response = client.messages.create(
+            model="claude-sonnet-4-5-20250929",
+            max_tokens=2000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        response_text = response.content[0].text.strip()
+        
+        if response_text.startswith("```"):
+            response_text = re.sub(r'^```json?\n?', '', response_text)
+            response_text = re.sub(r'\n?```$', '', response_text)
+        
+        result = json.loads(response_text)
+        
+        keep_refs = {item["ref"] for item in result.get("keep", [])}
+        reject_list = [(item["ref"], item["reason"]) for item in result.get("reject", [])]
+        
+        all_candidates = {c.ref: c for c in priority_2 + priority_3}
+        kept = []
+        
+        for ref in keep_refs:
+            if ref in all_candidates:
+                candidate = all_candidates[ref]
+                candidate.claude_confidence = 1.0
+                kept.append(candidate)
+                logger.info(f"  ✓ KEEP: {ref}")
+        
+        for ref, reason in reject_list:
+            logger.info(f"  ✗ REJECT: {ref} - {reason}")
+        
+        for c in priority_2:
+            if c.ref not in keep_refs and c.ref not in {r[0] for r in reject_list}:
+                kept.append(c)
+                logger.info(f"  ✓ KEEP (P2 default): {c.ref}")
+        
+        logger.info(f"\n  Total kept: {len(kept)}")
+        logger.info(f"  Total rejected: {len(reject_list)}")
+        
+        return kept, reject_list
+        
+    except json.JSONDecodeError as e:
+        logger.error(f"  JSON parse error: {e}")
+        rejected = [(c.ref, "JSON parse error") for c in priority_3]
+        return priority_2, rejected
+        
+    except Exception as e:
+        logger.error(f"  Claude review error: {e}")
+        rejected = [(c.ref, str(e)) for c in priority_3]
+        return priority_2, rejected
+
+
+# =============================================================================
+#  STEP 7: FETCH FINAL SOURCES
+# =============================================================================
+
+async def fetch_final_sources(
+    priority_1: List[CandidateSource],
+    kept_sources: List[CandidateSource],
+    target_authors: List[str]
+) -> List[Source]:
+    """
+    Fetch full text and commentaries for all kept sources.
+    """
+    logger.info("\n" + "=" * 70)
+    logger.info("[PHASE 7] FETCHING FINAL SOURCES")
+    logger.info(f"  Priority 1: {len(priority_1)}")
+    logger.info(f"  Kept (P2/P3): {len(kept_sources)}")
+    logger.info(f"  Target authors: {target_authors}")
+    logger.info("=" * 70)
+    
+    all_candidates = priority_1 + kept_sources
+    seen_refs = set()
+    sources: List[Source] = []
+    
+    client = _get_sefaria_client()
+    if not client:
+        return sources
+    
+    for candidate in all_candidates:
+        if candidate.ref in seen_refs:
+            continue
+        seen_refs.add(candidate.ref)
+        
+        try:
+            # Fetch gemara if we don't have text
+            if not candidate.hebrew_text:
+                result = await client.get_text(candidate.ref)
+                if result and hasattr(result, 'hebrew') and result.hebrew:
+                    hebrew_text = result.hebrew
+                    if isinstance(hebrew_text, list):
+                        hebrew_text = " ".join(str(x) for x in hebrew_text if x)
+                    candidate.hebrew_text = hebrew_text
+            
+            # Create main source
+            sources.append(Source(
+                ref=candidate.ref,
+                he_ref=candidate.ref,
+                level=SourceLevel.GEMARA_BAVLI,
+                hebrew_text=candidate.hebrew_text,
+                is_primary=True,
+                priority=candidate.priority,
+                source_origin=candidate.source_origin,
+                validation_method=candidate.validation_method,
+                citation_count=candidate.citation_count
+            ))
+            
+            # Fetch commentaries
+            for author in ['rashi', 'tosafot']:
+                if not target_authors or author in [a.lower() for a in target_authors]:
+                    try:
+                        comm_ref = f"{author.title()} on {candidate.ref}"
+                        comm_result = await client.get_text(comm_ref)
+                        
+                        if comm_result and hasattr(comm_result, 'hebrew') and comm_result.hebrew:
+                            comm_text = comm_result.hebrew
+                            if isinstance(comm_text, list):
+                                comm_text = " ".join(str(x) for x in comm_text if x)
+                            
+                            sources.append(Source(
+                                ref=comm_ref,
+                                he_ref=comm_ref,
+                                level=SourceLevel.RASHI if author == 'rashi' else SourceLevel.TOSFOS,
+                                hebrew_text=comm_text,
+                                author=author.title(),
+                                priority=candidate.priority
+                            ))
+                    except:
+                        pass
+                        
+        except Exception as e:
+            logger.warning(f"  Error fetching {candidate.ref}: {e}")
+    
+    logger.info(f"  Total sources fetched: {len(sources)}")
+    return sources
+
+
+# =============================================================================
+#  MAIN SEARCH FUNCTION (V17)
+# =============================================================================
+
+async def search(analysis: "QueryAnalysis") -> SearchResult:
+    """
+    V17 Search with Improved Trickle-Down Logic.
+    
+    KEY IMPROVEMENTS:
+    1. Filters generic root words when specific phrases exist
+    2. For comparison queries: Uses STRICT intersection on PRIMARY concepts
+    3. Filters citations by Claude's target_masechtos
+    4. Prioritizes sources mentioning multiple query concepts
+    """
+    logger.info("\n" + "=" * 70)
+    logger.info("STEP 3: SEARCH [V16 - Improved Trickle-Down]")
+    logger.info("=" * 70)
+    logger.info(f"  Query: {analysis.original_query}")
+    logger.info(f"  Topics: {analysis.search_topics_hebrew}")
     
     result = SearchResult(
         original_query=analysis.original_query,
-        search_topics=analysis.search_topics_hebrew,
+        search_topics=analysis.search_topics_hebrew or [],
     )
     
-    if not LOCAL_CORPUS_AVAILABLE:
-        logger.warning("Local corpus not available")
-        return result
-    
-    try:
-        corpus = LocalCorpus()
-    except Exception as e:
-        logger.error(f"Could not initialize local corpus: {e}")
-        return result
+    # =========================================================================
+    # PHASE 1: Extract Claude's info
+    # =========================================================================
+    info = extract_claude_info(analysis)
+    result.claude_picks = info["claude_picks"]
     
     # =========================================================================
-    # PHASE 1: BROAD SEARCH - Cast a Wide Net
+    # PHASE 2: Run V16 improved search
     # =========================================================================
-    logger.info("\n" + "=" * 60)
-    logger.info("PHASE 1: BROAD SEARCH")
-    logger.info("=" * 60)
+    corpus = None
+    if LOCAL_CORPUS_AVAILABLE:
+        try:
+            corpus = LocalCorpus()
+        except:
+            pass
     
-    daf_counts, all_citations, source_locations = broad_search_all_sources(
-        corpus, topics_hebrew
+    candidates, daf_counts = await run_search(info, corpus)
+    
+    # =========================================================================
+    # PHASE 3: Classify by proximity
+    # =========================================================================
+    priority_1, list_x = classify_by_proximity(candidates, info["claude_picks"])
+    
+    # =========================================================================
+    # PHASE 4: Validate with trickle-up
+    # =========================================================================
+    priority_2, priority_3 = await validate_with_trickle_up(
+        list_x, info["search_topics_hebrew"], corpus
     )
     
-    if not daf_counts:
-        logger.warning("No citations found in broad search")
-        # TODO: Try trickle-up as fallback
-        return result
+    # =========================================================================
+    # PHASE 5: Word search on P3
+    # =========================================================================
+    promoted, remaining_p3 = await word_search_validation(
+        priority_3, info["search_topics_hebrew"], info.get("synonyms", [])
+    )
+    priority_2.extend(promoted)
+    priority_3 = remaining_p3
     
     # =========================================================================
-    # PHASE 2: CLAUDE VALIDATION
+    # PHASE 6: Claude review
     # =========================================================================
-    logger.info("\n" + "=" * 60)
-    logger.info("PHASE 2: CLAUDE VALIDATION")
-    logger.info("=" * 60)
-    
-    candidate_sugyos = list(daf_counts.keys())[:25]  # Top 25 by citation count
-    
-    validated_sugyos = validate_sugyos_with_claude_v11(
-        candidate_sugyos,
-        daf_counts,
-        analysis,
-        source_locations
+    kept, rejected = await claude_review(
+        priority_2, priority_3,
+        analysis.original_query,
+        info["inyan_description"],
+        info["search_topics_hebrew"]
     )
     
-    logger.info(f"Validated sugyos: {len(validated_sugyos)}")
-    for sugya in validated_sugyos[:5]:
-        logger.info(f"  - {sugya}")
+    result.rejected_refs = rejected
     
     # =========================================================================
-    # PHASE 3: TRICKLE UP - Get Rishonim
+    # PHASE 7: Fetch sources
     # =========================================================================
-    logger.info("\n" + "=" * 60)
-    logger.info("PHASE 3: TRICKLE UP - Fetching Rishonim")
-    logger.info("=" * 60)
-    
-    target_authors = set(a.lower() for a in (analysis.target_authors or []))
-    if analysis.source_categories:
-        if analysis.source_categories.rashi:
-            target_authors.add("rashi")
-        if analysis.source_categories.tosfos:
-            target_authors.add("tosafot")
-        if analysis.source_categories.rishonim:
-            target_authors.update(["ran", "rashba", "ritva", "ramban", "meiri"])
-    
-    if not target_authors:
-        target_authors = {"rashi", "tosafot", "ran", "rashba"}
-    
-    rishonim_by_daf = await trickle_up_from_gemaras(validated_sugyos, target_authors)
-    
-    # =========================================================================
-    # PHASE 4: CONFIRMATION - Verify Sources
-    # =========================================================================
-    logger.info("\n" + "=" * 60)
-    logger.info("PHASE 4: CONFIRMATION - Verifying Sources")
-    logger.info("=" * 60)
-    
-    confirmations = await confirm_sugyos_with_trickle_down(
-        validated_sugyos,
-        rishonim_by_daf,
-        source_locations,
-        analysis
+    sources = await fetch_final_sources(
+        priority_1, kept, info["target_authors"]
     )
     
-    confirmed_sugyos = [c.sugya for c in confirmations if c.confirmed]
-    unconfirmed_sugyos = [c.sugya for c in confirmations if not c.confirmed]
-    
-    logger.info(f"\nConfirmed: {len(confirmed_sugyos)}")
-    logger.info(f"Unconfirmed: {len(unconfirmed_sugyos)}")
-    
-    # Keep confirmed + unconfirmed (but mark them)
-    # Unconfirmed might still be valid - just couldn't verify
-    final_sugyos = confirmed_sugyos + unconfirmed_sugyos[:3]
-    
     # =========================================================================
-    # PHASE 5: ORGANIZE RESULTS
+    # Organize results
     # =========================================================================
-    logger.info("\n" + "=" * 60)
-    logger.info("PHASE 5: ORGANIZING RESULTS")
-    logger.info("=" * 60)
-    
-    all_sources: List[Source] = []
-    
-    for sugya in final_sugyos[:10]:
-        sources = rishonim_by_daf.get(sugya, [])
-        is_confirmed = sugya in confirmed_sugyos
-        
-        for source in sources:
-            source.confirmed = is_confirmed
-            source.citation_count = daf_counts.get(sugya, 0)
-            all_sources.append(source)
-    
-    # Sort: confirmed first, then by citation count
-    all_sources.sort(key=lambda s: (-int(s.confirmed), -s.citation_count))
+    result.sources = sources
+    result.total_sources = len(sources)
     
     # Group by level
-    sources_by_level: Dict[str, List[Source]] = {}
-    for source in all_sources:
-        level_key = source.level_hebrew
-        if level_key not in sources_by_level:
-            sources_by_level[level_key] = []
-        sources_by_level[level_key].append(source)
+    by_level: Dict[str, List[Source]] = defaultdict(list)
+    for s in sources:
+        by_level[s.level.hebrew].append(s)
+    result.sources_by_level = dict(by_level)
+    result.levels_found = list(by_level.keys())
     
-    # Build result
-    result.sources = all_sources
-    result.sources_by_level = sources_by_level
-    result.total_sources = len(all_sources)
-    result.levels_found = list(sources_by_level.keys())
-    result.discovered_dapim = validated_sugyos
-    result.confirmed_dapim = confirmed_sugyos
+    # Group by priority
+    by_priority: Dict[int, List[Source]] = defaultdict(list)
+    for s in sources:
+        by_priority[s.priority.value].append(s)
+    result.sources_by_priority = dict(by_priority)
+    
+    # Summary refs
+    result.priority_1_refs = [c.ref for c in priority_1]
+    result.priority_2_refs = [c.ref for c in kept if c.priority == Priority.P2]
+    result.priority_3_refs = [c.ref for c in kept if c.priority == Priority.P3]
+    
+    result.search_description = (
+        f"V17 Search: {len(priority_1)} Priority 1 (proximity), "
+        f"{len(result.priority_2_refs)} Priority 2 (validated), "
+        f"{len(result.priority_3_refs)} Priority 3 (Claude approved). "
+        f"Rejected: {len(rejected)}. Total: {len(sources)} sources."
+    )
     
     result.confidence = (
-        ConfidenceLevel.HIGH if len(confirmed_sugyos) >= 3
-        else ConfidenceLevel.MEDIUM if len(confirmed_sugyos) >= 1
+        ConfidenceLevel.HIGH if len(priority_1) >= 2 
+        else ConfidenceLevel.MEDIUM if sources 
         else ConfidenceLevel.LOW
     )
     
-    result.search_description = (
-        f"Found {len(all_sources)} sources. "
-        f"Confirmed sugyos: {', '.join(confirmed_sugyos[:3]) if confirmed_sugyos else 'None'}. "
-        f"Method: trickle_down with confirmation."
-    )
-    
-    # Build discovery result
-    result.discovery = DiscoveryResult(
-        topic=topic,
-        topic_hebrew=", ".join(topics_hebrew),
-        all_citations=all_citations,
-        daf_counts=daf_counts,
-        main_sugyos=validated_sugyos,
-        confirmed_sugyos=confirmed_sugyos,
-        search_method_used="trickle_down_v11",
-    )
-    
-    # Write output files
+    # Write output
     try:
         from source_output import SourceOutputWriter
         writer = SourceOutputWriter()
         writer.write_results(result, analysis.original_query, formats=["txt", "html"])
     except Exception as e:
-        logger.warning(f"Could not write output files: {e}")
-    
-    logger.info("\n" + "=" * 70)
-    logger.info(f"[V11] STEP 3 COMPLETE: {len(all_sources)} sources found")
-    logger.info(f"  Confirmed sugyos: {confirmed_sugyos}")
-    logger.info("=" * 70)
-    
-    return result
-
-
-# ==============================================================================
-#  V11: TRICKLE UP SEARCH (for simple queries)
-# ==============================================================================
-
-async def trickle_up_search_v11(analysis: "QueryAnalysis") -> SearchResult:
-    """
-    V11 Trickle-Up Search with Confirmation Loop.
-    
-    For simple queries (single topic, halacha, chumash):
-    1. Find earliest source (pasuk/mishna/gemara)
-    2. Build up through rishonim → achronim
-    3. CONFIRM: Trickle down to verify chain is complete
-    """
-    logger.info("=" * 70)
-    logger.info("[V11] STEP 3: SEARCH - Trickle-Up with Confirmation")
-    logger.info("=" * 70)
-    
-    topics_hebrew = analysis.search_topics_hebrew or []
-    topic = topics_hebrew[0] if topics_hebrew else ""
-    
-    result = SearchResult(
-        original_query=analysis.original_query,
-        search_topics=topics_hebrew,
-    )
-    
-    client = _get_sefaria_client()
-    if not client:
-        logger.warning("Sefaria client not available")
-        return result
+        logger.warning(f"Could not write output: {e}")
     
     # =========================================================================
-    # PHASE 1: FIND EARLIEST SOURCE
+    # COMPREHENSIVE SUMMARY
     # =========================================================================
-    logger.info("\n[V11 TRICKLE-UP] Phase 1: Finding earliest source")
+    logger.info("\n" + "=" * 80)
+    logger.info("                         PIPELINE SUMMARY (V17)")
+    logger.info("=" * 80)
     
-    found_sources: List[Source] = []
-    base_refs: List[str] = []
+    logger.info("\n[QUERY]")
+    logger.info(f"  Original: {analysis.original_query}")
+    logger.info(f"  Topics (Hebrew): {analysis.search_topics_hebrew}")
+    logger.info(f"  Search method: {analysis.search_method}")
+    logger.info(f"  Query type: {info.get('query_type', 'unknown')}")
     
-    # Try Mishna first
-    try:
-        search_result = await client.search(topic, size=20, filters=["Mishnah"])
-        if search_result and search_result.hits:
-            for hit in search_result.hits[:5]:
-                ref = getattr(hit, 'ref', '')
-                if ref:
-                    base_refs.append(ref)
-                    source = await fetch_source_text(ref)
-                    if source:
-                        source.level = SourceLevel.MISHNA
-                        found_sources.append(source)
-            logger.info(f"  Found {len(base_refs)} Mishna refs")
-    except Exception as e:
-        logger.debug(f"  Mishna search error: {e}")
+    logger.info("\n[CLAUDE'S ANALYSIS]")
+    logger.info(f"  Claude's picks: {result.claude_picks}")
+    logger.info(f"  Target masechtos: {info.get('target_masechtos', [])}")
+    logger.info(f"  Target authors: {info.get('target_authors', [])}")
     
-    # Try Gemara
-    if not base_refs:
-        try:
-            search_result = await client.search(topic, size=30)
-            if search_result and search_result.hits:
-                for hit in search_result.hits[:10]:
-                    ref = getattr(hit, 'ref', '')
-                    if ref and re.search(r'\s\d+[ab]', ref):  # Looks like a daf
-                        base_refs.append(ref)
-                        source = await fetch_source_text(ref)
-                        if source:
-                            found_sources.append(source)
-                logger.info(f"  Found {len(base_refs)} Gemara refs")
-        except Exception as e:
-            logger.debug(f"  Gemara search error: {e}")
+    logger.info("\n[V17 TRICKLE-DOWN IMPROVEMENTS]")
+    logger.info(f"  Filtered generic root words from topics")
+    logger.info(f"  Searched for full phrases (not just root words)")
+    is_comparison = info.get('query_type', '') in ('comparison', 'machlokes')
+    if is_comparison:
+        logger.info(f"  Used STRICT INTERSECTION for comparison query (V17)")
+        logger.info(f"  Required BOTH primary concepts to match")
+    if info.get('target_masechtos'):
+        logger.info(f"  Filtered citations by target masechtos: {info['target_masechtos']}")
     
-    if not base_refs:
-        logger.warning("No base sources found - switching to trickle-down")
-        return await trickle_down_search_v11(analysis)
+    logger.info("\n[PRIORITY CLASSIFICATION]")
+    logger.info(f"  Priority 1 (Claude's picks + proximity): {len(result.priority_1_refs)}")
+    for ref in result.priority_1_refs[:5]:
+        logger.info(f"    ✓ {ref}")
+    if len(result.priority_1_refs) > 5:
+        logger.info(f"    ... and {len(result.priority_1_refs) - 5} more")
     
-    # =========================================================================
-    # PHASE 2: BUILD UP - Get commentaries
-    # =========================================================================
-    logger.info("\n[V11 TRICKLE-UP] Phase 2: Building up through commentaries")
+    logger.info(f"  Priority 2 (validated): {len(result.priority_2_refs)}")
+    for ref in result.priority_2_refs[:5]:
+        logger.info(f"    ✓ {ref}")
     
-    target_authors = set(a.lower() for a in (analysis.target_authors or []))
-    if not target_authors:
-        target_authors = {"rashi", "tosafot", "ran", "rashba"}
+    logger.info(f"  Priority 3 (kept after review): {len(result.priority_3_refs)}")
+    for ref in result.priority_3_refs[:3]:
+        logger.info(f"    ? {ref}")
+        
+    logger.info(f"  Rejected: {len(rejected)}")
+    for ref, reason in rejected[:3]:
+        logger.info(f"    ✗ {ref}: {reason}")
     
-    for ref in base_refs[:5]:
-        commentaries = await fetch_commentaries_on_daf(ref, target_authors)
-        found_sources.extend(commentaries)
+    logger.info("\n[FINAL OUTPUT]")
+    logger.info(f"  Total sources fetched: {len(sources)}")
+    logger.info(f"  Sources with text: {sum(1 for s in sources if s.hebrew_text)}")
+    logger.info(f"  Levels found: {result.levels_found}")
     
-    # =========================================================================
-    # PHASE 3: CONFIRM - Check if traces back to achronim
-    # =========================================================================
-    logger.info("\n[V11 TRICKLE-UP] Phase 3: Confirmation")
+    # Check for overlap between trickle-down and Claude's picks
+    p2_and_p3 = set(result.priority_2_refs + result.priority_3_refs)
+    claude_adjacent = set()
+    for cp in result.claude_picks:
+        for other in p2_and_p3:
+            if refs_in_proximity(cp, other, PROXIMITY_RADIUS):
+                claude_adjacent.add(other)
     
-    # Try to find these refs cited in SA/Tur
-    confirmed_refs = []
-    
-    if LOCAL_CORPUS_AVAILABLE:
-        try:
-            corpus = LocalCorpus()
-            
-            for ref in base_refs[:3]:
-                # Extract daf info
-                match = re.search(r'(\w+)\s+(\d+[ab])', ref)
-                if match:
-                    masechta = match.group(1)
-                    daf = match.group(2)
-                    
-                    # Search for this daf in nosei keilim
-                    for chelek in ["oc", "yd", "eh", "cm"]:
-                        try:
-                            hits = corpus.search_shulchan_aruch(masechta, chelek)
-                            if hits:
-                                confirmed_refs.append(ref)
-                                logger.info(f"  ✓ {ref} confirmed - found in SA {chelek.upper()}")
-                                break
-                        except:
-                            pass
-        except Exception as e:
-            logger.debug(f"Confirmation error: {e}")
-    
-    # =========================================================================
-    # PHASE 4: ORGANIZE RESULTS
-    # =========================================================================
-    # Sort by level
-    found_sources.sort(key=lambda s: list(SourceLevel).index(s.level) if s.level in list(SourceLevel) else 99)
-    
-    # Mark confirmed
-    for source in found_sources:
-        if any(ref in source.ref for ref in confirmed_refs):
-            source.confirmed = True
-    
-    # Group by level
-    sources_by_level: Dict[str, List[Source]] = {}
-    for source in found_sources:
-        level_key = source.level_hebrew
-        if level_key not in sources_by_level:
-            sources_by_level[level_key] = []
-        sources_by_level[level_key].append(source)
-    
-    result.sources = found_sources
-    result.sources_by_level = sources_by_level
-    result.total_sources = len(found_sources)
-    result.levels_found = list(sources_by_level.keys())
-    result.discovered_dapim = base_refs
-    result.confirmed_dapim = confirmed_refs
-    
-    result.confidence = (
-        ConfidenceLevel.HIGH if confirmed_refs
-        else ConfidenceLevel.MEDIUM if found_sources
-        else ConfidenceLevel.LOW
-    )
-    
-    logger.info(f"\n[V11] TRICKLE-UP COMPLETE: {len(found_sources)} sources")
-    
-    return result
-
-
-# ==============================================================================
-#  MAIN SEARCH FUNCTION
-# ==============================================================================
-
-async def search(analysis: "QueryAnalysis") -> SearchResult:
-    """V11 Main entry point for Step 3: SEARCH."""
-    logger.info("=" * 70)
-    logger.info("STEP 3: SEARCH [V11]")
-    logger.info(f"  Query: {analysis.original_query}")
-    logger.info(f"  Realm: {analysis.realm}")
-    logger.info(f"  Topics: {analysis.search_topics_hebrew}")
-    logger.info(f"  Method from Step 2: {analysis.search_method}")
-    logger.info("=" * 70)
-    
-    # Determine direction
-    direction = determine_search_direction(analysis)
-    logger.info(f"  Search direction: {direction}")
-    
-    if direction == "trickle_up":
-        return await trickle_up_search_v11(analysis)
-    elif direction == "direct":
-        # For direct refs, just fetch
-        return await trickle_up_search_v11(analysis)
+    logger.info("\n[VALIDATION]")
+    logger.info(f"  Trickle-down sources near Claude's picks: {len(claude_adjacent)}")
+    if claude_adjacent:
+        for ref in list(claude_adjacent)[:5]:
+            logger.info(f"    ~ {ref}")
     else:
-        return await trickle_down_search_v11(analysis)
+        logger.info("    (No overlap - consider checking search terms)")
+    
+    logger.info("\n" + "=" * 80)
+    logger.info("                       END PIPELINE SUMMARY")
+    logger.info("=" * 80 + "\n")
+    
+    return result
 
 
-# Aliases for backwards compatibility
-trickle_down_search_v10 = trickle_down_search_v11
-trickle_down_search_v9 = trickle_down_search_v11
-trickle_down_search_v8 = trickle_down_search_v11
+# Backwards compatibility
+trickle_down_search_v17 = search
+trickle_down_search_v16 = search
+trickle_down_search_v15 = search
+trickle_down_search_v14 = search
+trickle_down_search_v13 = search
 
 
 __all__ = [
     'search',
-    'trickle_down_search_v11',
-    'trickle_up_search_v11',
-    'determine_search_direction',
+    'trickle_down_search_v17',
+    'trickle_down_search_v16',
+    'extract_claude_info',
+    'run_search',
+    'classify_by_proximity',
+    'validate_with_trickle_up',
+    'word_search_validation',
+    'claude_review',
+    'fetch_final_sources',
     'Source',
     'SourceLevel',
     'SearchResult',
-    'DiscoveryResult',
-    'ConfirmationResult',
+    'CandidateSource',
+    'Priority',
+    'matches_target_masechtos',
+    'text_contains_phrase',
+    'count_topic_matches',
+    '_filter_generic_roots',
 ]

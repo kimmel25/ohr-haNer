@@ -272,8 +272,8 @@ STEP-BY-STEP ANALYSIS:
 
 3. DETERMINE WHERE TO LOOK
    Think about which masechtos would logically discuss this topic:
-   - Monetary law → Bava Kamma, Bava Metzia, Bava Basra, Choshen Mishpat
-   - Marriage/divorce → Kesubos, Kiddushin, Gittin, Even HaEzer, Ishut/Ishus
+   - Monetary law → Bava Kamma, Bava Metzia, Bava Batra, Choshen Mishpat
+   - Marriage/divorce → Ketubot, Kiddushin, Gittin, Even HaEzer, Ishut/Ishus
    - Holidays → Shabbat, Eruvin, Psachim, Orach Chaim, Zmanim
    - Kashrus → Chullin, Zvachim, Yoreh Deah
    - etc.
@@ -309,6 +309,22 @@ IMPORTANT WARNINGS:
 3. BE COMPREHENSIVE:
    - If a topic could appear in multiple masechtos, list them all
    - Don't guess too narrowly - let the search find the right places
+
+4. SEFARIA SPELLING (CRITICAL):
+   Use Sefaria's EXACT masechta spellings in all output fields (target_masechtos, potential_masechtos, target_dapim, reasoning):
+   - Ketubot (NOT Kesubos)
+   - Shabbat (NOT Shabbos)  
+   - Berakhot (NOT Berachos)
+   - Yevamot (NOT Yevamos)
+   - Bava Batra (NOT Bava Basra)
+   - Makkot (NOT Makkos)
+   - Shevuot (NOT Shevuos)
+   - Horayot (NOT Horayos)
+   - Menachot (NOT Menachos)
+   - Bekhorot (NOT Bechoros)
+   - Keritot (NOT Kerisos)
+   - Taanit (NOT Taanis)
+   - Chullin, Gittin, Kiddushin, Sanhedrin, Nazir, Sotah are spelled correctly as-is
 
 OUTPUT FORMAT:
 Return a JSON object with:
@@ -347,12 +363,12 @@ Query: "chezkas haguf chezkas mammon"
     "search_topics": ["chezkas haguf", "chezkas mammon", "types of chazakah in monetary law"],
     "search_topics_hebrew": ["חזקת הגוף", "חזקת ממון", "חזקה"],
     "related_concepts": ["המוציא מחבירו עליו הראיה", "ספק ממון", "אוקי ממונא בחזקתיה"],
-    "potential_masechtos": ["Kesubos", "Bava Kamma", "Bava Basra", "Bava Metzia", "Sanhedrin"],
-    "target_masechtos": ["Kesubos", "Bava Kamma", "Bava Basra"],
+    "potential_masechtos": ["Ketubot", "Bava Kamma", "Bava Batra", "Bava Metzia", "Sanhedrin"],
+    "target_masechtos": ["Ketubot", "Bava Kamma", "Bava Batra"],
     "target_dapim": [],
     "target_simanim": [],
     "target_authors": ["Rashi", "Tosafos", "Ketzos HaChoshen", "Nesivos HaMishpat"],
-    "reasoning": "This is a conceptual comparison between two fundamental types of presumption in monetary law. Kesubos discusses this in the context of marriage claims (12a, 75a), Bava Kamma in the context of damages (46a - shor tam). Using trickle_down because achronim like Ketzos systematically analyze these categories and will point us to the right gemaras.",
+    "reasoning": "This is a conceptual comparison between two fundamental types of presumption in monetary law. Ketubot discusses this in the context of marriage claims (12a, 75a), Bava Kamma in the context of damages (46a - shor tam). Using trickle_down because achronim like Ketzos systematically analyze these categories and will point us to the right gemaras.",
     "confidence": "high",
     "needs_clarification": false
 }
@@ -367,8 +383,8 @@ Query: "migu"
     "search_topics": ["migu"],
     "search_topics_hebrew": ["מיגו"],
     "related_concepts": ["נאמנות", "טענה", "פה שאסר"],
-    "potential_masechtos": ["Kesubos", "Bava Kamma", "Bava Metzia", "Bava Basra", "Kiddushin"],
-    "target_masechtos": ["Kesubos", "Bava Kamma", "Bava Metzia"],
+    "potential_masechtos": ["Ketubot", "Bava Kamma", "Bava Metzia", "Bava Batra", "Kiddushin"],
+    "target_masechtos": ["Ketubot", "Bava Kamma", "Bava Metzia"],
     "target_dapim": [],
     "target_authors": ["Rashi", "Tosafos", "Ketzos"],
     "reasoning": "Single-topic query about a fundamental gemara concept. Trickle-down will help find the main sugyos where migu is discussed via the nosei keilim.",

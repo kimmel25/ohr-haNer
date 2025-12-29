@@ -126,6 +126,61 @@ MASECHTA_MAP = {
     'נדה': 'Niddah',
 }
 
+# Maximum daf numbers for each Bavli masechta (to filter out garbage citations)
+# Masechtos not in Bavli (like Challah, Middot, etc.) are not included
+MASECHTA_MAX_DAF = {
+    # Seder Zeraim (only Berakhot has Bavli)
+    'Berakhot': 64,
+    
+    # Seder Moed
+    'Shabbat': 157,
+    'Eruvin': 105,
+    'Pesachim': 121,
+    'Shekalim': 22,  # Yerushalmi in Bavli editions
+    'Yoma': 88,
+    'Sukkah': 56,
+    'Beitzah': 40,
+    'Rosh Hashanah': 35,
+    'Taanit': 31,
+    'Megillah': 32,
+    'Moed Katan': 29,
+    'Chagigah': 27,
+    
+    # Seder Nashim
+    'Yevamot': 122,
+    'Ketubot': 112,
+    'Nedarim': 91,
+    'Nazir': 66,
+    'Sotah': 49,
+    'Gittin': 90,
+    'Kiddushin': 82,
+    
+    # Seder Nezikin
+    'Bava Kamma': 119,
+    'Bava Metzia': 119,
+    'Bava Batra': 176,
+    'Sanhedrin': 113,
+    'Makkot': 24,
+    'Shevuot': 49,
+    'Avodah Zarah': 76,
+    'Horayot': 14,
+    
+    # Seder Kodshim
+    'Zevachim': 120,
+    'Menachot': 110,
+    'Chullin': 142,
+    'Bekhorot': 61,
+    'Arakhin': 34,
+    'Temurah': 34,
+    'Keritot': 28,
+    'Meilah': 22,
+    'Tamid': 33,
+    # Middot and Kinnim have no Bavli
+    
+    # Seder Taharot (only Niddah has Bavli)
+    'Niddah': 73,
+}
+
 MASECHTA_ABBREV = {
     'פסח': 'פסחים',
     'שב': 'שבת',
@@ -243,6 +298,17 @@ def extract_gemara_citations(
             
             amud = parse_amud(amud_str)
             masechta_en = MASECHTA_MAP.get(masechta_he, masechta_he)
+            
+            # Validate daf number is valid for this specific masechta
+            # This filters out garbage like "Challah 31a" (Challah has no Bavli)
+            max_daf = MASECHTA_MAX_DAF.get(masechta_en)
+            if max_daf is None:
+                # Masechta not in Bavli (e.g., Challah, Middot) - skip
+                continue
+            if daf_num > max_daf:
+                # Daf number exceeds max for this masechta - skip
+                continue
+            
             daf = f"{daf_num}{amud}"
             
             key = f"{masechta_en}_{daf}"

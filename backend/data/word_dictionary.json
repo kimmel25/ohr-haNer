@@ -870,9 +870,9 @@
   "chezkas haguf": {
     "hebrew": "חזקת הגוף",
     "confidence": "high",
-    "usage_count": 37,
+    "usage_count": 49,
     "source": "manual",
-    "last_used": "2025-12-25T22:34:16.623959"
+    "last_used": "2025-12-28T21:18:22.018633"
   },
   "chezka haguf": {
     "hebrew": "חזקת הגוף",
@@ -1656,7 +1656,7 @@
     "source": "sefaria",
     "last_used": "2025-12-07T17:32:42.564701"
   },
-    "shakla vetariya": {
+  "shakla vetariya": {
     "hebrew": "שקלא וטריא",
     "confidence": "high",
     "usage_count": 3,
