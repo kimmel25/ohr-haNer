@@ -1,415 +1,217 @@
 """
-Source Text Output
-==================
+Source Output Writer for Ohr Haner V2
+======================================
 
-Creates readable output files containing the actual text of fetched sources.
-This allows review and verification of the sources returned by the pipeline.
-
-Output formats:
-1. Text file (.txt) - Simple readable format
-2. JSON file (.json) - Structured data for programmatic access
-3. HTML file (.html) - Formatted for browser viewing with Hebrew support
-
-Usage:
-    from source_output import SourceOutputWriter
-    
-    writer = SourceOutputWriter(output_dir="output")
-    writer.write_results(search_result, query="bittul chometz")
+Generates formatted output files (TXT and HTML) from search results.
 """
 
-import json
 import logging
 from pathlib import Path
 from datetime import datetime
-from typing import List, Dict, Any, Optional
-from dataclasses import dataclass, asdict
+from typing import List, Optional
+import re
+import html
+
+# Initialize logging - FIXED: removed 'logging.' prefix
+try:
+    from logging.logging_config import setup_logging
+    setup_logging()
+except ImportError:
+    # Fallback to basic logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s | %(levelname)-8s | %(name)s | %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+
+try:
+    from step_three_search import SearchResult, Source, SourceLevel
+except ImportError:
+    # Will be imported at runtime
+    pass
 
 logger = logging.getLogger(__name__)
 
+# Output directory
+OUTPUT_DIR = Path(__file__).parent / "output"
+OUTPUT_DIR.mkdir(exist_ok=True)
 
-@dataclass
-class SourceForOutput:
-    """Normalized source data for output."""
-    ref: str
-    he_ref: str
-    author: str
-    level: str
-    level_hebrew: str
-    hebrew_text: str
-    english_text: str
-    char_count: int
-    
-    @classmethod
-    def from_source(cls, source: Any) -> 'SourceForOutput':
-        """Create from a Source object or dict."""
-        if isinstance(source, dict):
-            hebrew = source.get('hebrew_text', '') or ''
-            return cls(
-                ref=source.get('ref', ''),
-                he_ref=source.get('he_ref', source.get('ref', '')),
-                author=source.get('author', ''),
-                level=source.get('level', ''),
-                level_hebrew=source.get('level_hebrew', ''),
-                hebrew_text=hebrew,
-                english_text=source.get('english_text', '') or '',
-                char_count=len(hebrew)
-            )
-        else:
-            hebrew = getattr(source, 'hebrew_text', '') or ''
-            return cls(
-                ref=getattr(source, 'ref', ''),
-                he_ref=getattr(source, 'he_ref', getattr(source, 'ref', '')),
-                author=getattr(source, 'author', ''),
-                level=getattr(source, 'level', ''),
-                level_hebrew=getattr(source, 'level_hebrew', ''),
-                hebrew_text=hebrew,
-                english_text=getattr(source, 'english_text', '') or '',
-                char_count=len(hebrew)
-            )
+# Traditional learning hierarchy order for sorting
+LEVEL_ORDER = {
+    "pasuk": 1,
+    "targum": 2,
+    "mishna": 3,
+    "tosefta": 4,
+    "gemara": 5,
+    "rashi": 6,
+    "tosafos": 7,
+    "rishonim": 8,
+    "rambam": 9,
+    "tur": 10,
+    "shulchan_aruch": 11,
+    "nosei_keilim": 12,
+    "acharonim": 13,
+    "other": 14
+}
 
 
-class SourceOutputWriter:
-    """Writes search results to readable output files."""
+def sort_sources_by_level(sources: List["Source"]) -> List["Source"]:
+    """Sort sources by traditional learning hierarchy."""
+    def get_level_priority(source):
+        level_str = source.level.value if hasattr(source.level, 'value') else str(source.level)
+        return LEVEL_ORDER.get(level_str, 99)
     
-    def __init__(self, output_dir: str = "output"):
-        self.output_dir = Path(output_dir)
-        self.output_dir.mkdir(parents=True, exist_ok=True)
+    return sorted(sources, key=get_level_priority)
+
+
+def sanitize_filename(query: str) -> str:
+    """Create a safe filename from query."""
+    # Remove/replace problematic characters
+    safe = re.sub(r'[<>:"/\\|?*]', '', query)
+    safe = re.sub(r'\s+', '_', safe)
+    safe = safe[:50]  # Limit length
+    return safe or "query"
+
+
+def strip_html_tags(text: str) -> str:
+    """
+    Remove HTML tags from text for plain text output.
+    Converts <br> to newlines, strips all other tags.
+    """
+    if not text:
+        return ""
     
-    def write_results(
-        self,
-        search_result: Any,
-        query: str = "",
-        formats: List[str] = None
-    ) -> Dict[str, Path]:
-        """
-        Write search results to output files.
-        
-        Args:
-            search_result: SearchResult object with sources
-            query: Original query string
-            formats: List of formats to output ("txt", "json", "html")
-                    Default: all three
-        
-        Returns:
-            Dict mapping format to output file path
-        """
-        if formats is None:
-            formats = ["txt", "json", "html"]
-        
-        # Generate timestamp for filename
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        base_name = f"sources_{timestamp}"
-        
-        # Extract sources
-        sources = self._extract_sources(search_result)
-        
-        # Metadata
-        metadata = {
-            "query": query,
-            "timestamp": datetime.now().isoformat(),
-            "total_sources": len(sources),
-            "base_refs": getattr(search_result, 'base_refs_found', []),
-        }
-        
-        output_files = {}
-        
-        if "txt" in formats:
-            txt_path = self.output_dir / f"{base_name}.txt"
-            self._write_txt(txt_path, sources, metadata)
-            output_files["txt"] = txt_path
-            logger.info(f"[OUTPUT] Written: {txt_path}")
-        
-        if "json" in formats:
-            json_path = self.output_dir / f"{base_name}.json"
-            self._write_json(json_path, sources, metadata)
-            output_files["json"] = json_path
-            logger.info(f"[OUTPUT] Written: {json_path}")
-        
-        if "html" in formats:
-            html_path = self.output_dir / f"{base_name}.html"
-            self._write_html(html_path, sources, metadata)
-            output_files["html"] = html_path
-            logger.info(f"[OUTPUT] Written: {html_path}")
-        
-        return output_files
+    # Convert <br> and <br/> to newlines
+    text = re.sub(r'<br\s*/?>', '\n', text, flags=re.IGNORECASE)
     
-    def _extract_sources(self, search_result: Any) -> List[SourceForOutput]:
-        """Extract and normalize sources from search result."""
-        sources = []
-        
-        # Try to get sources from the result
-        raw_sources = getattr(search_result, 'sources', [])
-        
-        for src in raw_sources:
-            try:
-                sources.append(SourceForOutput.from_source(src))
-            except Exception as e:
-                logger.warning(f"Could not process source: {e}")
-        
-        return sources
+    # Convert </p> and </div> to newlines (paragraph breaks)
+    text = re.sub(r'</p>|</div>', '\n', text, flags=re.IGNORECASE)
     
-    def _write_txt(
-        self,
-        path: Path,
-        sources: List[SourceForOutput],
-        metadata: Dict
-    ):
-        """Write plain text output."""
-        with open(path, 'w', encoding='utf-8') as f:
-            # Header
-            f.write("=" * 80 + "\n")
-            f.write("MAREI MEKOMOS - SOURCE OUTPUT\n")
-            f.write("=" * 80 + "\n\n")
-            
-            f.write(f"Query: {metadata['query']}\n")
-            f.write(f"Generated: {metadata['timestamp']}\n")
-            f.write(f"Total Sources: {metadata['total_sources']}\n")
-            f.write(f"Base Refs: {', '.join(metadata['base_refs'])}\n")
-            f.write("\n" + "=" * 80 + "\n\n")
-            
-            # Group by level
-            by_level = {}
-            for src in sources:
-                level = src.level_hebrew or src.level or "Other"
-                if level not in by_level:
-                    by_level[level] = []
-                by_level[level].append(src)
-            
-            # Write each level
-            for level, level_sources in by_level.items():
-                f.write(f"\n{'─' * 40}\n")
-                f.write(f"  {level} ({len(level_sources)} sources)\n")
-                f.write(f"{'─' * 40}\n\n")
-                
-                for i, src in enumerate(level_sources, 1):
-                    f.write(f"[{i}] {src.ref}\n")
-                    if src.he_ref and src.he_ref != src.ref:
-                        f.write(f"    {src.he_ref}\n")
-                    f.write(f"    Author: {src.author}\n")
-                    f.write(f"    Characters: {src.char_count}\n")
-                    f.write("\n")
-                    
-                    # Hebrew text
-                    f.write("    ─── Hebrew ───\n")
-                    # Wrap text for readability
-                    hebrew_lines = self._wrap_text(src.hebrew_text, 70)
-                    for line in hebrew_lines:
-                        f.write(f"    {line}\n")
-                    
-                    # English if available
-                    if src.english_text:
-                        f.write("\n    ─── English ───\n")
-                        english_lines = self._wrap_text(src.english_text, 70)
-                        for line in english_lines:
-                            f.write(f"    {line}\n")
-                    
-                    f.write("\n" + "─" * 60 + "\n\n")
-            
-            # Footer
-            f.write("\n" + "=" * 80 + "\n")
-            f.write("END OF SOURCE OUTPUT\n")
-            f.write("=" * 80 + "\n")
+    # Remove all other HTML tags
+    text = re.sub(r'<[^>]+>', '', text)
     
-    def _write_json(
-        self,
-        path: Path,
-        sources: List[SourceForOutput],
-        metadata: Dict
-    ):
-        """Write JSON output."""
-        output = {
-            "metadata": metadata,
-            "sources": [asdict(src) for src in sources]
-        }
-        
-        with open(path, 'w', encoding='utf-8') as f:
-            json.dump(output, f, ensure_ascii=False, indent=2)
+    # Decode HTML entities
+    text = html.unescape(text)
     
-    def _write_html(
-        self,
-        path: Path,
-        sources: List[SourceForOutput],
-        metadata: Dict
-    ):
-        """Write HTML output with proper Hebrew formatting."""
-        html = f'''<!DOCTYPE html>
-<html dir="rtl" lang="he">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Marei Mekomos - {metadata['query']}</title>
-    <style>
-        body {{
-            font-family: 'David', 'Times New Roman', serif;
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 20px;
-            background: #fafafa;
-            line-height: 1.8;
-        }}
-        .header {{
-            text-align: center;
-            border-bottom: 2px solid #333;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
-        }}
-        .header h1 {{
-            color: #1a1a1a;
-            font-size: 2em;
-        }}
-        .metadata {{
-            background: #f0f0f0;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 30px;
-            direction: ltr;
-            text-align: left;
-            font-family: monospace;
-        }}
-        .level-section {{
-            margin-bottom: 40px;
-        }}
-        .level-header {{
-            background: #333;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
-            font-size: 1.3em;
-        }}
-        .source {{
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 15px 0;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }}
-        .source-header {{
-            border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
-            margin-bottom: 15px;
-        }}
-        .source-ref {{
-            font-weight: bold;
-            font-size: 1.1em;
-            color: #0066cc;
-        }}
-        .source-meta {{
-            color: #666;
-            font-size: 0.9em;
-            direction: ltr;
-        }}
-        .source-text {{
-            font-size: 1.2em;
-            line-height: 2;
-            text-align: justify;
-        }}
-        .hebrew-text {{
-            direction: rtl;
-            font-family: 'David', 'Times New Roman', serif;
-        }}
-        .english-text {{
-            direction: ltr;
-            text-align: left;
-            font-family: Georgia, serif;
-            color: #444;
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px dashed #ccc;
-        }}
-        .toggle-btn {{
-            background: #eee;
-            border: 1px solid #ccc;
-            padding: 5px 10px;
-            cursor: pointer;
-            border-radius: 3px;
-            font-size: 0.8em;
-        }}
-        .toggle-btn:hover {{
-            background: #ddd;
-        }}
-        .hidden {{
-            display: none;
-        }}
-    </style>
-    <script>
-        function toggleEnglish(id) {{
-            var el = document.getElementById(id);
-            el.classList.toggle('hidden');
-        }}
-    </script>
-</head>
-<body>
-    <div class="header">
-        <h1>מראה מקומות</h1>
-        <p>Source Output</p>
-    </div>
+    # Clean up multiple newlines
+    text = re.sub(r'\n{3,}', '\n\n', text)
     
-    <div class="metadata">
-        <strong>Query:</strong> {metadata['query']}<br>
-        <strong>Generated:</strong> {metadata['timestamp']}<br>
-        <strong>Total Sources:</strong> {metadata['total_sources']}<br>
-        <strong>Base Refs:</strong> {', '.join(metadata['base_refs'])}
-    </div>
-'''
-        
-        # Group by level
-        by_level = {}
-        for src in sources:
-            level = src.level_hebrew or src.level or "Other"
-            if level not in by_level:
-                by_level[level] = []
-            by_level[level].append(src)
-        
-        # Write each level
-        for level, level_sources in by_level.items():
-            html += f'''
-    <div class="level-section">
-        <div class="level-header">{level} ({len(level_sources)})</div>
-'''
-            
-            for i, src in enumerate(level_sources, 1):
-                eng_id = f"eng_{level}_{i}"
-                html += f'''
-        <div class="source">
-            <div class="source-header">
-                <div class="source-ref">{src.he_ref}</div>
-                <div class="source-meta">{src.ref} | {src.author} | {src.char_count} chars</div>
-            </div>
-            <div class="source-text hebrew-text">
-                {src.hebrew_text}
-            </div>
-'''
-                if src.english_text:
-                    html += f'''
-            <button class="toggle-btn" onclick="toggleEnglish('{eng_id}')">Toggle English</button>
-            <div id="{eng_id}" class="source-text english-text hidden">
-                {src.english_text}
-            </div>
-'''
-                html += '''
-        </div>
-'''
-            
-            html += '''
-    </div>
-'''
-        
-        html += '''
-</body>
-</html>
-'''
-        
-        with open(path, 'w', encoding='utf-8') as f:
-            f.write(html)
+    # Clean up whitespace
+    text = text.strip()
     
-    def _wrap_text(self, text: str, width: int) -> List[str]:
-        """Wrap text to specified width."""
-        if not text:
-            return []
+    return text
+
+
+def format_sources_txt(result: "SearchResult", query: str) -> str:
+    """Format search results as plain text."""
+    lines = []
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    lines.append("=" * 70)
+    lines.append("                         OHR HANER - MAREI MEKOMOS")
+    lines.append("=" * 70)
+    lines.append(f"Query: {query}")
+    lines.append(f"Generated: {timestamp}")
+    lines.append(f"Confidence: {result.confidence.value if hasattr(result.confidence, 'value') else result.confidence}")
+    lines.append("=" * 70)
+    lines.append("")
+    
+    # TRADITIONAL LEARNING ORDER: Earlier → Foundation → Commentaries
+    
+    # 1. Earlier sources (Chumash, Mishna, etc.)
+    if result.earlier_sources:
+        lines.append("╔" + "═" * 68 + "╗")
+        lines.append("║" + "  📜 EARLIER SOURCES (מקורות קדומים)".center(68) + "║")
+        lines.append("╚" + "═" * 68 + "╝")
+        lines.append("")
         
-        words = text.split()
-        lines = []
+        for i, s in enumerate(result.earlier_sources, 1):
+            lines.append(f"┌─ [{i}] {s.ref}")
+            if s.he_ref and s.he_ref != s.ref:
+                lines.append(f"│  {s.he_ref}")
+            if s.hebrew_text:
+                # Strip HTML tags for plain text output
+                text = strip_html_tags(s.hebrew_text)
+                wrapped = wrap_text(text, 65)
+                for line in wrapped[:8]:
+                    lines.append(f"│  {line}")
+                if len(wrapped) > 8:
+                    lines.append(f"│  ... ({len(wrapped) - 8} more lines)")
+            lines.append("└" + "─" * 50)
+            lines.append("")
+    
+    # 2. Foundation stones (Gemara)
+    if result.foundation_stones:
+        lines.append("╔" + "═" * 68 + "╗")
+        lines.append("║" + "  📖 FOUNDATION SOURCES (יסודות)".center(68) + "║")
+        lines.append("╚" + "═" * 68 + "╝")
+        lines.append("")
+        
+        for i, s in enumerate(result.foundation_stones, 1):
+            lines.append(f"┌─ [{i}] {s.ref}")
+            if s.he_ref and s.he_ref != s.ref:
+                lines.append(f"│  {s.he_ref}")
+            lines.append("│")
+            if s.hebrew_text:
+                # Strip HTML tags for plain text output
+                text = strip_html_tags(s.hebrew_text)
+                wrapped = wrap_text(text, 65)
+                for line in wrapped[:20]:  # Limit lines
+                    lines.append(f"│  {line}")
+                if len(wrapped) > 20:
+                    lines.append(f"│  ... ({len(wrapped) - 20} more lines)")
+            lines.append("└" + "─" * 50)
+            lines.append("")
+    
+    # 3. Commentaries (Rashi → Tosafos → Rishonim → Acharonim)
+    if result.commentary_sources:
+        lines.append("╔" + "═" * 68 + "╗")
+        lines.append("║" + "  📚 COMMENTARIES (מפרשים)".center(68) + "║")
+        lines.append("╚" + "═" * 68 + "╝")
+        lines.append("")
+        
+        # Sort commentaries by traditional order
+        sorted_commentaries = sort_sources_by_level(result.commentary_sources)
+        
+        for i, s in enumerate(sorted_commentaries, 1):
+            lines.append(f"┌─ [{i}] {s.ref}")
+            if s.author:
+                lines.append(f"│  Author: {s.author}")
+            if s.hebrew_text:
+                # Strip HTML tags for plain text output
+                text = strip_html_tags(s.hebrew_text)
+                wrapped = wrap_text(text, 65)
+                for line in wrapped[:10]:
+                    lines.append(f"│  {line}")
+                if len(wrapped) > 10:
+                    lines.append(f"│  ... ({len(wrapped) - 10} more lines)")
+            lines.append("└" + "─" * 50)
+            lines.append("")
+    
+    # Summary
+    lines.append("=" * 70)
+    lines.append("SUMMARY")
+    lines.append("=" * 70)
+    lines.append(f"Earlier sources: {len(result.earlier_sources)}")
+    lines.append(f"Foundation stones: {len(result.foundation_stones)}")
+    lines.append(f"Commentaries: {len(result.commentary_sources)}")
+    lines.append(f"Total sources: {result.total_sources}")
+    lines.append("")
+    lines.append(result.search_description)
+    lines.append("=" * 70)
+    
+    return "\n".join(lines)
+
+
+def wrap_text(text: str, width: int) -> List[str]:
+    """Word wrap text to specified width."""
+    lines = []
+    for paragraph in text.split('\n'):
+        if not paragraph.strip():
+            lines.append("")
+            continue
+        
+        words = paragraph.split()
         current_line = []
         current_length = 0
         
@@ -419,125 +221,367 @@ class SourceOutputWriter:
                 current_length += len(word) + 1
             else:
                 if current_line:
-                    lines.append(' '.join(current_line))
+                    lines.append(" ".join(current_line))
                 current_line = [word]
                 current_length = len(word)
         
         if current_line:
-            lines.append(' '.join(current_line))
+            lines.append(" ".join(current_line))
+    
+    return lines
+
+
+def format_sources_html(result: "SearchResult", query: str) -> str:
+    """Format search results as HTML."""
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    html_content = f"""<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מראי מקומות - {html.escape(query)}</title>
+    <style>
+        :root {{
+            --primary: #1a365d;
+            --secondary: #2c5282;
+            --accent: #ed8936;
+            --bg: #f7fafc;
+            --card-bg: #ffffff;
+            --text: #2d3748;
+            --text-light: #718096;
+            --border: #e2e8f0;
+        }}
         
-        return lines
-
-
-# =============================================================================
-# CONVENIENCE FUNCTION
-# =============================================================================
-
-def write_source_output(
-    search_result: Any,
-    query: str = "",
-    output_dir: str = "output",
-    formats: List[str] = None
-) -> Dict[str, Path]:
-    """
-    Convenience function to write source output.
-    
-    Args:
-        search_result: SearchResult from Step 3
-        query: Original query
-        output_dir: Directory for output files
-        formats: List of formats ("txt", "json", "html")
-    
-    Returns:
-        Dict of format -> file path
-    """
-    writer = SourceOutputWriter(output_dir)
-    return writer.write_results(search_result, query, formats)
-
-
-# =============================================================================
-# STANDALONE SOURCE FILE WRITER (Simpler version)
-# =============================================================================
-
-def write_sources_to_file(
-    sources: List[Any],
-    output_path: str,
-    query: str = "",
-    base_refs: List[str] = None
-):
-    """
-    Simple function to write sources to a text file.
-    
-    Can be called directly without a SearchResult object.
-    
-    Args:
-        sources: List of Source objects or dicts
-        output_path: Path for output file
-        query: Query string for header
-        base_refs: List of base refs found
-    """
-    base_refs = base_refs or []
-    
-    with open(output_path, 'w', encoding='utf-8') as f:
-        # Header
-        f.write("=" * 80 + "\n")
-        f.write("MAREI MEKOMOS - SOURCE TEXT OUTPUT\n")
-        f.write("=" * 80 + "\n\n")
+        * {{
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }}
         
-        f.write(f"Query: {query}\n")
-        f.write(f"Generated: {datetime.now().isoformat()}\n")
-        f.write(f"Total Sources: {len(sources)}\n")
-        f.write(f"Base Gemara Refs: {', '.join(base_refs)}\n")
-        f.write("\n" + "=" * 80 + "\n")
+        body {{
+            font-family: 'David Libre', 'Frank Ruhl Libre', 'Times New Roman', serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.8;
+            padding: 20px;
+        }}
         
-        # Group by author for easier reading
-        by_author = {}
-        for src in sources:
-            if isinstance(src, dict):
-                author = src.get('author', 'Unknown')
-                ref = src.get('ref', '')
-                hebrew = src.get('hebrew_text', '')
-                english = src.get('english_text', '')
-            else:
-                author = getattr(src, 'author', 'Unknown')
-                ref = getattr(src, 'ref', '')
-                hebrew = getattr(src, 'hebrew_text', '')
-                english = getattr(src, 'english_text', '')
+        .container {{
+            max-width: 900px;
+            margin: 0 auto;
+        }}
+        
+        header {{
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            text-align: center;
+        }}
+        
+        header h1 {{
+            font-size: 2em;
+            margin-bottom: 10px;
+        }}
+        
+        header .query {{
+            font-size: 1.3em;
+            opacity: 0.9;
+        }}
+        
+        header .meta {{
+            font-size: 0.85em;
+            opacity: 0.7;
+            margin-top: 10px;
+        }}
+        
+        .section {{
+            margin-bottom: 30px;
+        }}
+        
+        .section-title {{
+            background: var(--secondary);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px 8px 0 0;
+            font-size: 1.2em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }}
+        
+        .section-title .count {{
+            background: var(--accent);
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.8em;
+        }}
+        
+        .source-card {{
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-top: none;
+            padding: 20px;
+        }}
+        
+        .source-card:last-child {{
+            border-radius: 0 0 8px 8px;
+        }}
+        
+        .source-card + .source-card {{
+            border-top: 1px solid var(--border);
+        }}
+        
+        .source-ref {{
+            font-weight: bold;
+            color: var(--primary);
+            font-size: 1.1em;
+            margin-bottom: 5px;
+        }}
+        
+        .source-author {{
+            color: var(--text-light);
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }}
+        
+        .source-text {{
+            background: #fafafa;
+            padding: 15px;
+            border-radius: 6px;
+            border-right: 3px solid var(--accent);
+            font-size: 1.05em;
+            max-height: 300px;
+            overflow-y: auto;
+        }}
+        
+        .summary {{
+            background: var(--card-bg);
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+        }}
+        
+        .summary h3 {{
+            color: var(--primary);
+            margin-bottom: 10px;
+        }}
+        
+        .summary-stats {{
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }}
+        
+        .stat {{
+            background: var(--bg);
+            padding: 10px 15px;
+            border-radius: 6px;
+        }}
+        
+        .stat-value {{
+            font-size: 1.5em;
+            font-weight: bold;
+            color: var(--primary);
+        }}
+        
+        .stat-label {{
+            font-size: 0.85em;
+            color: var(--text-light);
+        }}
+        
+        .empty-section {{
+            color: var(--text-light);
+            font-style: italic;
+            padding: 20px;
+            text-align: center;
+        }}
+        
+        @media (max-width: 600px) {{
+            body {{
+                padding: 10px;
+            }}
             
-            if author not in by_author:
-                by_author[author] = []
-            by_author[author].append((ref, hebrew, english))
-        
-        # Write each author's sources
-        for author in sorted(by_author.keys()):
-            author_sources = by_author[author]
-            f.write(f"\n\n{'═' * 80}\n")
-            f.write(f"  {author} ({len(author_sources)} sources)\n")
-            f.write(f"{'═' * 80}\n")
+            header {{
+                padding: 20px;
+            }}
             
-            for ref, hebrew, english in author_sources:
-                f.write(f"\n{'─' * 60}\n")
-                f.write(f"📖 {ref}\n")
-                f.write(f"{'─' * 60}\n\n")
-                
-                # Hebrew text
-                if hebrew:
-                    f.write(hebrew)
-                    f.write("\n")
-                else:
-                    f.write("[No Hebrew text]\n")
-                
-                # English if available
-                if english:
-                    f.write(f"\n--- English ---\n")
-                    f.write(english)
-                    f.write("\n")
-                
-                f.write("\n")
-        
-        # Footer
-        f.write("\n" + "=" * 80 + "\n")
-        f.write("END OF OUTPUT\n")
-        f.write("=" * 80 + "\n")
+            .summary-stats {{
+                flex-direction: column;
+            }}
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🕯️ אור הנר - מראי מקומות</h1>
+            <div class="query">{html.escape(query)}</div>
+            <div class="meta">נוצר: {timestamp} | רמת ביטחון: {result.confidence.value if hasattr(result.confidence, 'value') else result.confidence}</div>
+        </header>
+"""
     
-    logger.info(f"[OUTPUT] Written {len(sources)} sources to {output_path}")
+    # TRADITIONAL LEARNING ORDER: Earlier → Foundation → Commentaries
+    
+    # 1. Earlier sources
+    html_content += """
+        <div class="section">
+            <div class="section-title">
+                📜 מקורות קדומים - Earlier Sources
+                <span class="count">{count}</span>
+            </div>
+""".format(count=len(result.earlier_sources))
+    
+    if result.earlier_sources:
+        for s in result.earlier_sources:
+            # For HTML output, we keep the HTML but escape any user-injected content
+            source_text = s.hebrew_text[:1000] if s.hebrew_text else '<em>No text available</em>'
+            html_content += f"""
+            <div class="source-card">
+                <div class="source-ref">{html.escape(s.ref)}</div>
+                <div class="source-text">{source_text}</div>
+            </div>
+"""
+    else:
+        html_content += '<div class="source-card empty-section">No earlier sources found</div>'
+    
+    html_content += "</div>"
+    
+    # 2. Foundation stones
+    html_content += """
+        <div class="section">
+            <div class="section-title">
+                📖 יסודות - Foundation Sources
+                <span class="count">{count}</span>
+            </div>
+""".format(count=len(result.foundation_stones))
+    
+    if result.foundation_stones:
+        for s in result.foundation_stones:
+            source_text = s.hebrew_text[:2000] if s.hebrew_text else '<em>No text available</em>'
+            html_content += f"""
+            <div class="source-card">
+                <div class="source-ref">{html.escape(s.ref)}</div>
+                {f'<div class="source-author">{html.escape(s.he_ref)}</div>' if s.he_ref and s.he_ref != s.ref else ''}
+                <div class="source-text">{source_text}</div>
+            </div>
+"""
+    else:
+        html_content += '<div class="source-card empty-section">No foundation sources found</div>'
+    
+    html_content += "</div>"
+    
+    # 3. Commentaries (sorted by level)
+    html_content += """
+        <div class="section">
+            <div class="section-title">
+                📚 מפרשים - Commentaries
+                <span class="count">{count}</span>
+            </div>
+""".format(count=len(result.commentary_sources))
+    
+    if result.commentary_sources:
+        sorted_commentaries = sort_sources_by_level(result.commentary_sources)
+        for s in sorted_commentaries:
+            source_text = s.hebrew_text[:1500] if s.hebrew_text else '<em>No text available</em>'
+            html_content += f"""
+            <div class="source-card">
+                <div class="source-ref">{html.escape(s.ref)}</div>
+                {f'<div class="source-author">{html.escape(s.author)}</div>' if s.author else ''}
+                <div class="source-text">{source_text}</div>
+            </div>
+"""
+    else:
+        html_content += '<div class="source-card empty-section">No commentaries found</div>'
+    
+    html_content += "</div>"
+    
+    # Summary
+    html_content += f"""
+        <div class="summary">
+            <h3>סיכום - Summary</h3>
+            <div class="summary-stats">
+                <div class="stat">
+                    <div class="stat-value">{len(result.earlier_sources)}</div>
+                    <div class="stat-label">Earlier</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">{len(result.foundation_stones)}</div>
+                    <div class="stat-label">Foundation</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">{len(result.commentary_sources)}</div>
+                    <div class="stat-label">Commentaries</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">{result.total_sources}</div>
+                    <div class="stat-label">Total</div>
+                </div>
+            </div>
+            <p style="margin-top: 15px; color: var(--text-light);">{html.escape(result.search_description)}</p>
+        </div>
+    </div>
+</body>
+</html>
+"""
+    
+    return html_content
+
+
+class SourceOutputWriter:
+    """Writes search results to output files."""
+    
+    def __init__(self, output_dir: Path = None):
+        self.output_dir = output_dir or OUTPUT_DIR
+        self.output_dir.mkdir(exist_ok=True)
+    
+    def write_results(
+        self,
+        result: "SearchResult",
+        query: str,
+        formats: List[str] = None
+    ) -> dict:
+        """
+        Write results to output files.
+        
+        Args:
+            result: SearchResult from step 3
+            query: Original query string
+            formats: List of formats to write ("txt", "html"). Default: both.
+        
+        Returns:
+            Dict mapping format to output file path
+        """
+        if formats is None:
+            formats = ["txt", "html"]
+        
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        safe_query = sanitize_filename(query)
+        
+        output_files = {}
+        
+        if "txt" in formats:
+            txt_content = format_sources_txt(result, query)
+            txt_path = self.output_dir / f"sources_{safe_query}_{timestamp}.txt"
+            txt_path.write_text(txt_content, encoding='utf-8')
+            output_files["txt"] = txt_path
+            logger.info(f"Wrote TXT output: {txt_path}")
+        
+        if "html" in formats:
+            html_content = format_sources_html(result, query)
+            html_path = self.output_dir / f"sources_{safe_query}_{timestamp}.html"
+            html_path.write_text(html_content, encoding='utf-8')
+            output_files["html"] = html_path
+            logger.info(f"Wrote HTML output: {html_path}")
+        
+        return output_files
+
+
+# Convenience function
+def write_output(result: "SearchResult", query: str, formats: List[str] = None) -> dict:
+    """Write search results to output files."""
+    writer = SourceOutputWriter()
+    return writer.write_results(result, query, formats)
