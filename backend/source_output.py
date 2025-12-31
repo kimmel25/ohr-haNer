@@ -3,21 +3,21 @@ Source Output Writer for Ohr Haner V2
 ======================================
 
 Generates formatted output files (TXT and HTML) from search results.
+Clean, simple format optimized for reading in VS Code and text editors.
 """
 
 import logging
 from pathlib import Path
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Dict
 import re
 import html
 
-# Initialize logging - FIXED: removed 'logging.' prefix
+# Initialize logging
 try:
     from logging.logging_config import setup_logging
     setup_logging()
 except ImportError:
-    # Fallback to basic logging
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s | %(levelname)-8s | %(name)s | %(message)s',
@@ -27,7 +27,6 @@ except ImportError:
 try:
     from step_three_search import SearchResult, Source, SourceLevel
 except ImportError:
-    # Will be imported at runtime
     pass
 
 logger = logging.getLogger(__name__)
@@ -54,185 +53,183 @@ LEVEL_ORDER = {
     "other": 14
 }
 
+# Level display names (Hebrew)
+LEVEL_NAMES = {
+    "pasuk": "פסוקים",
+    "targum": "תרגום",
+    "mishna": "משנה",
+    "tosefta": "תוספתא",
+    "gemara": "גמרא בבלי",
+    "rashi": "רש\"י",
+    "tosafos": "תוספות",
+    "rishonim": "ראשונים",
+    "rambam": "רמב\"ם",
+    "tur": "טור",
+    "shulchan_aruch": "שולחן ערוך",
+    "nosei_keilim": "נושאי כלים",
+    "acharonim": "אחרונים",
+    "other": "אחר"
+}
+
+
+def get_level_str(source) -> str:
+    """Get the level string from a source."""
+    if hasattr(source.level, 'value'):
+        return source.level.value
+    return str(source.level)
+
 
 def sort_sources_by_level(sources: List["Source"]) -> List["Source"]:
     """Sort sources by traditional learning hierarchy."""
     def get_level_priority(source):
-        level_str = source.level.value if hasattr(source.level, 'value') else str(source.level)
+        level_str = get_level_str(source)
         return LEVEL_ORDER.get(level_str, 99)
     
     return sorted(sources, key=get_level_priority)
 
 
+def group_sources_by_level(sources: List["Source"]) -> Dict[str, List["Source"]]:
+    """Group sources by their level."""
+    groups = {}
+    for source in sources:
+        level_str = get_level_str(source)
+        if level_str not in groups:
+            groups[level_str] = []
+        groups[level_str].append(source)
+    return groups
+
+
 def sanitize_filename(query: str) -> str:
     """Create a safe filename from query."""
-    # Remove/replace problematic characters
     safe = re.sub(r'[<>:"/\\|?*]', '', query)
     safe = re.sub(r'\s+', '_', safe)
-    safe = safe[:50]  # Limit length
+    safe = safe[:50]
     return safe or "query"
 
 
 def strip_html_tags(text: str) -> str:
-    """
-    Remove HTML tags from text for plain text output.
-    Converts <br> to newlines, strips all other tags.
-    """
+    """Remove HTML tags from text for plain text output."""
     if not text:
         return ""
     
-    # Convert <br> and <br/> to newlines
     text = re.sub(r'<br\s*/?>', '\n', text, flags=re.IGNORECASE)
-    
-    # Convert </p> and </div> to newlines (paragraph breaks)
     text = re.sub(r'</p>|</div>', '\n', text, flags=re.IGNORECASE)
-    
-    # Remove all other HTML tags
     text = re.sub(r'<[^>]+>', '', text)
-    
-    # Decode HTML entities
     text = html.unescape(text)
-    
-    # Clean up multiple newlines
     text = re.sub(r'\n{3,}', '\n\n', text)
-    
-    # Clean up whitespace
     text = text.strip()
     
     return text
 
 
 def format_sources_txt(result: "SearchResult", query: str) -> str:
-    """Format search results as plain text."""
-    lines = []
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    """
+    Format search results as plain text.
     
-    lines.append("=" * 70)
-    lines.append("                         OHR HANER - MAREI MEKOMOS")
-    lines.append("=" * 70)
+    Simple, clean format optimized for VS Code scrolling:
+    - Section headers with source counts
+    - Numbered sources with ref, Hebrew ref, author
+    - Hebrew and English text sections
+    """
+    lines = []
+    timestamp = datetime.now().isoformat()
+    
+    # Header
+    lines.append("=" * 80)
+    lines.append("MAREI MEKOMOS - SOURCE OUTPUT")
+    lines.append("=" * 80)
+    lines.append("")
     lines.append(f"Query: {query}")
     lines.append(f"Generated: {timestamp}")
-    lines.append(f"Confidence: {result.confidence.value if hasattr(result.confidence, 'value') else result.confidence}")
-    lines.append("=" * 70)
-    lines.append("")
+    lines.append(f"Total Sources: {result.total_sources}")
     
-    # TRADITIONAL LEARNING ORDER: Earlier → Foundation → Commentaries
-    
-    # 1. Earlier sources (Chumash, Mishna, etc.)
-    if result.earlier_sources:
-        lines.append("╔" + "═" * 68 + "╗")
-        lines.append("║" + "  📜 EARLIER SOURCES (מקורות קדומים)".center(68) + "║")
-        lines.append("╚" + "═" * 68 + "╝")
-        lines.append("")
-        
-        for i, s in enumerate(result.earlier_sources, 1):
-            lines.append(f"┌─ [{i}] {s.ref}")
-            if s.he_ref and s.he_ref != s.ref:
-                lines.append(f"│  {s.he_ref}")
-            if s.hebrew_text:
-                # Strip HTML tags for plain text output
-                text = strip_html_tags(s.hebrew_text)
-                wrapped = wrap_text(text, 65)
-                for line in wrapped[:8]:
-                    lines.append(f"│  {line}")
-                if len(wrapped) > 8:
-                    lines.append(f"│  ... ({len(wrapped) - 8} more lines)")
-            lines.append("└" + "─" * 50)
-            lines.append("")
-    
-    # 2. Foundation stones (Gemara)
+    # List base refs if available
+    base_refs = []
     if result.foundation_stones:
-        lines.append("╔" + "═" * 68 + "╗")
-        lines.append("║" + "  📖 FOUNDATION SOURCES (יסודות)".center(68) + "║")
-        lines.append("╚" + "═" * 68 + "╝")
-        lines.append("")
-        
-        for i, s in enumerate(result.foundation_stones, 1):
-            lines.append(f"┌─ [{i}] {s.ref}")
-            if s.he_ref and s.he_ref != s.ref:
-                lines.append(f"│  {s.he_ref}")
-            lines.append("│")
-            if s.hebrew_text:
-                # Strip HTML tags for plain text output
-                text = strip_html_tags(s.hebrew_text)
-                wrapped = wrap_text(text, 65)
-                for line in wrapped[:20]:  # Limit lines
-                    lines.append(f"│  {line}")
-                if len(wrapped) > 20:
-                    lines.append(f"│  ... ({len(wrapped) - 20} more lines)")
-            lines.append("└" + "─" * 50)
-            lines.append("")
-    
-    # 3. Commentaries (Rashi → Tosafos → Rishonim → Acharonim)
-    if result.commentary_sources:
-        lines.append("╔" + "═" * 68 + "╗")
-        lines.append("║" + "  📚 COMMENTARIES (מפרשים)".center(68) + "║")
-        lines.append("╚" + "═" * 68 + "╝")
-        lines.append("")
-        
-        # Sort commentaries by traditional order
-        sorted_commentaries = sort_sources_by_level(result.commentary_sources)
-        
-        for i, s in enumerate(sorted_commentaries, 1):
-            lines.append(f"┌─ [{i}] {s.ref}")
-            if s.author:
-                lines.append(f"│  Author: {s.author}")
-            if s.hebrew_text:
-                # Strip HTML tags for plain text output
-                text = strip_html_tags(s.hebrew_text)
-                wrapped = wrap_text(text, 65)
-                for line in wrapped[:10]:
-                    lines.append(f"│  {line}")
-                if len(wrapped) > 10:
-                    lines.append(f"│  ... ({len(wrapped) - 10} more lines)")
-            lines.append("└" + "─" * 50)
-            lines.append("")
-    
-    # Summary
-    lines.append("=" * 70)
-    lines.append("SUMMARY")
-    lines.append("=" * 70)
-    lines.append(f"Earlier sources: {len(result.earlier_sources)}")
-    lines.append(f"Foundation stones: {len(result.foundation_stones)}")
-    lines.append(f"Commentaries: {len(result.commentary_sources)}")
-    lines.append(f"Total sources: {result.total_sources}")
+        base_refs = [s.ref for s in result.foundation_stones[:5]]
+    lines.append(f"Base Refs: {', '.join(base_refs) if base_refs else ''}")
     lines.append("")
-    lines.append(result.search_description)
-    lines.append("=" * 70)
+    lines.append("=" * 80)
+    lines.append("")
+    lines.append("")
+    
+    # Combine all sources and group by level
+    all_sources = []
+    all_sources.extend(result.earlier_sources or [])
+    all_sources.extend(result.foundation_stones or [])
+    all_sources.extend(result.commentary_sources or [])
+    
+    # Sort by level
+    all_sources = sort_sources_by_level(all_sources)
+    
+    # Group by level
+    grouped = group_sources_by_level(all_sources)
+    
+    # Output each group
+    source_num = 1
+    
+    # Process in level order
+    for level_key in sorted(grouped.keys(), key=lambda x: LEVEL_ORDER.get(x, 99)):
+        sources = grouped[level_key]
+        level_name = LEVEL_NAMES.get(level_key, level_key)
+        
+        # Section header
+        lines.append("─" * 40)
+        lines.append(f"  {level_name} ({len(sources)} sources)")
+        lines.append("─" * 40)
+        lines.append("")
+        
+        for source in sources:
+            # Source header
+            lines.append(f"[{source_num}] {source.ref}")
+            
+            # Hebrew ref if different
+            if source.he_ref and source.he_ref != source.ref:
+                lines.append(f"    {source.he_ref}")
+            
+            # Author
+            author = source.author if source.author else ""
+            lines.append(f"    Author: {author}")
+            
+            # Character count
+            total_chars = len(source.hebrew_text or "") + len(source.english_text or "")
+            lines.append(f"    Characters: {total_chars}")
+            lines.append("")
+            
+            # Hebrew text
+            if source.hebrew_text:
+                lines.append("    ─── Hebrew ───")
+                hebrew_clean = strip_html_tags(source.hebrew_text)
+                # Indent each line
+                for line in hebrew_clean.split('\n'):
+                    lines.append(f"    {line}")
+            
+            # English text
+            if source.english_text:
+                lines.append("")
+                lines.append("    ─── English ───")
+                english_clean = strip_html_tags(source.english_text)
+                for line in english_clean.split('\n'):
+                    lines.append(f"    {line}")
+            
+            # Source separator
+            lines.append("")
+            lines.append("─" * 60)
+            lines.append("")
+            
+            source_num += 1
+    
+    # Footer
+    lines.append("")
+    lines.append("=" * 80)
+    lines.append("END OF SOURCE OUTPUT")
+    lines.append("=" * 80)
     
     return "\n".join(lines)
 
 
-def wrap_text(text: str, width: int) -> List[str]:
-    """Word wrap text to specified width."""
-    lines = []
-    for paragraph in text.split('\n'):
-        if not paragraph.strip():
-            lines.append("")
-            continue
-        
-        words = paragraph.split()
-        current_line = []
-        current_length = 0
-        
-        for word in words:
-            if current_length + len(word) + 1 <= width:
-                current_line.append(word)
-                current_length += len(word) + 1
-            else:
-                if current_line:
-                    lines.append(" ".join(current_line))
-                current_line = [word]
-                current_length = len(word)
-        
-        if current_line:
-            lines.append(" ".join(current_line))
-    
-    return lines
-
-
 def format_sources_html(result: "SearchResult", query: str) -> str:
-    """Format search results as HTML."""
+    """Format search results as HTML with RTL support."""
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
     html_content = f"""<!DOCTYPE html>
@@ -243,14 +240,13 @@ def format_sources_html(result: "SearchResult", query: str) -> str:
     <title>מראי מקומות - {html.escape(query)}</title>
     <style>
         :root {{
-            --primary: #1a365d;
-            --secondary: #2c5282;
-            --accent: #ed8936;
-            --bg: #f7fafc;
-            --card-bg: #ffffff;
-            --text: #2d3748;
-            --text-light: #718096;
-            --border: #e2e8f0;
+            --bg: #1a1a2e;
+            --card-bg: #16213e;
+            --text: #eee;
+            --text-light: #aaa;
+            --primary: #e94560;
+            --accent: #0f3460;
+            --border: #333;
         }}
         
         * {{
@@ -260,11 +256,12 @@ def format_sources_html(result: "SearchResult", query: str) -> str:
         }}
         
         body {{
-            font-family: 'David Libre', 'Frank Ruhl Libre', 'Times New Roman', serif;
+            font-family: 'David Libre', 'Frank Ruhl Libre', 'SBL Hebrew', serif;
             background: var(--bg);
             color: var(--text);
             line-height: 1.8;
             padding: 20px;
+            direction: rtl;
         }}
         
         .container {{
@@ -273,28 +270,28 @@ def format_sources_html(result: "SearchResult", query: str) -> str:
         }}
         
         header {{
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
+            background: var(--card-bg);
             padding: 30px;
             border-radius: 12px;
             margin-bottom: 30px;
-            text-align: center;
+            border: 1px solid var(--border);
         }}
         
-        header h1 {{
+        h1 {{
+            color: var(--primary);
             font-size: 2em;
             margin-bottom: 10px;
         }}
         
-        header .query {{
+        .query {{
             font-size: 1.3em;
-            opacity: 0.9;
+            color: var(--text);
+            margin: 15px 0;
         }}
         
-        header .meta {{
-            font-size: 0.85em;
-            opacity: 0.7;
-            margin-top: 10px;
+        .meta {{
+            color: var(--text-light);
+            font-size: 0.9em;
         }}
         
         .section {{
@@ -302,36 +299,31 @@ def format_sources_html(result: "SearchResult", query: str) -> str:
         }}
         
         .section-title {{
-            background: var(--secondary);
-            color: white;
-            padding: 12px 20px;
-            border-radius: 8px 8px 0 0;
+            background: var(--accent);
+            color: var(--text);
+            padding: 15px 20px;
+            border-radius: 8px;
             font-size: 1.2em;
+            margin-bottom: 15px;
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 10px;
         }}
         
-        .section-title .count {{
-            background: var(--accent);
-            padding: 2px 10px;
-            border-radius: 12px;
-            font-size: 0.8em;
+        .count {{
+            background: var(--primary);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.85em;
         }}
         
         .source-card {{
             background: var(--card-bg);
             border: 1px solid var(--border);
-            border-top: none;
+            border-radius: 8px;
             padding: 20px;
-        }}
-        
-        .source-card:last-child {{
-            border-radius: 0 0 8px 8px;
-        }}
-        
-        .source-card + .source-card {{
-            border-top: 1px solid var(--border);
+            margin-bottom: 15px;
         }}
         
         .source-ref {{
@@ -341,6 +333,12 @@ def format_sources_html(result: "SearchResult", query: str) -> str:
             margin-bottom: 5px;
         }}
         
+        .source-he-ref {{
+            color: var(--text-light);
+            font-size: 0.95em;
+            margin-bottom: 10px;
+        }}
+        
         .source-author {{
             color: var(--text-light);
             font-size: 0.9em;
@@ -348,12 +346,12 @@ def format_sources_html(result: "SearchResult", query: str) -> str:
         }}
         
         .source-text {{
-            background: #fafafa;
+            background: rgba(0,0,0,0.2);
             padding: 15px;
             border-radius: 6px;
             border-right: 3px solid var(--accent);
             font-size: 1.05em;
-            max-height: 300px;
+            max-height: 400px;
             overflow-y: auto;
         }}
         
@@ -367,7 +365,7 @@ def format_sources_html(result: "SearchResult", query: str) -> str:
         
         .summary h3 {{
             color: var(--primary);
-            margin-bottom: 10px;
+            margin-bottom: 15px;
         }}
         
         .summary-stats {{
@@ -380,6 +378,7 @@ def format_sources_html(result: "SearchResult", query: str) -> str:
             background: var(--bg);
             padding: 10px 15px;
             border-radius: 6px;
+            text-align: center;
         }}
         
         .stat-value {{
@@ -392,27 +391,6 @@ def format_sources_html(result: "SearchResult", query: str) -> str:
             font-size: 0.85em;
             color: var(--text-light);
         }}
-        
-        .empty-section {{
-            color: var(--text-light);
-            font-style: italic;
-            padding: 20px;
-            text-align: center;
-        }}
-        
-        @media (max-width: 600px) {{
-            body {{
-                padding: 10px;
-            }}
-            
-            header {{
-                padding: 20px;
-            }}
-            
-            .summary-stats {{
-                flex-direction: column;
-            }}
-        }}
     </style>
 </head>
 <body>
@@ -420,108 +398,69 @@ def format_sources_html(result: "SearchResult", query: str) -> str:
         <header>
             <h1>🕯️ אור הנר - מראי מקומות</h1>
             <div class="query">{html.escape(query)}</div>
-            <div class="meta">נוצר: {timestamp} | רמת ביטחון: {result.confidence.value if hasattr(result.confidence, 'value') else result.confidence}</div>
+            <div class="meta">נוצר: {timestamp} | סה״כ מקורות: {result.total_sources}</div>
         </header>
 """
     
-    # TRADITIONAL LEARNING ORDER: Earlier → Foundation → Commentaries
+    # Combine and sort all sources
+    all_sources = []
+    all_sources.extend(result.earlier_sources or [])
+    all_sources.extend(result.foundation_stones or [])
+    all_sources.extend(result.commentary_sources or [])
+    all_sources = sort_sources_by_level(all_sources)
     
-    # 1. Earlier sources
-    html_content += """
+    # Group by level
+    grouped = group_sources_by_level(all_sources)
+    
+    # Output each group
+    for level_key in sorted(grouped.keys(), key=lambda x: LEVEL_ORDER.get(x, 99)):
+        sources = grouped[level_key]
+        level_name = LEVEL_NAMES.get(level_key, level_key)
+        
+        html_content += f"""
         <div class="section">
             <div class="section-title">
-                📜 מקורות קדומים - Earlier Sources
-                <span class="count">{count}</span>
+                {level_name}
+                <span class="count">{len(sources)}</span>
             </div>
-""".format(count=len(result.earlier_sources))
-    
-    if result.earlier_sources:
-        for s in result.earlier_sources:
-            # For HTML output, we keep the HTML but escape any user-injected content
-            source_text = s.hebrew_text[:1000] if s.hebrew_text else '<em>No text available</em>'
+"""
+        
+        for source in sources:
+            source_text = source.hebrew_text[:2000] if source.hebrew_text else '<em>אין טקסט</em>'
+            
             html_content += f"""
             <div class="source-card">
-                <div class="source-ref">{html.escape(s.ref)}</div>
+                <div class="source-ref">{html.escape(source.ref)}</div>
+                {f'<div class="source-he-ref">{html.escape(source.he_ref)}</div>' if source.he_ref and source.he_ref != source.ref else ''}
+                {f'<div class="source-author">{html.escape(source.author)}</div>' if source.author else ''}
                 <div class="source-text">{source_text}</div>
             </div>
 """
-    else:
-        html_content += '<div class="source-card empty-section">No earlier sources found</div>'
-    
-    html_content += "</div>"
-    
-    # 2. Foundation stones
-    html_content += """
-        <div class="section">
-            <div class="section-title">
-                📖 יסודות - Foundation Sources
-                <span class="count">{count}</span>
-            </div>
-""".format(count=len(result.foundation_stones))
-    
-    if result.foundation_stones:
-        for s in result.foundation_stones:
-            source_text = s.hebrew_text[:2000] if s.hebrew_text else '<em>No text available</em>'
-            html_content += f"""
-            <div class="source-card">
-                <div class="source-ref">{html.escape(s.ref)}</div>
-                {f'<div class="source-author">{html.escape(s.he_ref)}</div>' if s.he_ref and s.he_ref != s.ref else ''}
-                <div class="source-text">{source_text}</div>
-            </div>
-"""
-    else:
-        html_content += '<div class="source-card empty-section">No foundation sources found</div>'
-    
-    html_content += "</div>"
-    
-    # 3. Commentaries (sorted by level)
-    html_content += """
-        <div class="section">
-            <div class="section-title">
-                📚 מפרשים - Commentaries
-                <span class="count">{count}</span>
-            </div>
-""".format(count=len(result.commentary_sources))
-    
-    if result.commentary_sources:
-        sorted_commentaries = sort_sources_by_level(result.commentary_sources)
-        for s in sorted_commentaries:
-            source_text = s.hebrew_text[:1500] if s.hebrew_text else '<em>No text available</em>'
-            html_content += f"""
-            <div class="source-card">
-                <div class="source-ref">{html.escape(s.ref)}</div>
-                {f'<div class="source-author">{html.escape(s.author)}</div>' if s.author else ''}
-                <div class="source-text">{source_text}</div>
-            </div>
-"""
-    else:
-        html_content += '<div class="source-card empty-section">No commentaries found</div>'
-    
-    html_content += "</div>"
+        
+        html_content += "</div>"
     
     # Summary
     html_content += f"""
         <div class="summary">
-            <h3>סיכום - Summary</h3>
+            <h3>סיכום</h3>
             <div class="summary-stats">
                 <div class="stat">
-                    <div class="stat-value">{len(result.earlier_sources)}</div>
-                    <div class="stat-label">Earlier</div>
+                    <div class="stat-value">{len(result.earlier_sources or [])}</div>
+                    <div class="stat-label">מקורות קדומים</div>
                 </div>
                 <div class="stat">
-                    <div class="stat-value">{len(result.foundation_stones)}</div>
-                    <div class="stat-label">Foundation</div>
+                    <div class="stat-value">{len(result.foundation_stones or [])}</div>
+                    <div class="stat-label">יסודות</div>
                 </div>
                 <div class="stat">
-                    <div class="stat-value">{len(result.commentary_sources)}</div>
-                    <div class="stat-label">Commentaries</div>
+                    <div class="stat-value">{len(result.commentary_sources or [])}</div>
+                    <div class="stat-label">מפרשים</div>
                 </div>
                 <div class="stat">
                     <div class="stat-value">{result.total_sources}</div>
-                    <div class="stat-label">Total</div>
+                    <div class="stat-label">סה״כ</div>
                 </div>
             </div>
-            <p style="margin-top: 15px; color: var(--text-light);">{html.escape(result.search_description)}</p>
         </div>
     </div>
 </body>

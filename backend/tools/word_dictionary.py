@@ -1,6 +1,10 @@
 """
-Word Dictionary - Self-Maintaining Cache
-=========================================
+Word Dictionary - Self-Maintaining Cache V2
+============================================
+
+V2 IMPROVEMENTS:
+- lookup_all() method to find ALL non-overlapping sub-phrases
+- Better handling of multi-term queries like "chezkas haguf chezkas mammon"
 
 Auto-populated from:
 1. Your learning notes (Hebrew terms)
@@ -12,8 +16,9 @@ NO manual maintenance required.
 import json
 import re
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 from collections import Counter
+from datetime import datetime
 
 
 # ==========================================
@@ -229,9 +234,14 @@ def initialize_dictionary_from_notes() -> Dict:
         "sfek sfeika": "ספק ספיקא",
         "safek safeika": "ספק ספיקא",
         
+        # FIXED: All variations of chezkas haguf/mammon
         "chezkas haguf": "חזקת הגוף",
         "chezka haguf": "חזקת הגוף",
+        "chezkas mammon": "חזקת ממון",
         "chezkas mamon": "חזקת ממון",
+        "chekas haguf": "חזקת הגוף",
+        "chekas mammon": "חזקת ממון",
+        "chekas mamon": "חזקת ממון",
         
         "chezkas rav huna": "חזקת רב הונא",
         "chezka rav huna": "חזקת רב הונא",
@@ -265,6 +275,8 @@ def initialize_dictionary_from_notes() -> Dict:
 class WordDictionary:
     """
     Self-maintaining word dictionary with runtime learning.
+    
+    V2: Added lookup_all() for finding multiple non-overlapping sub-phrases.
     """
     
     def __init__(self):
@@ -294,33 +306,85 @@ class WordDictionary:
             json.dump(dictionary, f, ensure_ascii=False, indent=2)
     
     def lookup(self, query: str) -> Optional[Dict]:
-            """
-            Look up a transliteration in the dictionary.
-            
-            V8: Tries sub-phrases if full query not found.
-            
-            Returns entry dict or None if not found.
-            """
-            query = query.lower().strip()
-            
-            # Try exact match first
-            if query in self.dictionary:
-                return self._update_and_return(query)
-            
-            # Try sub-phrases (longest first)
-            words = query.split()
-            for phrase_len in range(len(words), 1, -1):
-                for start in range(len(words) - phrase_len + 1):
-                    phrase = ' '.join(words[start:start + phrase_len])
-                    if phrase in self.dictionary:
-                        return self._update_and_return(phrase)
-            
-            # Try individual words
-            for word in words:
-                if word in self.dictionary:
-                    return self._update_and_return(word)
-            
-            return None
+        """
+        Look up a transliteration in the dictionary.
+        
+        V8: Tries sub-phrases if full query not found.
+        NOTE: Returns FIRST match only. Use lookup_all() for multiple terms.
+        
+        Returns entry dict or None if not found.
+        """
+        query = query.lower().strip()
+        
+        # Try exact match first
+        if query in self.dictionary:
+            return self._update_and_return(query)
+        
+        # Try sub-phrases (longest first)
+        words = query.split()
+        for phrase_len in range(len(words), 1, -1):
+            for start in range(len(words) - phrase_len + 1):
+                phrase = ' '.join(words[start:start + phrase_len])
+                if phrase in self.dictionary:
+                    return self._update_and_return(phrase)
+        
+        # Try individual words
+        for word in words:
+            if word in self.dictionary:
+                return self._update_and_return(word)
+        
+        return None
+    
+    def lookup_all(self, query: str) -> List[Tuple[str, str, Dict]]:
+        """
+        Find ALL non-overlapping dictionary matches in the query.
+        
+        V2 NEW METHOD: Returns multiple Hebrew terms for queries like
+        "chezkas haguf chezkas mammon" → [חזקת הגוף, חזקת ממון]
+        
+        Uses greedy longest-first matching to avoid overlaps.
+        
+        Returns:
+            List of (transliteration, hebrew, entry_dict) tuples
+        """
+        query = query.lower().strip()
+        words = query.split()
+        n = len(words)
+        
+        # Track which word positions are already matched
+        used = [False] * n
+        matches = []
+        
+        # Greedy: try longest phrases first
+        for phrase_len in range(n, 0, -1):
+            for start in range(n - phrase_len + 1):
+                # Skip if any word in this range is already used
+                if any(used[start:start + phrase_len]):
+                    continue
+                
+                phrase = ' '.join(words[start:start + phrase_len])
+                
+                if phrase in self.dictionary:
+                    entry = self.dictionary[phrase]
+                    matches.append((phrase, entry['hebrew'], entry))
+                    
+                    # Mark these positions as used
+                    for i in range(start, start + phrase_len):
+                        used[i] = True
+                    
+                    # Update usage stats
+                    self._update_entry_stats(phrase)
+        
+        # Sort matches by position in original query
+        # (optional: currently returns in order found)
+        return matches
+    
+    def _update_entry_stats(self, key: str):
+        """Update usage stats for an entry (without returning it)."""
+        if key in self.dictionary:
+            self.dictionary[key]["usage_count"] += 1
+            self.dictionary[key]["last_used"] = self._get_timestamp()
+            self._save()
     
     def _update_and_return(self, key: str) -> Dict:
         """Update usage stats and return entry."""
@@ -416,18 +480,17 @@ class WordDictionary:
         return {
             "total_entries": len(self.dictionary),
             "by_source": {
-                source: sum(1 for e in self.dictionary.values() if e["source"] == source)
-                for source in ["notes", "manual", "runtime"]
+                source: sum(1 for e in self.dictionary.values() if e.get("source") == source)
+                for source in ["notes", "manual", "runtime", "sefaria", "manual_fix", "user_confirmed"]
             },
             "by_confidence": {
-                conf: sum(1 for e in self.dictionary.values() if e["confidence"] == conf)
+                conf: sum(1 for e in self.dictionary.values() if e.get("confidence") == conf)
                 for conf in ["high", "medium", "low"]
             }
         }
     
     def _get_timestamp(self) -> str:
         """Get current timestamp"""
-        from datetime import datetime
         return datetime.now().isoformat()
 
 
@@ -460,7 +523,7 @@ if __name__ == "__main__":
     print(f"By source: {stats['by_source']}")
     print(f"By confidence: {stats['by_confidence']}")
     
-    print("\n=== Test Lookups ===")
+    print("\n=== Test Single Lookups ===")
     test_queries = [
         "bari vishma",
         "chezkas haguf",
@@ -473,3 +536,19 @@ if __name__ == "__main__":
             print(f"✓ '{query}' → {result['hebrew']} (confidence: {result['confidence']})")
         else:
             print(f"✗ '{query}' not found")
+    
+    print("\n=== Test Multi-Term Lookups (V2 lookup_all) ===")
+    multi_queries = [
+        "chezkas haguf chezkas mammon",
+        "bari vishma sfek sfeika",
+        "what is chezkas haguf",  # Should find "chezkas haguf"
+    ]
+    
+    for query in multi_queries:
+        results = dict_obj.lookup_all(query)
+        if results:
+            print(f"✓ '{query}':")
+            for translit, hebrew, _ in results:
+                print(f"    → '{translit}' = '{hebrew}'")
+        else:
+            print(f"✗ '{query}' - no matches")

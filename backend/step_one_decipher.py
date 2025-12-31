@@ -1,21 +1,25 @@
 """
-Step 1: DECIPHER - V4.2 Architecture (Author-Aware + Optimized)
-================================================================
+Step 1: DECIPHER - V4.3 Architecture (Multi-Term Dictionary Support)
+=====================================================================
 
-IMPROVEMENTS FROM V4.1:
-1. AUTHOR-AWARE EXTRACTION: Skip phrase validation for known author names
+IMPROVEMENTS FROM V4.2:
+1. MULTI-TERM DICTIONARY: Uses lookup_all() to find multiple terms
+   - "chezkas haguf chezkas mammon" → ['חזקת הגוף', 'חזקת ממון']
+   - No longer stops at first match!
+
+2. AUTHOR-AWARE EXTRACTION: Skip phrase validation for known author names
    - Detects "ran", "rashi", "tosfos" etc. BEFORE trying phrase combinations
    - Prevents wasting API calls on "rans shittah" variants
 
-2. AUTHOR-PRIORITY VALIDATION: Author names beat generic words
+3. AUTHOR-PRIORITY VALIDATION: Author names beat generic words
    - Uses find_best_validated_with_authors() from V3 validator
    - "רש"י" (133 hits) beats "ראשי" (10000 hits)
 
-3. PARALLEL VALIDATION: Batch validation for phrases
+4. PARALLEL VALIDATION: Batch validation for phrases
    - Validates multiple variants concurrently
    - Significant speedup for multi-word phrases
 
-4. CONNECTION POOLING: Reuses HTTP connections
+5. CONNECTION POOLING: Reuses HTTP connections
    - Via V3 SefariaValidator with shared client
 
 Architecture:
@@ -490,15 +494,18 @@ def determine_confidence(hits: int, method: str) -> ConfidenceLevel:
 
 
 # ==========================================
-#  SINGLE TERM DECIPHER
+#  SINGLE TERM DECIPHER (V4.3 - Multi-Term Dictionary)
 # ==========================================
 
 async def decipher_single(query: str) -> DecipherResult:
     """
     Decipher a single transliteration term.
     
+    V4.3 IMPROVEMENT: Uses lookup_all() to find MULTIPLE dictionary matches.
+    "chezkas haguf chezkas mammon" → ['חזקת הגוף', 'חזקת ממון']
+    
     Tools (cascading):
-    1. Word Dictionary (cache) - FREE, instant
+    1. Word Dictionary (cache) - FREE, instant, NOW MULTI-TERM!
     2. Transliteration Map - FREE, generates variants
     3. Sefaria Validation (author-aware weighted) - FREE, validates
     """
@@ -515,27 +522,70 @@ async def decipher_single(query: str) -> DecipherResult:
     logger.debug(f"  Normalized: '{normalized_query}'")
     
     # ========================================
-    # TOOL 1: Word Dictionary (Cache)
+    # TOOL 1: Word Dictionary (Cache) - V4.3 Multi-Term Support
     # ========================================
     logger.debug(f"  [TOOL 1] Word Dictionary - Checking cache...")
     dictionary = get_dictionary()
-    cached_result = dictionary.lookup(normalized_query)
     
-    if cached_result:
-        hebrew_term = cached_result['hebrew']
-        logger.info(f"    ✓ Dictionary HIT: '{normalized_query}' → '{hebrew_term}'")
+    # V4.3: Try lookup_all first to find multiple terms
+    # This handles "chezkas haguf chezkas mammon" → both terms!
+    if hasattr(dictionary, 'lookup_all'):
+        all_matches = dictionary.lookup_all(normalized_query)
         
-        return DecipherResult(
-            success=True,
-            hebrew_term=hebrew_term,
-            hebrew_terms=[hebrew_term],
-            confidence=ConfidenceLevel.HIGH,
-            method="dictionary",
-            message=f"Found in dictionary cache",
-            is_mixed_query=False,
-            original_query=query,
-            extraction_confident=True
-        )
+        if all_matches:
+            hebrew_terms = [hebrew for _, hebrew, _ in all_matches]
+            translit_terms = [translit for translit, _, _ in all_matches]
+            
+            logger.info(f"    ✓ Dictionary HIT: Found {len(all_matches)} term(s)")
+            for translit, hebrew, _ in all_matches:
+                logger.info(f"      '{translit}' → '{hebrew}'")
+            
+            # If multiple terms, combine them
+            if len(hebrew_terms) > 1:
+                primary_term = ' '.join(hebrew_terms)
+                return DecipherResult(
+                    success=True,
+                    hebrew_term=primary_term,
+                    hebrew_terms=hebrew_terms,
+                    confidence=ConfidenceLevel.HIGH,
+                    method="dictionary_multi",
+                    message=f"Found {len(hebrew_terms)} terms in dictionary: {translit_terms}",
+                    is_mixed_query=False,
+                    original_query=query,
+                    extraction_confident=True
+                )
+            else:
+                # Single term - original behavior
+                return DecipherResult(
+                    success=True,
+                    hebrew_term=hebrew_terms[0],
+                    hebrew_terms=hebrew_terms,
+                    confidence=ConfidenceLevel.HIGH,
+                    method="dictionary",
+                    message=f"Found in dictionary cache",
+                    is_mixed_query=False,
+                    original_query=query,
+                    extraction_confident=True
+                )
+    else:
+        # Fallback to legacy lookup() if lookup_all not available
+        cached_result = dictionary.lookup(normalized_query)
+        
+        if cached_result:
+            hebrew_term = cached_result['hebrew']
+            logger.info(f"    ✓ Dictionary HIT: '{normalized_query}' → '{hebrew_term}'")
+            
+            return DecipherResult(
+                success=True,
+                hebrew_term=hebrew_term,
+                hebrew_terms=[hebrew_term],
+                confidence=ConfidenceLevel.HIGH,
+                method="dictionary",
+                message=f"Found in dictionary cache",
+                is_mixed_query=False,
+                original_query=query,
+                extraction_confident=True
+            )
     
     logger.debug(f"    → Dictionary miss, continuing to transliteration...")
     
@@ -613,14 +663,14 @@ async def decipher_single(query: str) -> DecipherResult:
 
 
 # ==========================================
-#  MAIN DECIPHER FUNCTION (V4.2)
+#  MAIN DECIPHER FUNCTION (V4.3)
 # ==========================================
 
 async def decipher(query: str) -> DecipherResult:
     """
     Main entry point for Step 1: Transliteration → Hebrew
     
-    V4.2 FLOW:
+    V4.3 FLOW:
     1. Check if mixed query (English + Hebrew)
     2. If mixed:
        - Extract Hebrew candidates (author-aware, V4.2)
@@ -628,8 +678,9 @@ async def decipher(query: str) -> DecipherResult:
        - Return all terms for Step 2 to verify
     3. If pure transliteration:
        - Use single-term flow (dictionary → transliteration → Sefaria)
+       - V4.3: Dictionary now uses lookup_all() for multi-term support!
     """
-    log_section("STEP 1: DECIPHER (V4.2) - Author-Aware Extraction")
+    log_section("STEP 1: DECIPHER (V4.3) - Multi-Term Dictionary Support")
     logger.info("Incoming query: %s", query)
     
     # ========================================
@@ -670,7 +721,11 @@ async def decipher(query: str) -> DecipherResult:
             result = await decipher_single(candidate)
             
             if result.success or result.hebrew_term:
-                all_hebrew_terms.append(result.hebrew_term)
+                # V4.3: Handle multi-term results from dictionary
+                if result.hebrew_terms and len(result.hebrew_terms) > 1:
+                    all_hebrew_terms.extend(result.hebrew_terms)
+                else:
+                    all_hebrew_terms.append(result.hebrew_term)
                 all_confidences.append(result.confidence)
                 conf_str = result.confidence.value if hasattr(result.confidence, 'value') else result.confidence
                 logger.info("Result: '%s' -> '%s' (%s confidence)", candidate, result.hebrew_term, conf_str)
@@ -721,6 +776,7 @@ async def decipher(query: str) -> DecipherResult:
         logger.info("No English markers detected; running dictionary -> transliteration map -> Sefaria cascade")
         result = await decipher_single(query)
         
+        # V4.3: decipher_single now handles multi-term dictionary results
         if result.success and result.hebrew_term and not result.hebrew_terms:
             result.hebrew_terms = [result.hebrew_term]
         
@@ -732,8 +788,11 @@ async def decipher(query: str) -> DecipherResult:
 # ==========================================
 
 async def quick_test():
-    """Quick test of the V4.2 decipher function."""
+    """Quick test of the V4.3 decipher function."""
     test_queries = [
+        # V4.3 NEW: Multi-term dictionary test
+        "chezkas haguf chezkas mammon",  # Should return BOTH terms!
+        
         # Pure transliteration
         "chezkas haguf",
         "migu",

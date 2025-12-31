@@ -870,9 +870,9 @@
   "chezkas haguf": {
     "hebrew": "חזקת הגוף",
     "confidence": "high",
-    "usage_count": 49,
+    "usage_count": 53,
     "source": "manual",
-    "last_used": "2025-12-28T21:18:22.018633"
+    "last_used": "2025-12-30T23:26:22.887172"
   },
   "chezka haguf": {
     "hebrew": "חזקת הגוף",
@@ -947,9 +947,9 @@
   "shabbos": {
     "hebrew": "שבת",
     "confidence": "high",
-    "usage_count": 8,
+    "usage_count": 9,
     "source": "transliteration",
-    "last_used": "2025-12-03T23:23:08.441467"
+    "last_used": "2025-12-30T15:35:25.266739"
   },
   "pesachim": {
     "hebrew": "פסחים",
@@ -1729,9 +1729,9 @@
   "bari vishema": {
     "hebrew": "ברי ושמא",
     "confidence": "low",
-    "usage_count": 4,
+    "usage_count": 5,
     "source": "sefaria",
-    "last_used": "2025-12-21T22:32:28.972389"
+    "last_used": "2025-12-30T15:32:30.410795"
   },
   "kamma": {
     "hebrew": "קמא",
@@ -2034,5 +2034,20 @@
     "usage_count": 0,
     "source": "manual_fix",
     "last_used": null
+  },
+  "halachos": {
+    "hebrew": "הלכות",
+    "confidence": "high",
+    "usage_count": 1,
+    "source": "runtime",
+    "last_used": "2025-12-30T15:35:25.256656",
+    "hits": 10000
+  },
+  "chezkas mammon": {
+    "hebrew": "חזקת ממון",
+    "confidence": "high",
+    "usage_count": 1,
+    "source": "manual_fix",
+    "last_used": "2025-12-30T23:26:22.895478"
   }
 }

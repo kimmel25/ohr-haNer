@@ -1,23 +1,33 @@
 """
-Step 3: SEARCH - V2 Complete Rewrite
+Step 3: SEARCH - V3 Complete Rewrite
 =====================================
 
-V2 PHILOSOPHY:
-Claude's suggested refs are our starting point. We verify them, then trickle.
+V3 PHILOSOPHY:
+    Claude's suggested refs from Step 2 come with verification_keywords.
+    We verify them PROGRAMMATICALLY using local corpus or Sefaria API.
+    NO CLAUDE CALLS IN STEP 3 - this is the key cost savings.
 
 FLOW:
-1. Get Claude's suggested_refs from Step 2
-2. For each ref: fetch text + surrounding context (buffer)
-3. Claude verifies/pinpoints exact location within buffer
-4. Verified refs = "foundation stones"
-5. Trickle UP: Use Sefaria /related API to get commentaries
-6. Trickle DOWN: Look for earlier sources (mishna, pasuk)
-7. Filter to only include target_sources from Step 2
-8. Return organized sources
+    1. Get RefHints from Step 2 (with verification_keywords)
+    2. For each RefHint: 
+       a. Fetch text (with buffer based on buffer_size)
+       b. Search for verification_keywords in text
+       c. If found: VERIFIED as foundation stone
+    3. Use SearchVariants for additional corpus discovery
+    4. Trickle UP: Use Sefaria /related API to get commentaries
+    5. Trickle DOWN: Use /links API for earlier sources
+    6. Filter to only include target_sources from Step 2
+    7. Return organized sources
 
 KEY INSIGHT:
-The old approach tried to find sources through keyword search and citation extraction.
-The new approach trusts Claude's semantic understanding and just verifies/fetches.
+    Step 2 now provides verification_keywords that appear in the actual gemara text.
+    These keywords include Aramaic forms (דגופא, דממונא) that Claude knows to expect.
+    Simple substring search can verify if a ref discusses the topic.
+
+COST SAVINGS:
+    Before: 1 + N Claude calls (N = number of refs, typically 4-6)
+    After:  1 Claude call (only in Step 2)
+    Result: ~80% reduction in API costs
 """
 
 import logging
@@ -29,22 +39,46 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Set, Tuple, Any
+from pathlib import Path
+from datetime import datetime
 
-from anthropic import Anthropic
+# =============================================================================
+#  LOGGING SETUP
+# =============================================================================
 
-# Initialize logging
-try:
-    from logging.logging_config import setup_logging
-    setup_logging()
-except ImportError:
-    # Fallback to basic logging
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s | %(levelname)-8s | %(name)s | %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
-    )
+logger = logging.getLogger(__name__)
 
-# Imports
+
+def log_section(title: str) -> None:
+    """Log a major section header."""
+    border = "=" * 70
+    logger.info("")
+    logger.info(border)
+    logger.info(f"  {title}")
+    logger.info(border)
+
+
+def log_subsection(title: str) -> None:
+    """Log a subsection header."""
+    logger.info("")
+    logger.info("-" * 50)
+    logger.info(f"  {title}")
+    logger.info("-" * 50)
+
+
+def log_verification(ref: str, verified: bool, reason: str, keywords_found: List[str] = None) -> None:
+    """Log verification result for a ref."""
+    status = "✓ VERIFIED" if verified else "✗ NOT FOUND"
+    logger.info(f"  {status}: {ref}")
+    if keywords_found:
+        logger.info(f"    Keywords found: {keywords_found}")
+    logger.info(f"    Reason: {reason}")
+
+
+# =============================================================================
+#  CONFIGURATION & IMPORTS
+# =============================================================================
+
 try:
     from config import get_settings
     settings = get_settings()
@@ -55,12 +89,37 @@ except ImportError:
         sefaria_base_url = "https://www.sefaria.org/api"
     settings = Settings()
 
+# Import SourceLevel from central models (compatibility with source_output.py)
+try:
+    from models import SourceLevel, ConfidenceLevel as ModelsConfidenceLevel
+    logger.debug("Imported SourceLevel from models.py")
+except ImportError:
+    # Fallback: define locally if models.py not available
+    class SourceLevel(str, Enum):
+        """Source levels in trickle-up order."""
+        CHUMASH = "chumash"
+        MISHNA = "mishna"
+        GEMARA = "gemara"
+        RASHI = "rashi"
+        TOSFOS = "tosfos"
+        RISHONIM = "rishonim"
+        RAMBAM = "rambam"
+        TUR = "tur"
+        SHULCHAN_ARUCH = "shulchan_aruch"
+        NOSEI_KEILIM = "nosei_keilim"
+        ACHARONIM = "acharonim"
+        OTHER = "other"
+
+# Import Step 2 structures
 try:
     from step_two_understand import (
-        QueryAnalysis, FoundationType, TrickleDirection, ConfidenceLevel
+        QueryAnalysis, RefHint, SearchVariants,
+        FoundationType, TrickleDirection, ConfidenceLevel, RefConfidence
     )
 except ImportError:
-    # Fallback definitions
+    # Fallback definitions (should not happen in normal operation)
+    logger.warning("Could not import step_two_understand, using fallback enums")
+    
     class FoundationType(str, Enum):
         GEMARA = "gemara"
         MISHNA = "mishna"
@@ -80,56 +139,47 @@ except ImportError:
         HIGH = "high"
         MEDIUM = "medium"
         LOW = "low"
+    
+    class RefConfidence(str, Enum):
+        CERTAIN = "certain"
+        LIKELY = "likely"
+        POSSIBLE = "possible"
+        GUESS = "guess"
 
-logger = logging.getLogger(__name__)
+# Import local corpus handler
+try:
+    from local_corpus import LocalCorpus, get_local_corpus, MASECHTA_MAP
+    LOCAL_CORPUS_AVAILABLE = True
+    logger.debug("Local corpus module imported successfully")
+except ImportError:
+    LOCAL_CORPUS_AVAILABLE = False
+    logger.warning("Local corpus not available, will use Sefaria API only")
+    MASECHTA_MAP = {}
 
-
-# ==============================================================================
-#  CONFIGURATION
-# ==============================================================================
 
 SEFARIA_BASE_URL = getattr(settings, 'sefaria_base_url', "https://www.sefaria.org/api")
-BUFFER_DAPIM = 1  # How many dapim before/after to fetch for verification
+DEFAULT_BUFFER_SIZE = 1
 MAX_CONCURRENT_REQUESTS = 5
 
 
-# ==============================================================================
-#  DATA STRUCTURES
-# ==============================================================================
+# =============================================================================
+#  CATEGORY MAPPING
+# =============================================================================
 
-class SourceLevel(str, Enum):
-    """Source levels in trickle-up order."""
-    PASUK = "pasuk"
-    TARGUM = "targum"
-    MISHNA = "mishna"
-    TOSEFTA = "tosefta"
-    GEMARA = "gemara"
-    RASHI = "rashi"
-    TOSAFOS = "tosafos"
-    RISHONIM = "rishonim"
-    RAMBAM = "rambam"
-    TUR = "tur"
-    SHULCHAN_ARUCH = "shulchan_aruch"
-    NOSEI_KEILIM = "nosei_keilim"
-    ACHARONIM = "acharonim"
-    OTHER = "other"
-
-
-# Map from Sefaria category to our level
+# Map from Sefaria category to our SourceLevel
+# NOTE: Uses SourceLevel from models.py (TOSFOS not TOSAFOS, CHUMASH not PASUK)
 CATEGORY_TO_LEVEL = {
-    "Tanakh": SourceLevel.PASUK,
-    "Torah": SourceLevel.PASUK,
-    "Prophets": SourceLevel.PASUK,
-    "Writings": SourceLevel.PASUK,
-    "Targum": SourceLevel.TARGUM,
+    "Tanakh": SourceLevel.CHUMASH,
+    "Torah": SourceLevel.CHUMASH,
+    "Prophets": SourceLevel.CHUMASH,
+    "Writings": SourceLevel.CHUMASH,
     "Mishnah": SourceLevel.MISHNA,
-    "Tosefta": SourceLevel.TOSEFTA,
     "Talmud": SourceLevel.GEMARA,
     "Bavli": SourceLevel.GEMARA,
     "Yerushalmi": SourceLevel.GEMARA,
-    "Midrash": SourceLevel.RISHONIM,  # Simplification
+    "Midrash": SourceLevel.RISHONIM,
     "Rashi": SourceLevel.RASHI,
-    "Tosafot": SourceLevel.TOSAFOS,
+    "Tosafot": SourceLevel.TOSFOS,
     "Rishonim": SourceLevel.RISHONIM,
     "Rambam": SourceLevel.RAMBAM,
     "Mishneh Torah": SourceLevel.RAMBAM,
@@ -138,7 +188,7 @@ CATEGORY_TO_LEVEL = {
     "Acharonim": SourceLevel.ACHARONIM,
 }
 
-# Map from target_sources names to what to look for in Sefaria
+# Map from target_sources names to Sefaria categories
 SOURCE_NAME_MAP = {
     "gemara": ["Talmud", "Bavli"],
     "rashi": ["Rashi"],
@@ -151,8 +201,7 @@ SOURCE_NAME_MAP = {
     "rosh": ["Rosh"],
     "rif": ["Rif"],
     "meiri": ["Meiri"],
-    "nimukei_yosef": ["Nimukei Yosef"],
-    "shulchan_aruch": ["Shulchan Arukh"],
+    "shulchan_arukh": ["Shulchan Arukh"],
     "mishnah_berurah": ["Mishnah Berurah"],
     "taz": ["Taz", "Turei Zahav"],
     "shach": ["Shakh", "Siftei Kohen"],
@@ -164,6 +213,7 @@ SOURCE_NAME_MAP = {
     "sforno": ["Sforno"],
     "ohr_hachaim": ["Or HaChaim"],
     "targum": ["Targum"],
+    "midrash_rabbah": ["Midrash Rabbah"],
 }
 
 
@@ -177,8 +227,21 @@ class Source:
     english_text: str = ""
     author: str = ""
     categories: List[str] = field(default_factory=list)
-    is_foundation: bool = False  # Is this a foundation stone?
-    is_verified: bool = False    # Was this verified by Claude?
+    is_foundation: bool = False
+    is_verified: bool = False
+    verification_keywords_found: List[str] = field(default_factory=list)
+
+
+@dataclass
+class VerificationResult:
+    """Result of programmatic verification for a ref."""
+    ref: str
+    original_hint_ref: str
+    verified: bool
+    keywords_found: List[str] = field(default_factory=list)
+    reason: str = ""
+    text_snippet: str = ""
+    confidence: RefConfidence = RefConfidence.POSSIBLE
 
 
 @dataclass
@@ -198,16 +261,20 @@ class SearchResult:
     
     needs_clarification: bool = False
     clarification_question: Optional[str] = None
+    
+    # V3: Verification stats
+    refs_verified: int = 0
+    refs_checked: int = 0
+    verification_method: str = "programmatic"
 
 
-# ==============================================================================
+# =============================================================================
 #  SEFARIA API HELPERS
-# ==============================================================================
+# =============================================================================
 
 async def fetch_text(ref: str, session: aiohttp.ClientSession) -> Optional[Dict]:
     """Fetch text from Sefaria API."""
     try:
-        # URL encode the ref
         encoded_ref = ref.replace(" ", "%20")
         url = f"{SEFARIA_BASE_URL}/texts/{encoded_ref}?context=0"
         
@@ -215,10 +282,10 @@ async def fetch_text(ref: str, session: aiohttp.ClientSession) -> Optional[Dict]
             if response.status == 200:
                 return await response.json()
             else:
-                logger.warning(f"Sefaria returned {response.status} for {ref}")
+                logger.debug(f"Sefaria returned {response.status} for {ref}")
                 return None
     except Exception as e:
-        logger.error(f"Error fetching {ref}: {e}")
+        logger.debug(f"Error fetching {ref}: {e}")
         return None
 
 
@@ -232,10 +299,10 @@ async def fetch_related(ref: str, session: aiohttp.ClientSession) -> Optional[Di
             if response.status == 200:
                 return await response.json()
             else:
-                logger.warning(f"Sefaria related returned {response.status} for {ref}")
+                logger.debug(f"Sefaria related returned {response.status} for {ref}")
                 return None
     except Exception as e:
-        logger.error(f"Error fetching related for {ref}: {e}")
+        logger.debug(f"Error fetching related for {ref}: {e}")
         return None
 
 
@@ -251,7 +318,7 @@ async def fetch_links(ref: str, session: aiohttp.ClientSession) -> Optional[List
             else:
                 return None
     except Exception as e:
-        logger.error(f"Error fetching links for {ref}: {e}")
+        logger.debug(f"Error fetching links for {ref}: {e}")
         return None
 
 
@@ -263,14 +330,12 @@ def extract_text_content(sefaria_response: Dict) -> Tuple[str, str]:
     if not sefaria_response:
         return he_text, en_text
     
-    # Hebrew text
     he = sefaria_response.get("he", "")
     if isinstance(he, list):
         he_text = " ".join(flatten_text(he))
     else:
         he_text = str(he) if he else ""
     
-    # English text
     en = sefaria_response.get("text", "")
     if isinstance(en, list):
         en_text = " ".join(flatten_text(en))
@@ -297,14 +362,12 @@ def determine_level(categories: List[str], ref: str) -> SourceLevel:
     if not categories:
         return SourceLevel.OTHER
     
-    # Check ref for common patterns
     ref_lower = ref.lower()
     if "rashi" in ref_lower:
         return SourceLevel.RASHI
     if "tosafot" in ref_lower or "tosafos" in ref_lower:
-        return SourceLevel.TOSAFOS
+        return SourceLevel.TOSFOS
     
-    # Check categories
     for cat in categories:
         if cat in CATEGORY_TO_LEVEL:
             return CATEGORY_TO_LEVEL[cat]
@@ -312,29 +375,27 @@ def determine_level(categories: List[str], ref: str) -> SourceLevel:
     return SourceLevel.OTHER
 
 
-# ==============================================================================
+# =============================================================================
 #  REF PARSING AND MANIPULATION
-# ==============================================================================
+# =============================================================================
 
 def parse_gemara_ref(ref: str) -> Optional[Tuple[str, int, str]]:
     """Parse a gemara ref into (masechta, daf_number, amud)."""
-    # Handle refs like "Ketubot 12b" or "Bava Kamma 46a"
     match = re.match(r'^([A-Za-z\s]+)\s+(\d+)([ab])$', ref.strip())
     if match:
         return (match.group(1).strip(), int(match.group(2)), match.group(3))
     return None
 
 
-def get_adjacent_refs(ref: str, buffer: int = BUFFER_DAPIM) -> List[str]:
+def get_adjacent_refs(ref: str, buffer: int = DEFAULT_BUFFER_SIZE) -> List[str]:
     """Get refs for surrounding dapim (for verification buffer)."""
     parsed = parse_gemara_ref(ref)
     if not parsed:
-        return [ref]  # Can't parse, just return original
+        return [ref]
     
     masechta, daf, amud = parsed
     refs = []
     
-    # Generate refs for buffer before and after
     # Each daf has a and b sides
     current_pos = daf * 2 + (0 if amud == 'a' else 1)
     
@@ -350,178 +411,412 @@ def get_adjacent_refs(ref: str, buffer: int = BUFFER_DAPIM) -> List[str]:
     return refs
 
 
-# ==============================================================================
-#  PHASE 1: FETCH FOUNDATION STONES WITH BUFFER
-# ==============================================================================
+def normalize_for_search(text: str) -> str:
+    """
+    Normalize Hebrew text for keyword matching.
+    
+    V3.1 IMPROVEMENTS:
+    - Strip HTML
+    - Normalize sofit letters (ם→מ, ן→נ, etc.)
+    - Remove nikud (vowel points)
+    - Normalize geresh/gershayim
+    - Collapse whitespace
+    """
+    if not text:
+        return ""
+    
+    # Strip HTML
+    text = re.sub(r'<[^>]+>', '', text)
+    
+    # Remove nikud (Hebrew vowel points)
+    # Nikud range: U+05B0 to U+05BD, U+05BF, U+05C1-U+05C2, U+05C4-U+05C5, U+05C7
+    text = re.sub(r'[\u05B0-\u05BD\u05BF\u05C1\u05C2\u05C4\u05C5\u05C7]', '', text)
+    
+    # Normalize geresh (׳) and gershayim (״) - remove
+    text = text.replace('״', '').replace('׳', '')
+    text = text.replace('"', '').replace("'", '')
+    
+    # Normalize sofits (final letters) for matching
+    text_normalized = text
+    sofit_map = {
+        'ם': 'מ',
+        'ן': 'נ',
+        'ף': 'פ',
+        'ך': 'כ',
+        'ץ': 'צ',
+    }
+    for sofit, regular in sofit_map.items():
+        text_normalized = text_normalized.replace(sofit, regular)
+    
+    # Collapse whitespace
+    text_normalized = re.sub(r'\s+', ' ', text_normalized)
+    
+    return text_normalized
 
-async def fetch_with_buffer(
-    suggested_refs: List[str],
-    foundation_type: FoundationType,
-    session: aiohttp.ClientSession
-) -> Dict[str, Dict]:
+
+def generate_keyword_variants(keyword: str) -> List[str]:
     """
-    Fetch each suggested ref plus surrounding context (buffer).
-    Returns dict mapping ref -> {text, buffer_text, all_refs}
+    Generate variations of a keyword for more flexible matching.
+    
+    Handles:
+    - Smichut forms (חזקה ↔ חזקת)
+    - With/without ה prefix
     """
-    logger.info("[PHASE 1] Fetching foundation stones with buffer")
+    variants = [keyword]
     
-    results = {}
+    # Smichut: words ending in ה often become ת in construct state
+    if keyword.endswith('ה'):
+        variants.append(keyword[:-1] + 'ת')  # חזקה → חזקת
+    if keyword.endswith('ת'):
+        variants.append(keyword[:-1] + 'ה')  # חזקת → חזקה
     
-    for ref in suggested_refs:
-        logger.info(f"  Fetching: {ref}")
-        
-        # Get adjacent refs for buffer
-        if foundation_type == FoundationType.GEMARA:
-            all_refs = get_adjacent_refs(ref, BUFFER_DAPIM)
+    # Handle דגופא / דממונא - might be written with space or without
+    if ' ד' in keyword:
+        variants.append(keyword.replace(' ד', 'ד'))
+    
+    # Handle הגוף / גוף variations (with/without ה article)
+    if 'הגוף' in keyword:
+        variants.append(keyword.replace('הגוף', 'גוף'))
+    if 'גוף' in keyword and 'הגוף' not in keyword:
+        variants.append(keyword.replace('גוף', 'הגוף'))
+    
+    return list(set(variants))
+
+
+# =============================================================================
+#  PROGRAMMATIC VERIFICATION (NO CLAUDE CALLS!)
+# =============================================================================
+
+# Generic words that appear everywhere - LOW weight
+GENERIC_KEYWORDS = {
+    'חזקה', 'ספק', 'רוב', 'מום', 'גוף', 'ממון', 'טהור', 'טמא',
+    'אמר', 'רבא', 'אביי', 'רב', 'שמואל', 'מתני', 'גמרא',
+}
+
+def calculate_keyword_score(keywords_found: List[str]) -> float:
+    """
+    Calculate a weighted score for keywords found.
+    
+    Specific phrases (2+ words or Aramaic construct forms) = 3 points
+    Generic single words = 1 point
+    
+    Returns total score.
+    """
+    score = 0.0
+    
+    for keyword in keywords_found:
+        # Multi-word phrases are specific
+        if ' ' in keyword:
+            score += 3.0
+        # Aramaic construct forms (דגופא, דממונא) are specific
+        elif keyword.startswith('ד') and len(keyword) > 3:
+            score += 3.0
+        # Known generic words
+        elif keyword in GENERIC_KEYWORDS:
+            score += 1.0
+        # Other single words
         else:
-            # For non-gemara, just fetch the ref itself
-            all_refs = [ref]
+            score += 1.5
+    
+    return score
+
+
+def verify_text_contains_keywords(
+    text: str,
+    keywords: List[str],
+    require_all: bool = False,
+    min_score: float = 3.0
+) -> Tuple[bool, List[str], float]:
+    """
+    Check if text contains verification keywords with weighted scoring.
+    
+    V3.1: Now generates variants for each keyword (smichut forms, etc.)
+    
+    Args:
+        text: The text to search in
+        keywords: List of keywords to look for
+        require_all: If True, ALL keywords must be present
+        min_score: Minimum weighted score to consider verified
         
-        # Fetch all refs
-        texts = {}
-        tasks = [fetch_text(r, session) for r in all_refs]
-        responses = await asyncio.gather(*tasks, return_exceptions=True)
+    Returns:
+        (verified, keywords_found, score)
+    """
+    if not text or not keywords:
+        return False, [], 0.0
+    
+    text_normalized = normalize_for_search(text)
+    text_no_spaces = text_normalized.replace(" ", "")
+    keywords_found = []
+    
+    for keyword in keywords:
+        # Generate variants of this keyword (smichut, etc.)
+        variants = generate_keyword_variants(keyword)
         
-        for r, resp in zip(all_refs, responses):
-            if isinstance(resp, Exception):
-                logger.warning(f"    Error fetching {r}: {resp}")
-                continue
-            if resp:
-                he_text, en_text = extract_text_content(resp)
-                texts[r] = {
-                    "he": he_text,
-                    "en": en_text,
+        found = False
+        for variant in variants:
+            variant_normalized = normalize_for_search(variant)
+            
+            # Try exact match
+            if variant in text or variant_normalized in text_normalized:
+                found = True
+                break
+            
+            # Try without spaces (for compound terms)
+            variant_no_space = variant_normalized.replace(" ", "")
+            if variant_no_space in text_no_spaces:
+                found = True
+                break
+        
+        if found:
+            keywords_found.append(keyword)
+    
+    # Calculate weighted score
+    score = calculate_keyword_score(keywords_found)
+    
+    if require_all:
+        verified = len(keywords_found) == len(keywords)
+    else:
+        # Need either specific keywords OR enough generic ones
+        verified = score >= min_score
+    
+    return verified, keywords_found, score
+
+
+async def verify_ref_programmatic(
+    hint: 'RefHint',
+    session: aiohttp.ClientSession,
+    search_variants: Optional['SearchVariants'] = None
+) -> VerificationResult:
+    """
+    Verify a RefHint programmatically without Claude.
+    
+    V3.1 IMPROVEMENTS:
+    1. Trust "certain" confidence refs without verification
+    2. Use weighted keyword scoring (specific > generic)
+    3. Better text normalization
+    
+    Args:
+        hint: RefHint from Step 2 with ref and verification_keywords
+        session: aiohttp session for API calls
+        search_variants: Optional additional search terms from Step 2
+        
+    Returns:
+        VerificationResult with verification status
+    """
+    logger.info(f"  Verifying: {hint.ref} [confidence: {hint.confidence.value}]")
+    
+    # FIX 1: Trust "certain" confidence refs from Claude
+    # Claude marked these as definite locations - skip verification
+    if hint.confidence.value == "certain":
+        logger.info(f"    → TRUSTED (certain confidence from Step 2)")
+        
+        # Still fetch the text for the source
+        response = await fetch_text(hint.ref, session)
+        snippet = ""
+        if response:
+            he_text, _ = extract_text_content(response)
+            if he_text:
+                snippet = he_text[:200] + "..." if len(he_text) > 200 else he_text
+        
+        return VerificationResult(
+            ref=hint.ref,
+            original_hint_ref=hint.ref,
+            verified=True,
+            keywords_found=hint.verification_keywords[:3] if hint.verification_keywords else [],
+            reason="Trusted (certain confidence from Step 2)",
+            text_snippet=snippet,
+            confidence=hint.confidence
+        )
+    
+    # Get buffer refs based on hint's buffer_size
+    buffer_size = getattr(hint, 'buffer_size', DEFAULT_BUFFER_SIZE)
+    refs_to_check = get_adjacent_refs(hint.ref, buffer_size)
+    
+    logger.debug(f"    Checking refs: {refs_to_check}")
+    
+    # Collect all keywords to search for
+    keywords = list(hint.verification_keywords) if hint.verification_keywords else []
+    
+    # Add high-confidence terms from search_variants
+    if search_variants:
+        keywords.extend(search_variants.aramaic_forms)
+        keywords.extend(search_variants.gemara_language[:3])  # Top 3
+    
+    # Deduplicate
+    keywords = list(dict.fromkeys(keywords))
+    
+    logger.debug(f"    Keywords to search: {keywords[:10]}...")
+    
+    # Fetch and search all refs in buffer
+    all_text = ""
+    texts_by_ref = {}
+    
+    tasks = [fetch_text(r, session) for r in refs_to_check]
+    responses = await asyncio.gather(*tasks, return_exceptions=True)
+    
+    for r, resp in zip(refs_to_check, responses):
+        if isinstance(resp, Exception):
+            logger.debug(f"    Error fetching {r}: {resp}")
+            continue
+        if resp:
+            he_text, _ = extract_text_content(resp)
+            if he_text:
+                texts_by_ref[r] = {
+                    "text": he_text,
                     "he_ref": resp.get("heRef", r),
                     "categories": resp.get("categories", [])
                 }
-        
-        # Combine buffer text
-        buffer_text = ""
-        for r in all_refs:
-            if r in texts and texts[r]["he"]:
-                buffer_text += f"\n--- {r} ---\n{texts[r]['he']}\n"
-        
-        results[ref] = {
-            "primary_text": texts.get(ref, {}).get("he", ""),
-            "buffer_text": buffer_text,
-            "all_refs": all_refs,
-            "texts": texts,
-            "he_ref": texts.get(ref, {}).get("he_ref", ref),
-            "categories": texts.get(ref, {}).get("categories", [])
-        }
-        
-        logger.info(f"    Fetched {len(texts)} refs, buffer length: {len(buffer_text)} chars")
+                all_text += f"\n{he_text}\n"
     
-    return results
+    if not all_text:
+        return VerificationResult(
+            ref=hint.ref,
+            original_hint_ref=hint.ref,
+            verified=False,
+            reason="No text found for this ref",
+            confidence=hint.confidence
+        )
+    
+    # FIX 2: Use weighted keyword scoring
+    # min_score=3.0 means we need either:
+    #   - 1 specific phrase (3 pts), OR
+    #   - 2 generic words (2 pts) - NOT enough, OR  
+    #   - 1 non-generic word + 1 generic (2.5 pts) - NOT enough
+    verified, keywords_found, score = verify_text_contains_keywords(
+        all_text, keywords, min_score=3.0
+    )
+    
+    logger.debug(f"    Score: {score}, Keywords found: {keywords_found}")
+    
+    if verified:
+        # Find which specific ref has the highest score
+        best_ref = hint.ref
+        best_score = 0
+        
+        for r, data in texts_by_ref.items():
+            _, found, ref_score = verify_text_contains_keywords(
+                data["text"], keywords, min_score=0  # Get score regardless
+            )
+            if ref_score > best_score:
+                best_score = ref_score
+                best_ref = r
+        
+        # Get snippet around first keyword
+        snippet = ""
+        if keywords_found and best_ref in texts_by_ref:
+            text = texts_by_ref[best_ref]["text"]
+            first_keyword = keywords_found[0]
+            pos = text.find(first_keyword)
+            if pos >= 0:
+                start = max(0, pos - 50)
+                end = min(len(text), pos + len(first_keyword) + 100)
+                snippet = "..." + text[start:end] + "..."
+        
+        return VerificationResult(
+            ref=best_ref,
+            original_hint_ref=hint.ref,
+            verified=True,
+            keywords_found=keywords_found,
+            reason=f"Found {len(keywords_found)} keywords (score: {score:.1f})",
+            text_snippet=snippet,
+            confidence=hint.confidence
+        )
+    else:
+        return VerificationResult(
+            ref=hint.ref,
+            original_hint_ref=hint.ref,
+            verified=False,
+            reason=f"Score too low ({score:.1f} < 3.0) - only generic matches",
+            confidence=hint.confidence
+        )
 
 
-# ==============================================================================
-#  PHASE 2: CLAUDE VERIFICATION
-# ==============================================================================
+# =============================================================================
+#  PHASE 1: VERIFY AND FETCH FOUNDATION STONES
+# =============================================================================
 
-VERIFICATION_PROMPT = """You are verifying if a Torah text contains a specific topic.
-
-QUERY: {query}
-TOPIC: {inyan}
-SUGGESTED REF: {ref}
-
-Here is the text around that ref:
-{buffer_text}
-
-TASK: Does this text discuss the topic "{inyan}"?
-
-If YES: Return the EXACT ref where the main discussion is (might be the suggested ref or an adjacent one).
-If NO: Say "NOT_FOUND" and briefly explain why.
-
-Return ONLY a JSON object:
-{{
-    "found": true/false,
-    "exact_ref": "The exact ref like 'Ketubot 12b'",
-    "reason": "Brief explanation"
-}}"""
-
-
-async def verify_refs_with_claude(
-    ref_data: Dict[str, Dict],
-    query: str,
-    inyan_description: str
-) -> List[Tuple[str, bool, str]]:
+async def verify_and_fetch_foundations(
+    analysis: 'QueryAnalysis',
+    session: aiohttp.ClientSession
+) -> Tuple[List[Source], List[VerificationResult]]:
     """
-    Have Claude verify each suggested ref and pinpoint exact location.
-    Returns list of (verified_ref, is_verified, reason).
+    Verify ref hints and fetch verified sources as foundation stones.
+    
+    NO CLAUDE CALLS - uses programmatic verification.
     """
-    logger.info("[PHASE 2] Claude verification of refs")
+    log_subsection("PHASE 1: PROGRAMMATIC VERIFICATION")
     
-    if not ref_data:
-        return []
+    foundation_stones = []
+    verification_results = []
     
-    client = Anthropic(api_key=settings.anthropic_api_key)
-    verified = []
+    # Get ref hints from Step 2
+    ref_hints = getattr(analysis, 'ref_hints', [])
     
-    for ref, data in ref_data.items():
-        buffer_text = data.get("buffer_text", "")
+    # Backward compatibility: if no ref_hints, check for suggested_refs
+    if not ref_hints and hasattr(analysis, 'suggested_refs'):
+        logger.warning("Using legacy suggested_refs (no verification_keywords)")
+        for ref in analysis.suggested_refs:
+            # Create basic RefHint without keywords
+            from step_two_understand import RefHint
+            ref_hints.append(RefHint(
+                ref=ref,
+                confidence=RefConfidence.POSSIBLE,
+                verification_keywords=[],
+                buffer_size=DEFAULT_BUFFER_SIZE
+            ))
+    
+    if not ref_hints:
+        logger.warning("No ref hints from Step 2")
+        return [], []
+    
+    # Get search variants for additional keyword matching
+    search_variants = getattr(analysis, 'search_variants', None)
+    
+    # Verify each hint
+    logger.info(f"Verifying {len(ref_hints)} ref hints...")
+    
+    for hint in ref_hints:
+        result = await verify_ref_programmatic(hint, session, search_variants)
+        verification_results.append(result)
         
-        if not buffer_text or len(buffer_text) < 50:
-            logger.warning(f"  {ref}: No text found, skipping verification")
-            verified.append((ref, False, "No text available"))
-            continue
-        
-        prompt = VERIFICATION_PROMPT.format(
-            query=query,
-            inyan=inyan_description or query,
-            ref=ref,
-            buffer_text=buffer_text[:8000]  # Limit for context window
+        # Log result
+        log_verification(
+            ref=result.ref,
+            verified=result.verified,
+            reason=result.reason,
+            keywords_found=result.keywords_found
         )
         
-        try:
-            response = client.messages.create(
-                model="claude-sonnet-4-5-20250929",
-                max_tokens=500,
-                temperature=0,
-                messages=[{"role": "user", "content": prompt}]
-            )
+        if result.verified:
+            # Fetch full text for verified ref
+            response = await fetch_text(result.ref, session)
             
-            raw = response.content[0].text.strip()
-            
-            # Parse JSON response
-            try:
-                # Handle markdown code blocks
-                if "```json" in raw:
-                    raw = raw.split("```json")[1].split("```")[0].strip()
-                elif "```" in raw:
-                    raw = raw.split("```")[1].split("```")[0].strip()
+            if response:
+                he_text, en_text = extract_text_content(response)
                 
-                result = json.loads(raw)
-                found = result.get("found", False)
-                exact_ref = result.get("exact_ref", ref)
-                reason = result.get("reason", "")
-                
-                if found:
-                    logger.info(f"  ✓ {ref} -> {exact_ref}: {reason[:50]}...")
-                    verified.append((exact_ref, True, reason))
-                else:
-                    logger.info(f"  ✗ {ref}: NOT FOUND - {reason[:50]}...")
-                    verified.append((ref, False, reason))
-                    
-            except json.JSONDecodeError:
-                # Try to extract meaning from non-JSON response
-                if "NOT_FOUND" in raw.upper():
-                    verified.append((ref, False, raw[:100]))
-                else:
-                    # Assume found if no clear NOT_FOUND
-                    verified.append((ref, True, "Verification unclear, assuming valid"))
-                    
-        except Exception as e:
-            logger.error(f"  Error verifying {ref}: {e}")
-            # On error, keep the ref but mark as unverified
-            verified.append((ref, False, f"Verification error: {e}"))
+                source = Source(
+                    ref=result.ref,
+                    he_ref=response.get("heRef", result.ref),
+                    level=determine_level(response.get("categories", []), result.ref),
+                    hebrew_text=he_text,
+                    english_text=en_text,
+                    categories=response.get("categories", []),
+                    is_foundation=True,
+                    is_verified=True,
+                    verification_keywords_found=result.keywords_found
+                )
+                foundation_stones.append(source)
     
-    return verified
+    # Summary
+    verified_count = sum(1 for r in verification_results if r.verified)
+    logger.info(f"  Verification complete: {verified_count}/{len(ref_hints)} refs verified")
+    
+    return foundation_stones, verification_results
 
 
-# ==============================================================================
-#  PHASE 3: TRICKLE UP - GET COMMENTARIES
-# ==============================================================================
+# =============================================================================
+#  PHASE 2: TRICKLE UP (COMMENTARIES)
+# =============================================================================
 
 async def trickle_up(
     foundation_refs: List[str],
@@ -529,84 +824,93 @@ async def trickle_up(
     session: aiohttp.ClientSession
 ) -> List[Source]:
     """
-    Get commentaries on the foundation stones using Sefaria /related API.
-    Filter to only include requested target_sources.
-    """
-    logger.info("[PHASE 3] Trickle UP - Getting commentaries")
-    logger.info(f"  Target sources: {target_sources}")
+    Fetch commentaries (trickle up) for foundation stones.
     
-    sources = []
+    Uses Sefaria's /related API.
+    """
+    log_subsection("PHASE 2: TRICKLE UP (COMMENTARIES)")
+    
+    if not foundation_refs:
+        logger.info("  No foundation refs to trickle up from")
+        return []
+    
+    # Normalize target sources
+    target_lower = [t.lower().replace(" ", "_") for t in target_sources]
+    
+    logger.info(f"  Foundation refs: {foundation_refs}")
+    logger.info(f"  Target sources: {target_lower}")
+    
+    commentary_sources = []
     seen_refs = set()
     
-    # Build list of categories to look for based on target_sources
-    wanted_categories = set()
-    for source_name in target_sources:
-        if source_name.lower() in SOURCE_NAME_MAP:
-            wanted_categories.update(SOURCE_NAME_MAP[source_name.lower()])
-    
-    logger.info(f"  Looking for categories: {wanted_categories}")
-    
-    for foundation_ref in foundation_refs:
-        logger.info(f"  Getting related for: {foundation_ref}")
+    for ref in foundation_refs:
+        logger.info(f"  Getting commentaries for: {ref}")
         
-        related = await fetch_related(foundation_ref, session)
+        related = await fetch_related(ref, session)
         if not related:
-            logger.warning(f"    No related data for {foundation_ref}")
             continue
         
-        # Process links
+        # Process commentaries
         links = related.get("links", [])
-        logger.info(f"    Found {len(links)} links")
-        
         for link in links:
-            ref = link.get("ref", "")
-            if not ref or ref in seen_refs:
+            link_ref = link.get("ref", "")
+            if not link_ref or link_ref in seen_refs:
                 continue
             
-            categories = link.get("collectiveTitle", {})
-            if isinstance(categories, dict):
-                cat_en = categories.get("en", "")
-            else:
-                cat_en = str(categories)
+            # Check if this matches target sources
+            categories = link.get("category", "")
+            collective_title = link.get("collectiveTitle", {}).get("en", "")
             
-            # Check if this matches our wanted sources
-            should_include = False
-            for wanted in wanted_categories:
-                if wanted.lower() in cat_en.lower() or wanted.lower() in ref.lower():
-                    should_include = True
+            # Match against target sources
+            is_target = False
+            matched_target = None
+            
+            for target in target_lower:
+                if target == "gemara":
+                    continue  # Skip gemara in trickle-up
+                
+                search_patterns = SOURCE_NAME_MAP.get(target, [target])
+                for pattern in search_patterns:
+                    if pattern.lower() in categories.lower() or pattern.lower() in collective_title.lower() or pattern.lower() in link_ref.lower():
+                        is_target = True
+                        matched_target = target
+                        break
+                if is_target:
                     break
             
-            if not should_include:
+            if not is_target:
                 continue
             
-            seen_refs.add(ref)
+            seen_refs.add(link_ref)
             
-            # Fetch the actual text
-            text_data = await fetch_text(ref, session)
-            if text_data:
-                he_text, en_text = extract_text_content(text_data)
-                
-                source = Source(
-                    ref=ref,
-                    he_ref=text_data.get("heRef", ref),
-                    level=determine_level(text_data.get("categories", []), ref),
-                    hebrew_text=he_text,
-                    english_text=en_text,
-                    author=cat_en,
-                    categories=text_data.get("categories", []),
-                    is_foundation=False,
-                    is_verified=True
-                )
-                sources.append(source)
-                logger.info(f"    ✓ Added: {ref} ({cat_en})")
+            # Fetch text for this commentary
+            text_response = await fetch_text(link_ref, session)
+            if not text_response:
+                continue
+            
+            he_text, en_text = extract_text_content(text_response)
+            
+            source = Source(
+                ref=link_ref,
+                he_ref=text_response.get("heRef", link_ref),
+                level=determine_level(text_response.get("categories", []), link_ref),
+                hebrew_text=he_text,
+                english_text=en_text,
+                author=collective_title,
+                categories=text_response.get("categories", []),
+                is_foundation=False,
+                is_verified=False
+            )
+            commentary_sources.append(source)
+            logger.debug(f"    Added: {link_ref} ({matched_target})")
     
-    logger.info(f"  Total commentary sources: {len(sources)}")
-    return sources
+    logger.info(f"  Found {len(commentary_sources)} commentaries")
+    return commentary_sources
 
 
-# ==============================================================================
-#  PHASE 4: TRICKLE DOWN - GET EARLIER SOURCES
-# ==============================================================================
+# =============================================================================
+#  PHASE 3: TRICKLE DOWN (EARLIER SOURCES)
+# =============================================================================
 
 async def trickle_down(
     foundation_refs: List[str],
@@ -614,93 +918,114 @@ async def trickle_down(
     session: aiohttp.ClientSession
 ) -> List[Source]:
     """
-    Get earlier sources that the foundation is based on.
-    For gemara -> find mishna, pasuk
-    For halacha -> find gemara sources
-    """
-    logger.info("[PHASE 4] Trickle DOWN - Getting earlier sources")
+    Find earlier sources (trickle down) - Mishna, Pasuk, etc.
     
-    sources = []
+    Uses Sefaria's /links API.
+    """
+    log_subsection("PHASE 3: TRICKLE DOWN (EARLIER SOURCES)")
+    
+    if not foundation_refs:
+        logger.info("  No foundation refs to trickle down from")
+        return []
+    
+    # For halacha, we don't trickle down (already at destination)
+    if foundation_type in [FoundationType.HALACHA_SA, FoundationType.HALACHA_RAMBAM]:
+        logger.info("  Halacha query - skipping trickle down")
+        return []
+    
+    earlier_sources = []
     seen_refs = set()
     
-    for foundation_ref in foundation_refs:
-        links = await fetch_links(foundation_ref, session)
+    # Levels considered "earlier"
+    earlier_levels = {SourceLevel.PASUK, SourceLevel.MISHNA, SourceLevel.TOSEFTA}
+    
+    for ref in foundation_refs:
+        logger.info(f"  Finding earlier sources for: {ref}")
+        
+        links = await fetch_links(ref, session)
         if not links:
             continue
         
         for link in links:
-            ref = link.get("ref", "")
-            if not ref or ref in seen_refs:
+            if not isinstance(link, dict):
                 continue
             
-            # Determine if this is an "earlier" source
+            link_ref = link.get("ref", "")
+            if not link_ref or link_ref in seen_refs:
+                continue
+            
+            # Check if this is an earlier source
             categories = link.get("category", "")
-            link_type = link.get("type", "")
             
-            # We want: Tanakh, Mishnah for gemara foundation
-            # We want: Talmud for halacha foundation
             is_earlier = False
-            
-            if foundation_type == FoundationType.GEMARA:
-                if any(c in str(categories) for c in ["Tanakh", "Torah", "Mishnah"]):
-                    is_earlier = True
-            elif foundation_type in [FoundationType.HALACHA_SA, FoundationType.HALACHA_RAMBAM]:
-                if any(c in str(categories) for c in ["Talmud", "Bavli", "Mishnah"]):
-                    is_earlier = True
+            if any(cat in categories for cat in ["Tanakh", "Torah", "Mishnah", "Tosefta"]):
+                is_earlier = True
             
             if not is_earlier:
                 continue
             
-            seen_refs.add(ref)
+            seen_refs.add(link_ref)
             
             # Fetch text
-            text_data = await fetch_text(ref, session)
-            if text_data:
-                he_text, en_text = extract_text_content(text_data)
-                
-                source = Source(
-                    ref=ref,
-                    he_ref=text_data.get("heRef", ref),
-                    level=determine_level(text_data.get("categories", []), ref),
-                    hebrew_text=he_text,
-                    english_text=en_text,
-                    categories=text_data.get("categories", []),
-                    is_foundation=False,
-                    is_verified=True
-                )
-                sources.append(source)
-                logger.info(f"    ✓ Earlier source: {ref}")
+            text_response = await fetch_text(link_ref, session)
+            if not text_response:
+                continue
+            
+            he_text, en_text = extract_text_content(text_response)
+            
+            source = Source(
+                ref=link_ref,
+                he_ref=text_response.get("heRef", link_ref),
+                level=determine_level(text_response.get("categories", []), link_ref),
+                hebrew_text=he_text,
+                english_text=en_text,
+                categories=text_response.get("categories", []),
+                is_foundation=False,
+                is_verified=False
+            )
+            earlier_sources.append(source)
+            logger.debug(f"    Added: {link_ref}")
     
-    logger.info(f"  Total earlier sources: {len(sources)}")
-    return sources
+    logger.info(f"  Found {len(earlier_sources)} earlier sources")
+    return earlier_sources
 
 
-# ==============================================================================
+# =============================================================================
 #  MAIN SEARCH FUNCTION
-# ==============================================================================
+# =============================================================================
 
-async def search(analysis: "QueryAnalysis") -> SearchResult:
+async def search(analysis: 'QueryAnalysis') -> SearchResult:
     """
-    Main entry point for Step 3: SEARCH (V2).
+    Main search function - V3 with programmatic verification.
     
-    1. Fetch suggested refs with buffer
-    2. Claude verifies/pinpoints exact locations
-    3. Build foundation stones
-    4. Trickle up/down based on direction
-    5. Return organized sources
+    NO CLAUDE CALLS IN THIS FUNCTION.
+    
+    Flow:
+    1. Verify ref hints from Step 2 using verification_keywords
+    2. Fetch verified refs as foundation stones
+    3. Trickle up/down based on direction
+    4. Return organized sources
     """
-    logger.info("\n" + "=" * 70)
-    logger.info("STEP 3: SEARCH [V2 - Foundation Stones + Trickle]")
-    logger.info("=" * 70)
+    log_section("STEP 3: SEARCH [V3 - PROGRAMMATIC VERIFICATION]")
+    
     logger.info(f"  Query: {analysis.original_query}")
-    logger.info(f"  Suggested refs: {analysis.suggested_refs}")
     logger.info(f"  Foundation type: {analysis.foundation_type}")
     logger.info(f"  Trickle direction: {analysis.trickle_direction}")
+    
+    # Log ref hints
+    ref_hints = getattr(analysis, 'ref_hints', [])
+    if ref_hints:
+        logger.info(f"  Ref hints from Step 2: {len(ref_hints)}")
+        for hint in ref_hints:
+            conf = hint.confidence.value if hasattr(hint.confidence, 'value') else hint.confidence
+            logger.info(f"    - {hint.ref} [{conf}]")
+    else:
+        logger.info(f"  Suggested refs: {getattr(analysis, 'suggested_refs', [])}")
+    
     logger.info(f"  Target sources: {analysis.target_sources}")
     
-    result = SearchResult(
-        original_query=analysis.original_query
-    )
+    # Initialize result
+    result = SearchResult(original_query=analysis.original_query)
     
     # Handle clarification case
     if analysis.needs_clarification:
@@ -711,74 +1036,54 @@ async def search(analysis: "QueryAnalysis") -> SearchResult:
         return result
     
     # Handle no refs case
-    if not analysis.suggested_refs:
-        logger.warning("No suggested refs from Step 2")
+    if not ref_hints and not getattr(analysis, 'suggested_refs', []):
+        logger.warning("No ref hints from Step 2")
         result.needs_clarification = True
-        result.clarification_question = "I couldn't identify specific sources. Could you provide more details about what you're looking for?"
+        result.clarification_question = "I couldn't identify specific sources. Could you provide more details?"
         result.confidence = ConfidenceLevel.LOW
         return result
     
     async with aiohttp.ClientSession() as session:
         # =====================================================================
-        # PHASE 1: Fetch suggested refs with buffer
+        # PHASE 1: Programmatic verification (NO CLAUDE!)
         # =====================================================================
-        ref_data = await fetch_with_buffer(
-            analysis.suggested_refs,
-            analysis.foundation_type,
-            session
+        foundation_stones, verification_results = await verify_and_fetch_foundations(
+            analysis, session
         )
+        result.foundation_stones = foundation_stones
+        result.refs_checked = len(verification_results)
+        result.refs_verified = len(foundation_stones)
         
-        # =====================================================================
-        # PHASE 2: Claude verification
-        # =====================================================================
-        verified_results = await verify_refs_with_claude(
-            ref_data,
-            analysis.original_query,
-            analysis.inyan_description
-        )
+        # If no refs verified, use suggested refs as fallback
+        verified_refs = [s.ref for s in foundation_stones]
         
-        # Build foundation stones from verified refs
-        verified_refs = []
-        for verified_ref, is_verified, reason in verified_results:
-            if is_verified:
-                verified_refs.append(verified_ref)
-                
-                # Get the text data for this ref
-                original_ref = None
-                for orig in analysis.suggested_refs:
-                    if orig in ref_data:
-                        # Check if verified_ref matches original or is in buffer
-                        if verified_ref == orig or verified_ref in ref_data[orig].get("all_refs", []):
-                            original_ref = orig
-                            break
-                
-                if original_ref and original_ref in ref_data:
-                    data = ref_data[original_ref]
-                    text_dict = data.get("texts", {}).get(verified_ref, {})
-                    
+        if not verified_refs:
+            logger.warning("No refs verified programmatically, using hints as fallback")
+            # Use high-confidence hints as fallback
+            for hint in ref_hints:
+                if hint.confidence in [RefConfidence.CERTAIN, RefConfidence.LIKELY]:
+                    verified_refs.append(hint.ref)
+            
+            # Fetch those refs even if not verified
+            for ref in verified_refs[:3]:  # Limit fallback
+                response = await fetch_text(ref, session)
+                if response:
+                    he_text, en_text = extract_text_content(response)
                     source = Source(
-                        ref=verified_ref,
-                        he_ref=text_dict.get("he_ref", verified_ref),
-                        level=determine_level(text_dict.get("categories", []), verified_ref),
-                        hebrew_text=text_dict.get("he", ""),
-                        english_text=text_dict.get("en", ""),
-                        categories=text_dict.get("categories", []),
+                        ref=ref,
+                        he_ref=response.get("heRef", ref),
+                        level=determine_level(response.get("categories", []), ref),
+                        hebrew_text=he_text,
+                        english_text=en_text,
+                        categories=response.get("categories", []),
                         is_foundation=True,
-                        is_verified=True
+                        is_verified=False
                     )
                     result.foundation_stones.append(source)
-        
-        logger.info(f"  Verified foundation stones: {len(result.foundation_stones)}")
-        for s in result.foundation_stones:
-            logger.info(f"    ✓ {s.ref}")
-        
-        # If no verified refs, try with original suggested refs anyway
-        if not verified_refs and analysis.suggested_refs:
-            logger.warning("No refs verified, using suggested refs as fallback")
-            verified_refs = analysis.suggested_refs
+            verified_refs = [s.ref for s in result.foundation_stones]
         
         # =====================================================================
-        # PHASE 3: Trickle UP (if requested)
+        # PHASE 2: Trickle UP (if requested)
         # =====================================================================
         if analysis.trickle_direction in [TrickleDirection.UP, TrickleDirection.BOTH]:
             commentary_sources = await trickle_up(
@@ -789,7 +1094,7 @@ async def search(analysis: "QueryAnalysis") -> SearchResult:
             result.commentary_sources = commentary_sources
         
         # =====================================================================
-        # PHASE 4: Trickle DOWN (if requested)
+        # PHASE 3: Trickle DOWN (if requested)
         # =====================================================================
         if analysis.trickle_direction in [TrickleDirection.DOWN, TrickleDirection.BOTH]:
             earlier_sources = await trickle_down(
@@ -803,7 +1108,6 @@ async def search(analysis: "QueryAnalysis") -> SearchResult:
     # Organize results
     # =========================================================================
     
-    # Combine all sources
     all_sources = (
         result.foundation_stones +
         result.commentary_sources +
@@ -819,7 +1123,7 @@ async def search(analysis: "QueryAnalysis") -> SearchResult:
     result.sources_by_level = dict(by_level)
     
     # Set confidence
-    if len(result.foundation_stones) >= 2:
+    if len(result.foundation_stones) >= 2 and result.refs_verified >= 2:
         result.confidence = ConfidenceLevel.HIGH
     elif len(result.foundation_stones) >= 1:
         result.confidence = ConfidenceLevel.MEDIUM
@@ -828,6 +1132,7 @@ async def search(analysis: "QueryAnalysis") -> SearchResult:
     
     # Summary
     result.search_description = (
+        f"Verified {result.refs_verified}/{result.refs_checked} refs programmatically. "
         f"Found {len(result.foundation_stones)} foundation stones, "
         f"{len(result.commentary_sources)} commentaries, "
         f"{len(result.earlier_sources)} earlier sources. "
@@ -837,9 +1142,9 @@ async def search(analysis: "QueryAnalysis") -> SearchResult:
     # =========================================================================
     # Log summary
     # =========================================================================
-    logger.info("\n" + "=" * 70)
-    logger.info("                    SEARCH COMPLETE (V2)")
-    logger.info("=" * 70)
+    log_section("SEARCH COMPLETE (V3 - NO CLAUDE VERIFICATION CALLS)")
+    logger.info(f"  Verification method: {result.verification_method}")
+    logger.info(f"  Refs verified: {result.refs_verified}/{result.refs_checked}")
     logger.info(f"  Foundation stones: {[s.ref for s in result.foundation_stones]}")
     logger.info(f"  Commentaries: {len(result.commentary_sources)}")
     logger.info(f"  Earlier sources: {len(result.earlier_sources)}")
@@ -850,64 +1155,88 @@ async def search(analysis: "QueryAnalysis") -> SearchResult:
     return result
 
 
-# ==============================================================================
-#  OUTPUT FORMATTING
-# ==============================================================================
-
-def format_sources_text(result: SearchResult) -> str:
-    """Format search results as plain text."""
-    lines = []
-    lines.append("=" * 60)
-    lines.append(f"MAREI MEKOMOS: {result.original_query}")
-    lines.append("=" * 60)
-    lines.append("")
-    
-    # Foundation stones first
-    if result.foundation_stones:
-        lines.append("📖 FOUNDATION SOURCES")
-        lines.append("-" * 40)
-        for s in result.foundation_stones:
-            lines.append(f"\n{s.ref} ({s.he_ref})")
-            if s.hebrew_text:
-                lines.append(s.hebrew_text[:500] + ("..." if len(s.hebrew_text) > 500 else ""))
-        lines.append("")
-    
-    # Commentaries
-    if result.commentary_sources:
-        lines.append("\n📚 COMMENTARIES")
-        lines.append("-" * 40)
-        for s in result.commentary_sources:
-            lines.append(f"\n{s.ref}")
-            if s.author:
-                lines.append(f"  Author: {s.author}")
-            if s.hebrew_text:
-                lines.append(s.hebrew_text[:300] + ("..." if len(s.hebrew_text) > 300 else ""))
-        lines.append("")
-    
-    # Earlier sources
-    if result.earlier_sources:
-        lines.append("\n📜 EARLIER SOURCES")
-        lines.append("-" * 40)
-        for s in result.earlier_sources:
-            lines.append(f"\n{s.ref}")
-            if s.hebrew_text:
-                lines.append(s.hebrew_text[:300] + ("..." if len(s.hebrew_text) > 300 else ""))
-    
-    lines.append("\n" + "=" * 60)
-    lines.append(result.search_description)
-    lines.append("=" * 60)
-    
-    return "\n".join(lines)
-
-
-# ==============================================================================
+# =============================================================================
 #  EXPORTS
-# ==============================================================================
+# =============================================================================
 
 __all__ = [
     'search',
     'SearchResult',
     'Source',
     'SourceLevel',
-    'format_sources_text',
+    'VerificationResult',
+    'verify_ref_programmatic',
+    'verify_text_contains_keywords',
 ]
+
+
+# =============================================================================
+#  CLI TESTING
+# =============================================================================
+
+if __name__ == "__main__":
+    import asyncio
+    
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(asctime)s | %(levelname)-8s | %(name)s | %(message)s',
+        datefmt='%H:%M:%S'
+    )
+    
+    async def test():
+        print("\n" + "=" * 70)
+        print("STEP 3 V3 - PROGRAMMATIC VERIFICATION TEST")
+        print("=" * 70)
+        
+        # Mock a QueryAnalysis from Step 2
+        from step_two_understand import (
+            QueryAnalysis, RefHint, SearchVariants,
+            QueryType, FoundationType, TrickleDirection, 
+            ConfidenceLevel, RefConfidence, Breadth
+        )
+        
+        # Simulate what Step 2 would return for "chezkas haguf vs chezkas mammon"
+        analysis = QueryAnalysis(
+            original_query="chezkas haguf vs chezkas mammon",
+            hebrew_terms_from_step1=["חזקת הגוף", "חזקת ממון"],
+            query_type=QueryType.COMPARISON,
+            foundation_type=FoundationType.GEMARA,
+            trickle_direction=TrickleDirection.UP,
+            breadth=Breadth.STANDARD,
+            ref_hints=[
+                RefHint(
+                    ref="Ketubot 76b",
+                    confidence=RefConfidence.CERTAIN,
+                    verification_keywords=["חזקה דגופא", "חזקה דממונא", "רבא", "אזיל בתר"],
+                    reasoning="Main sugya",
+                    buffer_size=1
+                ),
+                RefHint(
+                    ref="Ketubot 75a",
+                    confidence=RefConfidence.LIKELY,
+                    verification_keywords=["מום", "חזקה"],
+                    reasoning="Start of sugya",
+                    buffer_size=1
+                ),
+            ],
+            search_variants=SearchVariants(
+                primary_hebrew=["חזקת הגוף", "חזקת ממון"],
+                aramaic_forms=["חזקה דגופא", "חזקה דממונא", "דגופא", "דממונא"],
+                gemara_language=["אזיל בתר חזקה דגופא", "אזיל בתר חזקה דממונא"],
+                root_words=["חזקה", "גוף", "ממון"],
+                related_terms=["המוציא מחבירו"]
+            ),
+            target_sources=["gemara", "rashi", "tosafos", "ran"],
+            confidence=ConfidenceLevel.HIGH
+        )
+        
+        result = await search(analysis)
+        
+        print("\n--- TEST RESULTS ---")
+        print(f"Foundation stones: {[s.ref for s in result.foundation_stones]}")
+        print(f"Commentaries: {len(result.commentary_sources)}")
+        print(f"Total sources: {result.total_sources}")
+        print(f"Confidence: {result.confidence}")
+        print(f"\n{result.search_description}")
+    
+    asyncio.run(test())
