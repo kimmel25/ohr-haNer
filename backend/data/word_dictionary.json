@@ -1729,9 +1729,9 @@
   "bari vishema": {
     "hebrew": "ברי ושמא",
     "confidence": "low",
-    "usage_count": 6,
+    "usage_count": 7,
     "source": "sefaria",
-    "last_used": "2025-12-31T20:15:02.045064"
+    "last_used": "2025-12-31T21:24:13.376360"
   },
   "kamma": {
     "hebrew": "קמא",
@@ -1765,41 +1765,41 @@
   "shittah": {
     "hebrew": "שיטה",
     "confidence": "high",
-    "usage_count": 66,
+    "usage_count": 67,
     "source": "sefaria",
-    "last_used": "2025-12-21T15:02:36.158928",
+    "last_used": "2025-12-31T21:30:48.490457",
     "hits": 105
   },
   "bittul": {
     "hebrew": "ביטול",
     "confidence": "high",
-    "usage_count": 2,
+    "usage_count": 3,
     "source": "sefaria",
-    "last_used": "2025-12-11T22:01:49.514560",
+    "last_used": "2025-12-31T21:30:48.495456",
     "hits": 10000
   },
   "tosfos": {
     "hebrew": "תוספות",
     "confidence": "high",
-    "usage_count": 66,
+    "usage_count": 67,
     "source": "sefaria",
-    "last_used": "2025-12-21T15:02:36.167930",
+    "last_used": "2025-12-31T21:30:49.288729",
     "hits": 10000
   },
   "rashi": {
     "hebrew": "רש\"י",
     "confidence": "high",
-    "usage_count": 66,
+    "usage_count": 67,
     "source": "manual_fix",
-    "last_used": "2025-12-21T15:02:36.171930",
+    "last_used": "2025-12-31T21:30:49.282739",
     "hits": 133
   },
   "ran": {
     "hebrew": "רן",
     "confidence": "medium",
-    "usage_count": 68,
+    "usage_count": 69,
     "source": "runtime",
-    "last_used": "2025-12-21T15:02:36.152962",
+    "last_used": "2025-12-31T21:30:48.486570",
     "hits": 51
   },
   "רן": {
@@ -2049,5 +2049,13 @@
     "usage_count": 1,
     "source": "manual_fix",
     "last_used": "2025-12-30T23:26:22.895478"
+  },
+  "chometz": {
+    "hebrew": "חמץ",
+    "confidence": "high",
+    "usage_count": 1,
+    "source": "runtime",
+    "last_used": "2025-12-31T21:30:49.277734",
+    "hits": 10000
   }
 }

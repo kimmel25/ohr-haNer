@@ -6,6 +6,8 @@ backend/.env
 backend/.env.local
 output/
 
+Sefaria-Export/
+
 # Python
 __pycache__/
 *.py[cod]
@@ -58,4 +60,5 @@ htmlcov/
 *.tmp
 *.bak
 *.log
+Sefaria-Export
 Sefaria-Export
