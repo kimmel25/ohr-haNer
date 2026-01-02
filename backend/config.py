@@ -84,7 +84,8 @@ class Settings(BaseSettings):
 
     log_level: str = Field("INFO", env="LOG_LEVEL")
     log_dir: Path = Field(
-        Path(__file__).parent / "logs",
+        # Canonical log folder (avoid creating backend/logs)
+        Path(__file__).parent / "logging" / "logs",
         env="LOG_DIR"
     )
     log_format: str = "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"

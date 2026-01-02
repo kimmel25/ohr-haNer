@@ -54,8 +54,8 @@ from utils.serialization import enum_value, serialize_word_validations
 
 settings = get_settings()
 
-# FIXED: Use absolute path for logs
-LOG_DIR = THIS_DIR / "logs"
+# Use the canonical log directory from settings (avoid creating backend/logs)
+LOG_DIR = settings.log_dir.resolve()
 
 
 def _configure_logging() -> None:

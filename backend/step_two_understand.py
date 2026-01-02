@@ -1,27 +1,34 @@
 """
-Step 2: UNDERSTAND - V4 with Nuance Detection
-=============================================
+Step 2: UNDERSTAND - V6 with Known Sugyos Database
+===================================================
 
-V4 PHILOSOPHY:
-Claude is the brain. We trust Claude to identify:
-1. GENERAL queries: "bari vishema" → multiple foundations, wide expansion
-2. NUANCE queries: "bari vishema beissurin" → specific landmark, narrow expansion
+V6 CHANGES FROM V5:
+1. KNOWN SUGYOS DATABASE CHECK - Check database FIRST before Claude
+2. If known sugya found, use those exact locations as primary refs with HIGH confidence
+3. Claude still provides analysis but known refs take priority
+4. Solves "Primary Sources Issue" where system returned Rishonim instead of Gemara
 
-KEY V4 ADDITIONS:
-1. NUANCE DETECTION: Identify when query has a specific qualifier
-2. FOCUS TERMS: Behavioral markers that distinguish the nuance (e.g., "מותרת", "לאוסרה")
-3. TOPIC TERMS: Generic terms for the broad topic (e.g., "ברי ושמא")
-4. SUGGESTED LANDMARK: Claude's best guess for THE source for this nuance
-5. LANDMARK CONFIDENCE: How sure is Claude (high/medium/guessing/none)
-6. PRIMARY vs CONTRAST REFS: What to expand vs. just include for context
+PIPELINE LOGIC:
+1. Receive query + hebrew_terms from Step 1
+2. Check known_sugyos database for matches
+3. If MATCH FOUND:
+   - Use known gemara locations as primary_refs
+   - Set confidence HIGH
+   - Use key_terms for validation
+   - Claude enriches with search_variants, target_authors, etc.
+4. If NO MATCH:
+   - Fall back to full Claude analysis (same as V5)
+5. Return QueryAnalysis with refs to Step 3
 
-OUTPUT FLOW FOR NUANCE QUERIES:
-- suggested_landmark: "Rosh on Ketubot 1:18" - THE source
-- landmark_confidence: "high" | "medium" | "guessing" | "none"
-- focus_terms: ["מותרת", "אסורה", "לאוסרה", "שויא אנפשיה", "חתיכה דאיסורא"]
-- topic_terms: ["ברי ושמא", "ברי עדיף", "שמא"]
-- primary_refs: Refs that directly discuss the nuance (expand these)
-- contrast_refs: Refs for comparison/context only (don't expand)
+KEY CLASSIFICATION RULES:
+- TOPIC queries: "bari vishema" (general, wants multiple sources)
+- NUANCE queries include:
+  - Sub-topic: "bari vishema BEISSURIN" (specific aspect)
+  - SHITTAH: "what is the RAN'S shittah" (specific author's view)
+  - COMPARISON: "how does Ran differ from Rashi" (comparing views)
+  - MACHLOKES: "machlokes Rashi and Tosafos" (dispute)
+  
+All of these need FOCUS TERMS and targeted expansion.
 """
 
 import logging
@@ -67,6 +74,16 @@ except ImportError:
         anthropic_api_key = os.environ.get("ANTHROPIC_API_KEY", "")
     settings = Settings()
 
+# V6: Import known_sugyos lookup
+try:
+    from known_sugyos import lookup_known_sugya, KnownSugyaMatch
+    KNOWN_SUGYOS_AVAILABLE = True
+except ImportError:
+    KNOWN_SUGYOS_AVAILABLE = False
+    KnownSugyaMatch = None
+    def lookup_known_sugya(*args, **kwargs):
+        return None
+
 logger = logging.getLogger(__name__)
 
 
@@ -98,7 +115,7 @@ class FoundationType(str, Enum):
     HALACHA_SA = "halacha_sa"
     HALACHA_RAMBAM = "halacha_rambam"
     MIDRASH = "midrash"
-    RISHON = "rishon"                  # V4: For nuance queries where landmark is a rishon
+    RISHON = "rishon"                  # For nuance queries where landmark is a rishon
     UNKNOWN = "unknown"
 
 
@@ -146,7 +163,11 @@ class RefHint:
     verification_keywords: List[str] = field(default_factory=list)
     reasoning: str = ""
     buffer_size: int = 1
-    is_primary: bool = True  # V4: Primary refs get expanded, contrast refs don't
+    is_primary: bool = True  # Primary refs get expanded, contrast refs don't
+    # V5: Segment-level targeting
+    target_segments: List[str] = field(default_factory=list)  # Specific lines/segments to focus on
+    # V6: Source of ref
+    source: str = "claude"  # "claude" or "known_sugyos_db"
 
 
 @dataclass
@@ -161,7 +182,7 @@ class SearchVariants:
 
 @dataclass
 class QueryAnalysis:
-    """Complete analysis of a Torah query - V4 with nuance support."""
+    """Complete analysis of a Torah query - V6 with known sugyos support."""
     original_query: str
     hebrew_terms_from_step1: List[str] = field(default_factory=list)
     
@@ -171,20 +192,24 @@ class QueryAnalysis:
     breadth: Breadth = Breadth.STANDARD
     trickle_direction: TrickleDirection = TrickleDirection.UP
     
-    # V4: NUANCE DETECTION
+    # V5: NUANCE DETECTION (includes shittah, comparison, machlokes)
     is_nuance_query: bool = False
     nuance_description: str = ""  # What specific nuance is being asked about
     
-    # V4: LANDMARK (THE source for nuance queries)
+    # V5: Target authors (for shittah/comparison queries)
+    target_authors: List[str] = field(default_factory=list)  # ["Ran", "Rashi", "Tosafos"]
+    primary_author: Optional[str] = None  # The main author being asked about
+    
+    # LANDMARK (THE source for nuance queries)
     suggested_landmark: Optional[str] = None
     landmark_confidence: LandmarkConfidence = LandmarkConfidence.NONE
     landmark_reasoning: str = ""
     
-    # V4: FOCUS vs TOPIC TERMS
+    # FOCUS vs TOPIC TERMS
     focus_terms: List[str] = field(default_factory=list)  # Nuance-specific markers
     topic_terms: List[str] = field(default_factory=list)  # General topic terms
     
-    # V4: PRIMARY vs CONTRAST REFS
+    # PRIMARY vs CONTRAST REFS
     ref_hints: List[RefHint] = field(default_factory=list)  # All refs with metadata
     primary_refs: List[str] = field(default_factory=list)   # Expand these
     contrast_refs: List[str] = field(default_factory=list)  # Context only
@@ -210,6 +235,10 @@ class QueryAnalysis:
     
     # Claude's reasoning
     reasoning: str = ""
+    
+    # V6: Known sugyos database match info
+    known_sugya_match: Optional[Any] = None  # KnownSugyaMatch if found
+    used_known_sugyos: bool = False          # Did we use the database?
 
 
 # ==============================================================================
@@ -233,194 +262,411 @@ def log_subsection(title: str) -> None:
 
 
 # ==============================================================================
-#  CLAUDE SYSTEM PROMPT - V4 with NUANCE DETECTION
-# ==============================================================================
-
-CLAUDE_SYSTEM_PROMPT_V4 = """You are an expert Torah learning assistant for Ohr Haner, a marei mekomos (source finder) system.
-
-YOUR JOB: Understand what the user wants and tell us EXACTLY where to look.
-
-## CRITICAL: NUANCE DETECTION
-
-Many Torah queries are not just "tell me about X" but "tell me about the SPECIFIC ASPECT of X".
-
-Examples:
-- "bari vishema" → GENERAL topic, wants multiple sugyos
-- "bari vishema beissurin" → NUANCE query, wants the specific discussion of whether bari v'shema applies to issurin
-
-When you detect a NUANCE query:
-1. Set query_type = "nuance"
-2. Identify the LANDMARK source - the famous source that discusses this specific nuance
-3. Provide FOCUS TERMS - behavioral/halachic markers that distinguish this nuance
-4. Separate PRIMARY refs (expand these) from CONTRAST refs (context only)
-
-## FOCUS TERMS vs TOPIC TERMS
-
-TOPIC TERMS are generic words for the broad topic:
-- For bari v'shema: ["ברי ושמא", "ברי עדיף", "שמא"]
-- These appear in many sugyos
-
-FOCUS TERMS are specific markers for the nuance:
-- For bari v'shema BEISSURIN: ["מותרת", "אסורה", "לאוסרה", "שויא אנפשיה", "חתיכה דאיסורא"]
-- These appear specifically in the issur-application discussion
-- The key is finding phrases that distinguish the nuance from the general topic
-
-## LANDMARK SOURCES
-
-For nuance queries, there's usually ONE or TWO sources that are THE famous discussion.
-- For bari v'shema beissurin: Rosh on Ketubot 1:18 is THE landmark
-- The landmark might be a gemara, rishon, or even acharon depending on the topic
-
-If you know a landmark:
-- Set suggested_landmark to the exact ref
-- Set landmark_confidence to how sure you are:
-  - "high" = you're very confident this is THE source
-  - "medium" = you think this is probably it
-  - "guessing" = you're not sure but giving a best guess
-  - "none" = you don't know a specific landmark
-
-## PRIMARY vs CONTRAST REFS
-
-PRIMARY refs directly discuss the nuance - Step 3 will expand these (fetch commentaries).
-CONTRAST refs provide context but don't address the nuance - Step 3 includes them but doesn't expand.
-
-For "bari vishema beissurin":
-- PRIMARY: Ketubot 12b (the sugya), Rosh Ketubot 1:18 (the landmark)
-- CONTRAST: Bava Kamma 46a (mamon application - shows what bari v'shema looks like WITHOUT issur)
-
-## OUTPUT FORMAT
-
-Return ONLY valid JSON:
-```json
-{
-    "query_type": "topic|nuance|question|source_request|comparison|shittah|sugya|pasuk|halacha|machlokes",
-    "foundation_type": "gemara|mishna|chumash|halacha_sa|halacha_rambam|midrash|rishon",
-    "breadth": "narrow|standard|wide|exhaustive",
-    "trickle_direction": "up|down|both|none",
-    
-    "is_nuance_query": true,
-    "nuance_description": "Whether bari v'shema applies to issurin, not just mamon",
-    
-    "suggested_landmark": "Rosh on Ketubot 1:18",
-    "landmark_confidence": "high|medium|guessing|none",
-    "landmark_reasoning": "The Rosh explicitly discusses whether the principle applies in issur contexts",
-    
-    "focus_terms": ["מותרת", "אסורה", "לאוסרה", "שויא אנפשיה", "חתיכה דאיסורא"],
-    "topic_terms": ["ברי ושמא", "ברי עדיף", "ברי", "שמא"],
-    
-    "primary_refs": [
-        {
-            "ref": "Ketubot 12b",
-            "confidence": "certain",
-            "verification_keywords": ["ברי", "שמא", "ברי עדיף"],
-            "reasoning": "Main sugya for bari v'shema",
-            "buffer_size": 2
-        }
-    ],
-    "contrast_refs": [
-        {
-            "ref": "Bava Kamma 46a",
-            "confidence": "likely",
-            "verification_keywords": ["ברי", "שמא", "ממון"],
-            "reasoning": "Mamon application - contrast to issur",
-            "buffer_size": 1
-        }
-    ],
-    
-    "search_variants": {
-        "primary_hebrew": ["ברי ושמא", "ברי עדיף"],
-        "aramaic_forms": ["ברי עדיף משמא"],
-        "gemara_language": ["ברי ושמא ברי עדיף"],
-        "root_words": ["ברי", "שמא"],
-        "related_terms": ["טענת ברי", "טענת שמא"]
-    },
-    
-    "inyan_description": "Clear explanation of what this query is asking about",
-    "target_sources": ["gemara", "rashi", "tosafos", "rosh", "rashba", "ritva"],
-    "target_simanim": [],
-    "target_chelek": null,
-    
-    "confidence": "high|medium|low",
-    "needs_clarification": false,
-    "clarification_question": null,
-    "clarification_options": [],
-    "reasoning": "Your reasoning process"
-}
-```
-
-## IMPORTANT RULES
-
-1. **DETECT NUANCE**: If the query has a qualifier (beissurin, b'karka, b'get, l'chumra, etc.), treat as nuance
-2. **GIVE SPECIFIC REFS**: Don't say "Ketubot" - say "Ketubot 12b"
-3. **LANDMARKS FOR NUANCE**: Try to identify THE famous source for nuance queries
-4. **FOCUS TERMS**: These should be phrases that DISTINGUISH the nuance, not generic topic words
-5. **SEFARIA SPELLING**: Use Ketubot (not Kesubos), Shabbat (not Shabbos), etc.
-6. **HONEST UNCERTAINTY**: If you don't know a landmark, set landmark_confidence="none"
-"""
-
-
-# ==============================================================================
 #  HELPER FUNCTIONS
 # ==============================================================================
 
-def _load_author_kb():
-    """Try to load author detection from torah_authors_master."""
-    try:
-        from pathlib import Path
-        import importlib.util
-        
-        module_paths = [
-            Path(__file__).parent / "tools" / "torah_authors_master.py",
-            Path(__file__).parent / "torah_authors_master.py"
-        ]
-        for mp in module_paths:
-            if mp.exists():
-                spec = importlib.util.spec_from_file_location("torah_authors_master", mp)
-                if spec and spec.loader:
-                    mod = importlib.util.module_from_spec(spec)
-                    spec.loader.exec_module(mod)
-                    return getattr(mod, "is_author", None), getattr(mod, "get_author_matches", None)
-    except Exception as e:
-        logger.debug(f"Could not load author KB: {e}")
-    return None, None
-
-
-def _parse_enum(value: Any, enum_class, default):
-    """Safely parse an enum value."""
+def _parse_enum(value: Any, enum_class: type, default: Any) -> Any:
+    """Safely parse a string into an enum value."""
     if value is None:
         return default
-    try:
-        return enum_class(value)
-    except (ValueError, KeyError):
+    if isinstance(value, enum_class):
+        return value
+    if isinstance(value, str):
         try:
-            return enum_class(str(value).lower())
-        except:
+            return enum_class(value.lower())
+        except (ValueError, KeyError):
             return default
+    return default
 
 
-def _parse_ref_hint(ref_data: Dict) -> RefHint:
-    """Parse a ref hint from Claude's JSON response."""
+def _parse_ref_hint(ref_data: dict) -> RefHint:
+    """Parse a RefHint from JSON data."""
     return RefHint(
         ref=ref_data.get("ref", ""),
         confidence=_parse_enum(ref_data.get("confidence"), RefConfidence, RefConfidence.POSSIBLE),
         verification_keywords=ref_data.get("verification_keywords", []),
         reasoning=ref_data.get("reasoning", ""),
         buffer_size=ref_data.get("buffer_size", 1),
-        is_primary=True
+        is_primary=ref_data.get("is_primary", True),
+        target_segments=ref_data.get("target_segments", []),
+        source=ref_data.get("source", "claude"),
     )
 
 
-def _parse_search_variants(data: Dict) -> Optional[SearchVariants]:
-    """Parse search variants from Claude's response."""
-    if not data:
-        return None
+def _parse_search_variants(data: dict) -> SearchVariants:
+    """Parse SearchVariants from JSON data."""
     return SearchVariants(
         primary_hebrew=data.get("primary_hebrew", []),
         aramaic_forms=data.get("aramaic_forms", []),
         gemara_language=data.get("gemara_language", []),
         root_words=data.get("root_words", []),
-        related_terms=data.get("related_terms", [])
+        related_terms=data.get("related_terms", []),
     )
+
+
+def _load_author_kb() -> tuple:
+    """Load author knowledge base for detecting author names."""
+    authors = {
+        "rashi", "tosafos", "tosafot", "ramban", "rashba", "ritva", "ran", 
+        "rosh", "rambam", "meiri", "raavad", "rabbeinu tam", "ri", "maharam",
+        "rashbam", "rabbeinu chananel", "raah", "nimukei yosef", "tur",
+        "shulchan aruch", "rema", "taz", "shach", "magen avraham",
+        "mishnah berurah", "ketzos", "nesivos", "pnei yehoshua"
+    }
+    
+    def is_author(term: str) -> bool:
+        return term.lower().strip() in authors
+    
+    return is_author, authors
+
+
+def _validate_and_fix_refs(refs: List[str]) -> List[str]:
+    """V5: Validate and fix common ref format issues."""
+    fixed_refs = []
+    
+    for ref in refs:
+        if not ref:
+            continue
+        
+        # Check for range refs like "2a-6b" and split them
+        range_match = None
+        import re
+        range_pattern = r'(.+?)\s+(\d+[ab])\s*-\s*(\d+[ab])'
+        match = re.match(range_pattern, ref)
+        if match:
+            base = match.group(1)
+            start = match.group(2)
+            # Just take the start of the range
+            fixed_refs.append(f"{base} {start}".strip())
+            logger.warning(f"  Converted range ref '{ref}' to '{base} {start}'")
+            continue
+        
+        # Fix "Ran on X" to "Ran on Rif X" if needed
+        if ref.lower().startswith("ran on ") and "rif" not in ref.lower():
+            tractates = ["pesachim", "ketubot", "bava kamma", "bava metzia", "bava batra", 
+                        "shabbat", "eruvin", "yoma", "sukkah", "beitzah", "rosh hashanah",
+                        "taanit", "megillah", "moed katan", "chagigah", "yevamot", "nedarim",
+                        "nazir", "sotah", "gittin", "kiddushin", "sanhedrin", "makkot",
+                        "shevuot", "avodah zarah", "horayot", "zevachim", "menachot",
+                        "chullin", "bekhorot", "arakhin", "temurah", "keritot", "meilah", "niddah"]
+            
+            ref_lower = ref.lower()
+            for tractate in tractates:
+                if tractate in ref_lower:
+                    new_ref = ref.replace("Ran on ", "Ran on Rif ", 1)
+                    logger.warning(f"  Fixed Ran ref: '{ref}' -> '{new_ref}'")
+                    fixed_refs.append(new_ref)
+                    break
+            else:
+                fixed_refs.append(ref)
+            continue
+        
+        fixed_refs.append(ref)
+    
+    return fixed_refs
+
+
+def _detect_query_vagueness(query: str, hebrew_terms: List[str]) -> tuple[bool, str]:
+    """V5: Detect if query is too vague or gibberish."""
+    if len(query.split()) <= 2 and not hebrew_terms:
+        return True, "Your query seems very brief. Could you provide more context about what you're looking for?"
+    
+    generic_terms = ["gemara", "mishna", "halacha", "torah", "sugya", "inyan"]
+    if len(hebrew_terms) == 0 and query.lower().strip() in generic_terms:
+        return True, f"'{query}' is very broad. What specific topic or question within {query} are you interested in?"
+    
+    is_author, _ = _load_author_kb()
+    if is_author:
+        authors = [t for t in hebrew_terms if is_author(t)]
+        topics = [t for t in hebrew_terms if not is_author(t)]
+        
+        if len(authors) > 0 and len(topics) == 0:
+            return True, f"You mentioned {', '.join(authors)}, but what topic are you interested in their views on?"
+    
+    return False, ""
+
+
+# ==============================================================================
+#  CLAUDE SYSTEM PROMPT - V6 (same as V5)
+# ==============================================================================
+
+CLAUDE_SYSTEM_PROMPT_V6 = """You are an expert Torah learning assistant for Ohr Haner, a marei mekomos (source finder) system.
+
+YOUR JOB: Understand what the user wants and tell us EXACTLY where to look.
+
+## CRITICAL: QUERY CLASSIFICATION
+
+### NUANCE queries (is_nuance_query = true)
+These are NOT general topic queries. They need focused searching:
+
+1. **SUB-TOPIC queries**: "bari vishema BEISSURIN" 
+   - Has a qualifier narrowing the general topic
+   - Needs specific landmark source
+
+2. **SHITTAH queries**: "what is the RAN'S shittah in bittul chometz"
+   - Asking for ONE AUTHOR'S specific view
+   - is_nuance_query = TRUE (not false!)
+   - primary_author = "Ran"
+   - The LANDMARK is that author's main source on the topic
+
+3. **COMPARISON queries**: "how does Ran differ from Rashi on bittul"
+   - Comparing multiple authors' views
+   - is_nuance_query = TRUE
+   - target_authors = ["Ran", "Rashi"]
+   - Need landmarks for BOTH authors
+
+4. **MACHLOKES queries**: "machlokes Rashi and Tosafos on X"
+   - Dispute between authorities
+   - is_nuance_query = TRUE
+   - Need the source where they argue
+
+### TOPIC queries (is_nuance_query = false)
+General explorations without specific focus:
+- "bari vishema" (just the topic, no qualifier)
+- "sugyos in ketubot" (broad)
+- "explain the concept of migu" (general)
+
+## FOCUS TERMS vs TOPIC TERMS
+
+TOPIC TERMS are generic words for the broad topic:
+- For bittul chometz: ["ביטול חמץ", "בדיקת חמץ", "כל חמירא", "ביעור"]
+
+FOCUS TERMS are specific markers that distinguish THIS query:
+- For Ran's shittah on bittul: Ran's unique terminology/concepts
+- For comparison queries: Terms that show the DIFFERENCE between views
+- For nuance queries: Behavioral/halachic markers for the specific aspect
+
+## AUTHOR-SPECIFIC REF FORMATS
+
+CRITICAL: Different rishonim have different Sefaria formats!
+
+1. **Ran** - Writes on RIF (Alfasi), NOT directly on Gemara!
+   - WRONG: "Ran on Pesachim 2a" (doesn't exist)
+   - RIGHT: "Ran on Rif Pesachim 1a" or similar
+
+2. **Rashi, Tosafos** - Direct gemara commentaries
+   - Format: "Rashi on Pesachim 6b" ✓
+
+3. **Rashba, Ritva, Ramban** - Direct gemara commentaries
+   - Format: "Rashba on Ketubot 12b" ✓
+
+4. **Rosh** - Has own structure (not by daf)
+   - Format: "Rosh on Ketubot 1:18" ✓ (chapter:siman)
+
+5. **Rambam** - Mishneh Torah
+   - Format: "Mishneh Torah, Chametz U'Matzah 2:2" ✓
+
+## REF FORMAT RULES
+
+1. **NO RANGES**: Never "2a-6b". Use specific refs.
+2. **SEFARIA SPELLING**: Ketubot, Shabbat, Pesachim (not Kesubos, Shabbos)
+3. **SPECIFIC LOCATIONS**: Give daf/amud, not just masechta
+
+## OUTPUT FORMAT
+
+Return ONLY valid JSON:
+```json
+{
+  "query_type": "topic|nuance|shittah|comparison|machlokes|question|source_request|sugya|pasuk|halacha|unknown",
+  "foundation_type": "gemara|mishna|chumash|halacha_sa|halacha_rambam|midrash|rishon|unknown",
+  "breadth": "narrow|standard|wide|exhaustive",
+  "trickle_direction": "up|down|both|none",
+  
+  "is_nuance_query": true/false,
+  "nuance_description": "What specific nuance is being asked (if nuance)",
+  
+  "target_authors": ["Ran", "Rashi"],
+  "primary_author": "Ran",
+  
+  "suggested_landmark": "Ketubot 12b",
+  "landmark_confidence": "high|medium|guessing|none",
+  "landmark_reasoning": "Why this is the landmark",
+  
+  "focus_terms": ["specific markers"],
+  "topic_terms": ["general topic terms"],
+  
+  "primary_refs": [
+    {"ref": "Ketubot 12b", "confidence": "certain|likely|possible|guess", "verification_keywords": ["חזקת הגוף"], "reasoning": "why"}
+  ],
+  "contrast_refs": [
+    {"ref": "Ketubot 75b", "confidence": "likely", "verification_keywords": ["רובא וחזקה"]}
+  ],
+  
+  "search_variants": {
+    "primary_hebrew": ["חזקת הגוף"],
+    "aramaic_forms": [],
+    "gemara_language": [],
+    "related_terms": []
+  },
+  
+  "inyan_description": "Brief description of the topic",
+  "search_topics_hebrew": ["Hebrew search terms"],
+  "target_sources": ["gemara", "rashi", "tosafos"],
+  
+  "confidence": "high|medium|low",
+  "needs_clarification": false,
+  "clarification_question": null,
+  "reasoning": "Your reasoning"
+}
+```
+"""
+
+
+# ==============================================================================
+#  V6: KNOWN SUGYOS DATABASE CHECK
+# ==============================================================================
+
+def _check_known_sugyos(query: str, hebrew_terms: List[str]) -> Optional[Any]:
+    """
+    V6: Check if query matches a known sugya in the database.
+    Returns KnownSugyaMatch if found, None otherwise.
+    """
+    if not KNOWN_SUGYOS_AVAILABLE:
+        logger.debug("[KNOWN_SUGYOS] Module not available")
+        return None
+    
+    log_subsection("V6: CHECKING KNOWN SUGYOS DATABASE")
+    
+    match = lookup_known_sugya(query, hebrew_terms)
+    
+    if match and match.matched:
+        logger.info(f"[KNOWN_SUGYOS] ✓ Found match: {match.sugya_id}")
+        logger.info(f"[KNOWN_SUGYOS]   Confidence: {match.match_confidence}")
+        logger.info(f"[KNOWN_SUGYOS]   Primary refs: {match.primary_refs}")
+        return match
+    
+    logger.info("[KNOWN_SUGYOS] No match found in database")
+    return None
+
+
+def _build_analysis_from_known_sugya(
+    query: str,
+    hebrew_terms: List[str],
+    known_match: Any,  # KnownSugyaMatch
+    claude_enrichment: Optional[Dict] = None
+) -> QueryAnalysis:
+    """
+    V6: Build QueryAnalysis using known sugya data as foundation.
+    Claude enrichment provides additional context but known refs take priority.
+    """
+    log_subsection("V6: BUILDING ANALYSIS FROM KNOWN SUGYA")
+    
+    # Create ref hints from known primary refs - these are HIGH confidence
+    ref_hints = []
+    primary_refs = []
+    
+    for pg in known_match.primary_gemara:
+        hint = RefHint(
+            ref=pg.ref,
+            confidence=RefConfidence.CERTAIN,  # Known sugyos are CERTAIN
+            verification_keywords=known_match.key_terms[:5],
+            reasoning=f"From known_sugyos_db: {pg.description}",
+            source="known_sugyos_db",
+            is_primary=True,
+        )
+        ref_hints.append(hint)
+        primary_refs.append(pg.ref)
+    
+    # Add also_discussed as secondary refs
+    contrast_refs = known_match.also_discussed_refs
+    for ref in contrast_refs:
+        hint = RefHint(
+            ref=ref,
+            confidence=RefConfidence.LIKELY,
+            verification_keywords=known_match.key_terms[:3],
+            reasoning="Also discussed in known_sugyos_db",
+            source="known_sugyos_db",
+            is_primary=False,
+        )
+        ref_hints.append(hint)
+    
+    # Determine landmark - first primary gemara location
+    suggested_landmark = None
+    if known_match.primary_gemara:
+        suggested_landmark = known_match.primary_gemara[0].ref
+    
+    # Use Claude enrichment if available for additional fields
+    query_type = QueryType.TOPIC
+    foundation_type = FoundationType.GEMARA
+    breadth = Breadth.STANDARD
+    trickle_direction = TrickleDirection.UP
+    is_nuance = False
+    nuance_description = ""
+    target_authors = []
+    primary_author = None
+    focus_terms = []
+    topic_terms = known_match.key_terms
+    search_variants = None
+    inyan_description = ""
+    target_sources = ["gemara", "rashi", "tosafos"]
+    reasoning = f"Matched known sugya: {known_match.sugya_id}"
+    
+    if claude_enrichment:
+        # Use Claude's classification/enrichment but keep our refs
+        query_type = _parse_enum(claude_enrichment.get("query_type"), QueryType, QueryType.TOPIC)
+        foundation_type = _parse_enum(claude_enrichment.get("foundation_type"), FoundationType, FoundationType.GEMARA)
+        breadth = _parse_enum(claude_enrichment.get("breadth"), Breadth, Breadth.STANDARD)
+        trickle_direction = _parse_enum(claude_enrichment.get("trickle_direction"), TrickleDirection, TrickleDirection.UP)
+        is_nuance = claude_enrichment.get("is_nuance_query", False)
+        nuance_description = claude_enrichment.get("nuance_description", "")
+        target_authors = claude_enrichment.get("target_authors", [])
+        primary_author = claude_enrichment.get("primary_author")
+        focus_terms = claude_enrichment.get("focus_terms", [])
+        search_variants = _parse_search_variants(claude_enrichment.get("search_variants", {}))
+        inyan_description = claude_enrichment.get("inyan_description", "")
+        target_sources = claude_enrichment.get("target_sources", target_sources)
+        reasoning = f"Known sugya: {known_match.sugya_id}. Claude: {claude_enrichment.get('reasoning', '')}"
+    
+    # Build final analysis
+    analysis = QueryAnalysis(
+        original_query=query,
+        hebrew_terms_from_step1=hebrew_terms,
+        
+        query_type=query_type,
+        foundation_type=foundation_type,
+        breadth=breadth,
+        trickle_direction=trickle_direction,
+        
+        is_nuance_query=is_nuance,
+        nuance_description=nuance_description,
+        
+        target_authors=target_authors,
+        primary_author=primary_author,
+        
+        suggested_landmark=suggested_landmark,
+        landmark_confidence=LandmarkConfidence.HIGH,  # Known sugyos have HIGH confidence
+        landmark_reasoning=f"From known_sugyos_db: {known_match.sugya_id}",
+        
+        focus_terms=focus_terms,
+        topic_terms=topic_terms,
+        
+        ref_hints=ref_hints,
+        primary_refs=primary_refs,
+        contrast_refs=contrast_refs,
+        suggested_refs=primary_refs + contrast_refs,
+        
+        search_variants=search_variants,
+        inyan_description=inyan_description,
+        search_topics_hebrew=known_match.key_terms,
+        
+        target_sources=target_sources,
+        
+        confidence=ConfidenceLevel.HIGH,  # Known sugyos give us HIGH confidence
+        needs_clarification=False,
+        
+        reasoning=reasoning,
+        
+        # V6 fields
+        known_sugya_match=known_match,
+        used_known_sugyos=True,
+    )
+    
+    logger.info(f"[V6] Built analysis from known sugya: {known_match.sugya_id}")
+    logger.info(f"[V6]   Primary refs: {primary_refs}")
+    logger.info(f"[V6]   Landmark: {suggested_landmark}")
+    logger.info(f"[V6]   Confidence: HIGH")
+    
+    return analysis
 
 
 # ==============================================================================
@@ -428,25 +674,99 @@ def _parse_search_variants(data: Dict) -> Optional[SearchVariants]:
 # ==============================================================================
 
 async def analyze_with_claude(query: str, hebrew_terms: List[str]) -> QueryAnalysis:
-    """Have Claude analyze the query with nuance detection."""
-    log_section("STEP 2: UNDERSTAND (V4) - Nuance Detection")
+    """Have Claude analyze the query with V6 known sugyos integration."""
+    log_section("STEP 2: UNDERSTAND (V6) - With Known Sugyos")
     logger.info(f"Query: {query}")
     logger.info(f"Hebrew terms: {hebrew_terms}")
     
-    log_subsection("CALLING CLAUDE API")
+    # V5: Pre-check for vague queries
+    needs_clarification, clarification_q = _detect_query_vagueness(query, hebrew_terms)
+    if needs_clarification:
+        logger.warning(f"Query detected as vague: {clarification_q}")
+        return QueryAnalysis(
+            original_query=query,
+            hebrew_terms_from_step1=hebrew_terms,
+            confidence=ConfidenceLevel.LOW,
+            needs_clarification=True,
+            clarification_question=clarification_q,
+        )
     
-    # Build user prompt
+    # ==========================================================================
+    # V6: CHECK KNOWN SUGYOS DATABASE FIRST
+    # ==========================================================================
+    known_match = _check_known_sugyos(query, hebrew_terms)
+    
+    if known_match:
+        # We found a match! Still call Claude for enrichment but use known refs
+        logger.info("[V6] Known sugya found - will use database refs as primary")
+        
+        # Get Claude enrichment (optional - can skip for speed)
+        claude_enrichment = None
+        try:
+            log_subsection("CALLING CLAUDE FOR ENRICHMENT")
+            
+            client = Anthropic(api_key=settings.anthropic_api_key)
+            
+            # Simpler prompt since we already have the refs
+            enrich_prompt = f"""Analyze this Torah query. We already know the main sources.
+Just provide classification and search variants.
+
+QUERY: {query}
+HEBREW TERMS: {hebrew_terms}
+KNOWN TOPIC: {known_match.sugya_id}
+KNOWN KEY TERMS: {known_match.key_terms}
+
+Return ONLY valid JSON with: query_type, foundation_type, breadth, trickle_direction, 
+is_nuance_query, nuance_description, target_authors, primary_author, focus_terms, 
+search_variants, inyan_description, target_sources, reasoning."""
+            
+            response = client.messages.create(
+                model="claude-sonnet-4-5-20250929",
+                max_tokens=1500,
+                temperature=0,
+                system="You are a Torah learning assistant. Provide query classification as JSON.",
+                messages=[{"role": "user", "content": enrich_prompt}]
+            )
+            
+            raw_text = response.content[0].text.strip()
+            json_text = raw_text
+            if "```json" in raw_text:
+                json_text = raw_text.split("```json")[1].split("```")[0].strip()
+            elif "```" in raw_text:
+                json_text = raw_text.split("```")[1].split("```")[0].strip()
+            
+            claude_enrichment = json.loads(json_text)
+            logger.info("[V6] Got Claude enrichment")
+            
+        except Exception as e:
+            logger.warning(f"[V6] Claude enrichment failed (non-critical): {e}")
+            claude_enrichment = None
+        
+        # Build analysis from known sugya + Claude enrichment
+        analysis = _build_analysis_from_known_sugya(query, hebrew_terms, known_match, claude_enrichment)
+        
+        log_subsection("ANALYSIS RESULTS (FROM KNOWN SUGYOS)")
+        _log_analysis_results(analysis)
+        
+        return analysis
+    
+    # ==========================================================================
+    # NO KNOWN SUGYA - FALL BACK TO FULL CLAUDE ANALYSIS (V5 behavior)
+    # ==========================================================================
+    log_subsection("CALLING CLAUDE API (FULL ANALYSIS)")
+    
     user_prompt = f"""Analyze this Torah query and tell me EXACTLY where to look.
 
 QUERY: {query}
 HEBREW TERMS DETECTED: {hebrew_terms}
 
 Remember:
-- DETECT if this is a NUANCE query (specific sub-topic) vs GENERAL topic
-- For nuance queries: identify the LANDMARK source and FOCUS TERMS
-- Give SPECIFIC refs (e.g., "Ketubot 12b" not just "Ketubot")
-- Separate PRIMARY refs (to expand) from CONTRAST refs (for context only)
-- If you're not sure about a landmark, set landmark_confidence appropriately
+- SHITTAH queries (asking for one author's view) ARE nuance queries - set is_nuance_query=true
+- COMPARISON queries ARE nuance queries - set is_nuance_query=true  
+- RAN writes on RIF, not directly on gemara - use "Ran on Rif Pesachim" format
+- NO RANGE REFS like "2a-6b" - give specific refs
+- Include target_segments with starting words of relevant discussion when possible
+- If query is unclear, set needs_clarification=true
 
 Return ONLY valid JSON."""
 
@@ -460,7 +780,7 @@ Return ONLY valid JSON."""
             model="claude-sonnet-4-5-20250929",
             max_tokens=3000,
             temperature=0,
-            system=CLAUDE_SYSTEM_PROMPT_V4,
+            system=CLAUDE_SYSTEM_PROMPT_V6,
             messages=[{"role": "user", "content": user_prompt}]
         )
         
@@ -480,8 +800,6 @@ Return ONLY valid JSON."""
         elif "```" in raw_text:
             json_text = raw_text.split("```")[1].split("```")[0].strip()
         
-        logger.debug(f"Extracted JSON length: {len(json_text)} chars")
-        
         try:
             data = json.loads(json_text)
         except json.JSONDecodeError:
@@ -492,102 +810,117 @@ Return ONLY valid JSON."""
                 raise
         
         logger.info("Parsed JSON successfully")
-        logger.debug(f"Keys in response: {list(data.keys())}")
         
-        # Parse ref hints from primary_refs and contrast_refs
+        # Parse ref hints
         ref_hints = []
         primary_refs_list = []
         contrast_refs_list = []
         
-        # Parse primary refs
         for ref_data in data.get("primary_refs", []):
             if isinstance(ref_data, dict):
                 hint = _parse_ref_hint(ref_data)
                 hint.is_primary = True
+                hint.source = "claude"
                 ref_hints.append(hint)
                 primary_refs_list.append(hint.ref)
             elif isinstance(ref_data, str):
-                ref_hints.append(RefHint(ref=ref_data, is_primary=True))
+                ref_hints.append(RefHint(ref=ref_data, is_primary=True, source="claude"))
                 primary_refs_list.append(ref_data)
         
-        # Parse contrast refs
         for ref_data in data.get("contrast_refs", []):
             if isinstance(ref_data, dict):
                 hint = _parse_ref_hint(ref_data)
                 hint.is_primary = False
+                hint.source = "claude"
                 ref_hints.append(hint)
                 contrast_refs_list.append(hint.ref)
             elif isinstance(ref_data, str):
-                ref_hints.append(RefHint(ref=ref_data, is_primary=False))
+                ref_hints.append(RefHint(ref=ref_data, is_primary=False, source="claude"))
                 contrast_refs_list.append(ref_data)
         
-        # Fallback: if no primary/contrast refs, use suggested_refs
         if not ref_hints:
             for ref_data in data.get("suggested_refs", []):
                 if isinstance(ref_data, dict):
                     hint = _parse_ref_hint(ref_data)
+                    hint.source = "claude"
                     ref_hints.append(hint)
                     primary_refs_list.append(hint.ref)
                 elif isinstance(ref_data, str):
-                    ref_hints.append(RefHint(ref=ref_data))
+                    ref_hints.append(RefHint(ref=ref_data, source="claude"))
                     primary_refs_list.append(ref_data)
+        
+        # Validate and fix refs
+        primary_refs_list = _validate_and_fix_refs(primary_refs_list)
+        contrast_refs_list = _validate_and_fix_refs(contrast_refs_list)
+        
+        suggested_landmark = data.get("suggested_landmark")
+        if suggested_landmark:
+            fixed = _validate_and_fix_refs([suggested_landmark])
+            suggested_landmark = fixed[0] if fixed else suggested_landmark
+        
+        # Force nuance for shittah/comparison/machlokes
+        query_type = _parse_enum(data.get("query_type"), QueryType, QueryType.UNKNOWN)
+        is_nuance = data.get("is_nuance_query", False)
+        
+        if query_type in [QueryType.SHITTAH, QueryType.COMPARISON, QueryType.MACHLOKES]:
+            if not is_nuance:
+                logger.warning(f"Forcing is_nuance_query=true for {query_type.value} query")
+                is_nuance = True
         
         # Build QueryAnalysis
         analysis = QueryAnalysis(
             original_query=query,
             hebrew_terms_from_step1=hebrew_terms,
             
-            # Classification
-            query_type=_parse_enum(data.get("query_type"), QueryType, QueryType.UNKNOWN),
+            query_type=query_type,
             foundation_type=_parse_enum(data.get("foundation_type"), FoundationType, FoundationType.UNKNOWN),
             breadth=_parse_enum(data.get("breadth"), Breadth, Breadth.STANDARD),
             trickle_direction=_parse_enum(data.get("trickle_direction"), TrickleDirection, TrickleDirection.UP),
             
-            # V4: Nuance detection
-            is_nuance_query=data.get("is_nuance_query", False),
+            is_nuance_query=is_nuance,
             nuance_description=data.get("nuance_description", ""),
             
-            # V4: Landmark
-            suggested_landmark=data.get("suggested_landmark"),
+            target_authors=data.get("target_authors", []),
+            primary_author=data.get("primary_author"),
+            
+            suggested_landmark=suggested_landmark,
             landmark_confidence=_parse_enum(data.get("landmark_confidence"), LandmarkConfidence, LandmarkConfidence.NONE),
             landmark_reasoning=data.get("landmark_reasoning", ""),
             
-            # V4: Focus vs Topic terms
             focus_terms=data.get("focus_terms", []),
             topic_terms=data.get("topic_terms", []),
             
-            # V4: Refs
             ref_hints=ref_hints,
             primary_refs=primary_refs_list,
             contrast_refs=contrast_refs_list,
-            suggested_refs=primary_refs_list + contrast_refs_list,  # For backward compatibility
+            suggested_refs=primary_refs_list + contrast_refs_list,
             
-            # Search variants
             search_variants=_parse_search_variants(data.get("search_variants", {})),
             inyan_description=data.get("inyan_description", ""),
             search_topics_hebrew=data.get("search_topics_hebrew", hebrew_terms),
             
-            # Target sources
             target_sources=data.get("target_sources", ["gemara", "rashi", "tosafos"]),
             target_simanim=data.get("target_simanim", []),
             target_chelek=data.get("target_chelek"),
             
-            # Confidence and clarification
             confidence=_parse_enum(data.get("confidence"), ConfidenceLevel, ConfidenceLevel.MEDIUM),
             needs_clarification=data.get("needs_clarification", False),
             clarification_question=data.get("clarification_question"),
             clarification_options=data.get("clarification_options", []),
             reasoning=data.get("reasoning", ""),
+            
+            # V6: No known sugya match
+            known_sugya_match=None,
+            used_known_sugyos=False,
         )
         
-        # Log results
-        log_subsection("ANALYSIS RESULTS")
+        log_subsection("ANALYSIS RESULTS (FROM CLAUDE)")
         _log_analysis_results(analysis)
         
         return analysis
         
     except Exception as e:
-        logger.error(f"[UNDERSTAND V4] Claude error: {e}")
+        logger.error(f"[UNDERSTAND V6] Claude error: {e}")
         import traceback
         traceback.print_exc()
         return QueryAnalysis(
@@ -609,7 +942,15 @@ def _log_analysis_results(analysis: QueryAnalysis) -> None:
     logger.info(f"Trickle Direction: {analysis.trickle_direction.value}")
     logger.info(f"Confidence: {analysis.confidence.value}")
     
-    # V4: Nuance info
+    # V6: Known sugyos info
+    if analysis.used_known_sugyos:
+        logger.info("")
+        logger.info("📚 USED KNOWN SUGYOS DATABASE")
+        if analysis.known_sugya_match:
+            logger.info(f"  Sugya ID: {analysis.known_sugya_match.sugya_id}")
+            logger.info(f"  Match Reason: {analysis.known_sugya_match.match_reason}")
+    
+    # V5: Nuance info
     if analysis.is_nuance_query:
         logger.info("")
         logger.info("🎯 NUANCE QUERY DETECTED")
@@ -619,6 +960,11 @@ def _log_analysis_results(analysis: QueryAnalysis) -> None:
             logger.info(f"  Landmark Reason: {analysis.landmark_reasoning[:80]}...")
         logger.info(f"  Focus Terms: {analysis.focus_terms}")
         logger.info(f"  Topic Terms: {analysis.topic_terms}")
+        
+        if analysis.target_authors:
+            logger.info(f"  Target Authors: {analysis.target_authors}")
+        if analysis.primary_author:
+            logger.info(f"  Primary Author: {analysis.primary_author}")
     
     # Refs
     if analysis.primary_refs:
@@ -627,7 +973,8 @@ def _log_analysis_results(analysis: QueryAnalysis) -> None:
         for hint in analysis.ref_hints:
             if hint.is_primary:
                 conf = hint.confidence.value if hasattr(hint.confidence, 'value') else hint.confidence
-                logger.info(f"  • {hint.ref} [{conf}]")
+                src = f" [from {hint.source}]" if hint.source != "claude" else ""
+                logger.info(f"  • {hint.ref} [{conf}]{src}")
                 if hint.verification_keywords:
                     logger.info(f"    Keywords: {hint.verification_keywords}")
     
@@ -638,18 +985,6 @@ def _log_analysis_results(analysis: QueryAnalysis) -> None:
             if not hint.is_primary:
                 conf = hint.confidence.value if hasattr(hint.confidence, 'value') else hint.confidence
                 logger.info(f"  • {hint.ref} [{conf}] (context only)")
-    
-    # Search variants
-    if analysis.search_variants:
-        logger.info("")
-        logger.info("SEARCH VARIANTS:")
-        sv = analysis.search_variants
-        if sv.primary_hebrew:
-            logger.info(f"  Primary Hebrew: {sv.primary_hebrew}")
-        if sv.aramaic_forms:
-            logger.info(f"  Aramaic Forms: {sv.aramaic_forms}")
-        if sv.gemara_language:
-            logger.info(f"  Gemara Language: {sv.gemara_language}")
     
     logger.info("")
     logger.info(f"Target Sources: {analysis.target_sources}")
@@ -669,7 +1004,7 @@ async def understand(
     decipher_result: "DecipherResult" = None
 ) -> QueryAnalysis:
     """
-    Main entry point for Step 2: UNDERSTAND (V4 with nuance detection).
+    Main entry point for Step 2: UNDERSTAND (V6 with known sugyos).
     
     Args:
         hebrew_terms: List of Hebrew terms from Step 1
@@ -695,7 +1030,7 @@ async def understand(
     
     # Validation
     if not hebrew_terms and not query:
-        logger.warning("[UNDERSTAND V4] No input provided")
+        logger.warning("[UNDERSTAND V6] No input provided")
         return QueryAnalysis(
             original_query="",
             confidence=ConfidenceLevel.LOW,
@@ -711,10 +1046,11 @@ async def understand(
     log_section("STEP 2 COMPLETE")
     logger.info(f"Query type: {analysis.query_type.value}")
     logger.info(f"Is nuance: {analysis.is_nuance_query}")
+    logger.info(f"Used known sugyos: {analysis.used_known_sugyos}")
     logger.info(f"Landmark: {analysis.suggested_landmark}")
     logger.info(f"Primary refs: {len(analysis.primary_refs)}")
     logger.info(f"Contrast refs: {len(analysis.contrast_refs)}")
-    logger.info(f"Needs clarification: {analysis.needs_clarification}")
+    logger.info(f"Confidence: {analysis.confidence.value}")
     
     return analysis
 

@@ -1,0 +1,634 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "created": "2026-01-01",
+    "source": "Kollel notes - Kesubos and Pesachim",
+    "description": "Known sugyos database mapping classic Torah concepts to their actual gemara locations",
+    "usage": "Check this database first before relying on Claude's general suggestions. If entry exists, use these exact locations."
+  },
+  
+  "sugyos": [
+    {
+      "id": "chezkas_haguf_vs_mammon",
+      "names": {
+        "hebrew": ["חזקת הגוף", "חזקת הגוף וחזקת ממון", "חזקת גוף נגד חזקת ממון"],
+        "english": ["chezkas haguf", "chezkas haguf vs chezkas mammon", "bodily presumption vs monetary presumption"],
+        "transliterations": ["chezkas haguf", "chezkat haguf", "hazakat haguf", "chezkas mammon", "chezkat mammon"]
+      },
+      "primary_gemara": [
+        {
+          "ref": "Kesubos 12b",
+          "he_ref": "כתובות יב:",
+          "description": "Main sugya discussing the clash between bodily presumption and monetary presumption in kesubah disputes"
+        },
+        {
+          "ref": "Kesubos 75b-76a",
+          "he_ref": "כתובות עה:-עו.",
+          "description": "Discussion of ruba and chazakah, chezkas haguf being stronger than other chazakos"
+        }
+      ],
+      "also_discussed": [
+        {"ref": "Kesubos 16a", "context": "Ad kan lo ka'amar R\"G - bari v'shema and chazakah"},
+        {"ref": "Kesubos 13a", "context": "Connection to mukas etz case"},
+        {"ref": "Bava Basra 55a", "context": "Safek sefeika discussion"}
+      ],
+      "key_terms": ["חזקת הגוף", "חזקת ממון", "מוחזק", "להוציא ממון", "רובא וחזקה"],
+      "key_concepts": [
+        "Bodily presumption (woman born a besulah)",
+        "Monetary presumption (husband holding the kesubah money)",
+        "Which chazakah prevails in disputes",
+        "Chezkas haguf being stronger than other chazakos"
+      ],
+      "rishonim_who_discuss": [
+        "Rashi", "Tosafos", "Ramban", "Rashba", "Ritva", "Ran", "Shitah Yeshanah", 
+        "Pnei Yehoshua", "Beis Yaakov"
+      ],
+      "related_sugyos": ["bari_v_shema", "mukas_etz", "ruba_v_chazakah"],
+      "category": "dinei_mamonos",
+      "confidence": "high"
+    },
+    
+    {
+      "id": "shavya_anafshei",
+      "names": {
+        "hebrew": ["שויא אנפשיה חתיכה דאיסורא", "ש\"א חד\"א", "שוויה אנפשיה"],
+        "english": ["self-imposed prohibition", "making oneself prohibited", "shavya anafshei"],
+        "transliterations": ["shavya anafshei", "shavyah anafshei", "shovia anafshei", "shavya anafshey chaticha deissura"]
+      },
+      "primary_gemara": [
+        {
+          "ref": "Kesubos 9a",
+          "he_ref": "כתובות ט.",
+          "description": "R' Elazar's teaching that one who says petach pasuach is believed to prohibit her upon himself"
+        },
+        {
+          "ref": "Kiddushin 65b",
+          "he_ref": "קידושין סה:",
+          "description": "Source mishna - ha'omer l'isha kidashtic"
+        },
+        {
+          "ref": "Kesubos 22a",
+          "he_ref": "כתובות כב.",
+          "description": "Isha she'amra eishes ish ani"
+        }
+      ],
+      "also_discussed": [
+        {"ref": "Yevamos 47a", "context": "Ger she'nisgayer beino l'vein atzmo"},
+        {"ref": "Kiddushin 66a", "context": "Shitas R\"I HaZaken"}
+      ],
+      "key_terms": ["שויא אנפשיה", "חתיכה דאיסורא", "נאמן על עצמו", "אדם נאמן על עצמו יותר ממאה עדים"],
+      "key_concepts": [
+        "Person is believed regarding themselves",
+        "Self-testimony creates personal prohibition",
+        "Debate whether it's like neder or like ne'emanus",
+        "Whether it works against contradicting witnesses"
+      ],
+      "machlokes_rishonim": {
+        "nature_of_shavya": {
+          "neder_approach": ["Maharit", "Mahari Ba'asan"],
+          "ne'emanus_approach": ["Ketzos", "Noda B'Yehuda", "Gra"]
+        }
+      },
+      "rishonim_who_discuss": [
+        "Rashi", "Tosafos", "Ramban", "Rashba", "Ran", "Ritva", 
+        "Ketzos HaChoshen", "Noda B'Yehuda"
+      ],
+      "related_sugyos": ["petach_pasuach", "ne'emanus_ba'al_din"],
+      "category": "issurim",
+      "confidence": "high"
+    },
+    
+    {
+      "id": "besulah_nieses_beyom_dalet",
+      "names": {
+        "hebrew": ["בתולה נשאת ביום רביעי", "תקנה לנשאת ביום ד'", "בתולה נשאת ליום הרביעי"],
+        "english": ["virgin marries on Wednesday", "wedding day ordinance", "besulah nieses"],
+        "transliterations": ["besulah nieses beyom daled", "besulah niseis", "takana l'niseis"]
+      },
+      "primary_gemara": [
+        {
+          "ref": "Kesubos 2a-3a",
+          "he_ref": "כתובות ב.-ג.",
+          "description": "Mishna and gemara establishing why a virgin marries on Wednesday"
+        }
+      ],
+      "also_discussed": [
+        {"ref": "Kesubos 9a", "context": "Connection to ta'anas besulim"}
+      ],
+      "key_terms": ["בתולה נשאת ביום ד'", "טענת בתולים", "שקדו חכמים", "משכים לב\"ד"],
+      "key_concepts": [
+        "Reason for Wednesday wedding - courts sit Monday and Thursday",
+        "If husband has ta'anas besulim, he can go to beis din immediately",
+        "Machlokes Rashi/R\"T on scope of takanah",
+        "Safek sefeikah for other women"
+      ],
+      "machlokes_rishonim": {
+        "scope_of_takanah": {
+          "rashi": "Takanah for all women - maybe witnesses will come",
+          "rabbeinu_tam": "Lo plug - takanah really only for women with single safek"
+        }
+      },
+      "rishonim_who_discuss": ["Rashi", "Tosafos", "Ramban", "Ran", "Ritva"],
+      "related_sugyos": ["ta'anas_besulim", "petach_pasuach", "shavya_anafshei"],
+      "category": "ishus",
+      "confidence": "high"
+    },
+    
+    {
+      "id": "petach_pasuach",
+      "names": {
+        "hebrew": ["פתח פתוח", "טענת פתח פתוח", "האומר פתח פתוח מצאתי"],
+        "english": ["open door claim", "petach pasuach", "claim of finding open door"],
+        "transliterations": ["pesach pasuach", "petach patuach", "pesach patuach"]
+      },
+      "primary_gemara": [
+        {
+          "ref": "Kesubos 9a-10a",
+          "he_ref": "כתובות ט.-י.",
+          "description": "R' Elazar - one who says petach pasuach is believed to prohibit her"
+        }
+      ],
+      "also_discussed": [
+        {"ref": "Kesubos 9b", "context": "Kinui v'stirah discussion"},
+        {"ref": "Kesubos 10a", "context": "Kim lei discussion - is he expert in petach pasuach"}
+      ],
+      "key_terms": ["פתח פתוח", "נאמן לאוסרה עליו", "קים ליה", "בקי ומכיר"],
+      "key_concepts": [
+        "Husband claiming wife was not a virgin",
+        "Whether he's believed to prohibit her (shavya anafshei)",
+        "Whether he's believed to lose her kesubah",
+        "Connection to kinui v'stirah"
+      ],
+      "rishonim_who_discuss": ["Rashi", "Tosafos", "Ramban", "Rashba", "Ritva", "Ran", "Pnei Yehoshua"],
+      "related_sugyos": ["shavya_anafshei", "ta'anas_besulim", "kinui_v_stirah"],
+      "category": "ishus",
+      "confidence": "high"
+    },
+    
+    {
+      "id": "bari_v_shema",
+      "names": {
+        "hebrew": ["ברי ושמא", "ברי ושמא ברי עדיף", "טענת ברי"],
+        "english": ["certain vs uncertain claim", "bari v'shema", "definite claim vs doubtful claim"],
+        "transliterations": ["bari v'shema", "bari veshema", "bari ushma"]
+      },
+      "primary_gemara": [
+        {
+          "ref": "Kesubos 12b-13a",
+          "he_ref": "כתובות יב:-יג.",
+          "description": "Core discussion of bari v'shema in kesubah disputes"
+        },
+        {
+          "ref": "Kesubos 16a",
+          "he_ref": "כתובות טז.",
+          "description": "Ad kan lo ka'amar R\"G ela b'bari v'shema"
+        }
+      ],
+      "also_discussed": [
+        {"ref": "Bava Kamma 46a", "context": "Hamotzi mechavero alav hara'ayah"},
+        {"ref": "Kesubos 75b-76a", "context": "With chazakah"}
+      ],
+      "key_terms": ["ברי ושמא", "ברי עדיף", "טענת ברי", "טענת שמא"],
+      "key_concepts": [
+        "When one party claims certainly and other claims maybe",
+        "Does bari override shema?",
+        "Relationship to chazakah",
+        "R' Gamliel's position on ne'emanus"
+      ],
+      "rishonim_who_discuss": ["Rashi", "Tosafos", "Ramban", "Rashba", "Ran", "Shitah Yeshanah"],
+      "related_sugyos": ["chezkas_haguf_vs_mammon", "mukas_etz", "hamotzi_mechavero"],
+      "category": "dinei_mamonos",
+      "confidence": "high"
+    },
+    
+    {
+      "id": "mukas_etz",
+      "names": {
+        "hebrew": ["מוכת עץ", "היא אומרת מוכת עץ אני"],
+        "english": ["injured by wood", "mukas etz claim"],
+        "transliterations": ["mukas etz", "mukkas etz", "mukat etz"]
+      },
+      "primary_gemara": [
+        {
+          "ref": "Kesubos 12b-13a",
+          "he_ref": "כתובות יב:-יג.",
+          "description": "She says mukas etz, he says druasas ish"
+        }
+      ],
+      "also_discussed": [
+        {"ref": "Kesubos 11b", "context": "Definition of mukas etz"}
+      ],
+      "key_terms": ["מוכת עץ", "דרוסת איש", "בתולה", "חזקת הגוף"],
+      "key_concepts": [
+        "Woman claims she lost besulim through accident",
+        "Husband claims through intercourse with another man",
+        "Application of bari v'shema",
+        "Role of chezkas haguf"
+      ],
+      "rishonim_who_discuss": ["Rashi", "Tosafos", "Ramban", "Ran", "Ritva"],
+      "related_sugyos": ["bari_v_shema", "chezkas_haguf_vs_mammon", "druasas_ish"],
+      "category": "ishus",
+      "confidence": "high"
+    },
+    
+    {
+      "id": "bedikah_vs_bitul",
+      "names": {
+        "hebrew": ["בדיקת חמץ", "ביטול חמץ", "בדיקה וביטול"],
+        "english": ["checking for chametz", "nullifying chametz", "bedikah vs bitul"],
+        "transliterations": ["bedikah", "bedikas chametz", "bitul chametz", "bitul"]
+      },
+      "primary_gemara": [
+        {
+          "ref": "Pesachim 2a-7a",
+          "he_ref": "פסחים ב.-ז.",
+          "description": "Core sugya on obligation to check and nullify chametz"
+        },
+        {
+          "ref": "Pesachim 4b",
+          "he_ref": "פסחים ד:",
+          "description": "Bedikas chametz d'rabbanan - min haTorah bitul b'alma sagi"
+        },
+        {
+          "ref": "Pesachim 6b",
+          "he_ref": "פסחים ו:",
+          "description": "Habodek tzarich sheyevatel - one who checks must also nullify"
+        }
+      ],
+      "also_discussed": [
+        {"ref": "Pesachim 10a", "context": "Kikar b'shemei korah - bread on ceiling"},
+        {"ref": "Pesachim 21a", "context": "Chametz she'eino yadua"}
+      ],
+      "key_terms": ["בדיקת חמץ", "ביטול בעלמא סגי", "הבודק צריך שיבטל", "מדאורייתא", "מדרבנן"],
+      "key_concepts": [
+        "Is checking d'oraisa or d'rabbanan?",
+        "Why check if bitul alone suffices from Torah?",
+        "Reason for rabbinic checking - shema yavo l'ochlo",
+        "Relationship between bedikah and bitul"
+      ],
+      "machlokes_rishonim": {
+        "reason_for_bedikah": {
+          "rashi": "Shelo ya'avor al bal yiraeh bal yimatzei",
+          "tosafos": "Shema yavo l'ochlo - lest he come to eat it"
+        },
+        "is_bedikah_d_oraisa": {
+          "ran_ritvah": "Bedikah is d'oraisa option alongside bitul",
+          "tosafos": "Bedikah is d'rabbanan, bitul is d'oraisa"
+        }
+      },
+      "rishonim_who_discuss": [
+        "Rashi", "Tosafos", "Ran", "Ritva", "Rabbeinu David", 
+        "Rabbeinu Peretz", "Rosh", "Taz", "Pnei Yehoshua"
+      ],
+      "related_sugyos": ["tashbisu", "bal_yiraeh", "chametz_she_eino_yadua"],
+      "category": "hilchos_pesach",
+      "confidence": "high"
+    },
+    
+    {
+      "id": "tashbisu",
+      "names": {
+        "hebrew": ["תשביתו", "מצות תשביתו", "השבתת חמץ"],
+        "english": ["destroy chametz", "tashbisu obligation", "elimination of chametz"],
+        "transliterations": ["tashbisu", "tashbisu chametz", "hashbasas chametz"]
+      },
+      "primary_gemara": [
+        {
+          "ref": "Pesachim 4b-5a",
+          "he_ref": "פסחים ד:-ה.",
+          "description": "What constitutes hashbasah - destruction vs nullification"
+        },
+        {
+          "ref": "Pesachim 21a",
+          "he_ref": "פסחים כא.",
+          "description": "Methods of hashbasah - burning, crumbling, throwing to sea"
+        }
+      ],
+      "also_discussed": [
+        {"ref": "Pesachim 27b-28a", "context": "Machlokes tana'im on method of biur"}
+      ],
+      "key_terms": ["תשביתו", "השבתה", "ביעור", "אין השבתה אלא בלב"],
+      "key_concepts": [
+        "Torah obligation to eliminate chametz",
+        "What counts as hashbasah - physical destruction or bitul",
+        "Machlokes whether bitul qualifies as tashbisu",
+        "Timing - yom arba'ah asar"
+      ],
+      "rishonim_who_discuss": ["Rashi", "Tosafos", "Rambam", "Ran", "Ritva"],
+      "related_sugyos": ["bedikah_vs_bitul", "bal_yiraeh", "biur_chametz"],
+      "category": "hilchos_pesach",
+      "confidence": "high"
+    },
+    
+    {
+      "id": "bal_yiraeh",
+      "names": {
+        "hebrew": ["בל יראה בל ימצא", "בל יראה", "בל ימצא", "ב\"י ב\"מ"],
+        "english": ["prohibition of seeing/finding chametz", "bal yiraeh bal yimatzei"],
+        "transliterations": ["bal yiraeh", "bal yimatzei", "bal yeroeh bal yimotze"]
+      },
+      "primary_gemara": [
+        {
+          "ref": "Pesachim 5b-6b",
+          "he_ref": "פסחים ה:-ו:",
+          "description": "Scope and nature of the prohibition"
+        },
+        {
+          "ref": "Pesachim 21a",
+          "he_ref": "פסחים כא.",
+          "description": "Chametz she'eino yadua - unknown chametz"
+        }
+      ],
+      "also_discussed": [
+        {"ref": "Pesachim 95b", "context": "Lav she'nitak la'aseh"}
+      ],
+      "key_terms": ["בל יראה", "בל ימצא", "לא יראה לך", "לא ימצא בבתיכם"],
+      "key_concepts": [
+        "Two separate lavin",
+        "Applies even to chametz that's hidden",
+        "Whether nitak la'aseh of tashbisu exempts from malkos",
+        "Chametz pikadon - deposited chametz"
+      ],
+      "rishonim_who_discuss": ["Rashi", "Tosafos", "Rambam", "Ran"],
+      "related_sugyos": ["tashbisu", "bedikah_vs_bitul", "chametz_she_eino_yadua"],
+      "category": "hilchos_pesach",
+      "confidence": "high"
+    },
+    
+    {
+      "id": "chametz_she_eino_yadua",
+      "names": {
+        "hebrew": ["חמץ שאינו ידוע", "חמץ שאין ידוע לו היכן הוא"],
+        "english": ["unknown chametz", "chametz whose location is unknown"],
+        "transliterations": ["chametz she'eino yadua", "chametz sheino yadua"]
+      },
+      "primary_gemara": [
+        {
+          "ref": "Pesachim 6b-7a",
+          "he_ref": "פסחים ו:-ז.",
+          "description": "Does one violate bal yiraeh on unknown chametz?"
+        },
+        {
+          "ref": "Pesachim 21a",
+          "he_ref": "פסחים כא.",
+          "description": "Chaya d'matzna'a - animal that hides chametz"
+        }
+      ],
+      "key_terms": ["חמץ שאינו ידוע", "אינו מצוי", "מצוי בידו"],
+      "key_concepts": [
+        "Definition of 'matzui' - known and location known",
+        "Does one violate bal yiraeh on chametz he doesn't know exists?",
+        "Does bedikah help for unknown chametz?",
+        "Machlokes Ran vs Tosafos"
+      ],
+      "machlokes_rishonim": {
+        "violation_on_unknown": {
+          "ran": "Violates on unknown chametz, bedikah helps from Torah",
+          "tosafos": "Does not violate on unknown chametz"
+        }
+      },
+      "rishonim_who_discuss": ["Tosafos", "Ran", "Ritva", "Rosh", "Pri Chadash"],
+      "related_sugyos": ["bedikah_vs_bitul", "bal_yiraeh", "kikar_b_shemei_korah"],
+      "category": "hilchos_pesach",
+      "confidence": "high"
+    },
+    
+    {
+      "id": "kikar_b_shemei_korah",
+      "names": {
+        "hebrew": ["ככר בשמי קורה", "כיכר בשמי קורה"],
+        "english": ["bread on the ceiling beam", "loaf on rafters"],
+        "transliterations": ["kikar beshemei korah", "kikar bishemei korah"]
+      },
+      "primary_gemara": [
+        {
+          "ref": "Pesachim 10a-10b",
+          "he_ref": "פסחים י.-י:",
+          "description": "Does one need to retrieve bread from inaccessible location?"
+        }
+      ],
+      "key_terms": ["ככר בשמי קורה", "זימנין דנפיל", "אתי למיכליה"],
+      "key_concepts": [
+        "Chametz in hard-to-reach place",
+        "Risk it might fall and be eaten",
+        "Whether bedikah obligation applies"
+      ],
+      "rishonim_who_discuss": ["Rashi", "Tosafos", "Ran"],
+      "related_sugyos": ["bedikah_vs_bitul", "chametz_she_eino_yadua"],
+      "category": "hilchos_pesach",
+      "confidence": "high"
+    },
+    
+    {
+      "id": "shema_yimtzei_geluskah",
+      "names": {
+        "hebrew": ["שמא ימצא גלוסקא יפה", "גלוסקא יפיפיה", "גזירה שמא ימצא"],
+        "english": ["lest he find a nice loaf", "concern about finding desirable bread"],
+        "transliterations": ["shema yimtzei geluskah", "geluskah yafah"]
+      },
+      "primary_gemara": [
+        {
+          "ref": "Pesachim 6b",
+          "he_ref": "פסחים ו:",
+          "description": "Why one who checks must also nullify - lest he find and want to keep"
+        }
+      ],
+      "key_terms": ["שמא ימצא גלוסקא יפה", "דעתיה עלויה", "הבודק צריך שיבטל"],
+      "key_concepts": [
+        "Reason for post-bedikah bitul",
+        "Concern he might find attractive chametz and keep it",
+        "Rabbinic safeguard"
+      ],
+      "machlokes_rishonim": {
+        "timing_of_violation": {
+          "rashi_ran": "Violation from finding onwards (mikan ul'haba)",
+          "rosh": "Retroactive violation (l'mafrei'a)"
+        }
+      },
+      "rishonim_who_discuss": ["Rashi", "Tosafos", "Ran", "Rosh"],
+      "related_sugyos": ["bedikah_vs_bitul", "bal_yiraeh"],
+      "category": "hilchos_pesach",
+      "confidence": "high"
+    },
+    
+    {
+      "id": "safek_sefeikah",
+      "names": {
+        "hebrew": ["ספק ספיקא", "ס\"ס", "תרי ספיקי"],
+        "english": ["double doubt", "safek sefeikah", "two uncertainties"],
+        "transliterations": ["safek sefeikah", "sfek sfeika", "s\"s"]
+      },
+      "primary_gemara": [
+        {
+          "ref": "Kesubos 9a",
+          "he_ref": "כתובות ט.",
+          "description": "Safek sefeikah in ta'anas besulim cases"
+        }
+      ],
+      "also_discussed": [
+        {"ref": "Kesubos 15a", "context": "Safek sefeikah l'kula"},
+        {"ref": "Yevamos 119a", "context": "General principles"},
+        {"ref": "Yoma 83a", "context": "Safek sefeikah in pikuach nefesh"}
+      ],
+      "key_terms": ["ספק ספיקא", "תרי ספיקי", "ספק ספיקא להקל"],
+      "key_concepts": [
+        "When two doubts combine to permit",
+        "Whether safek sefeikah works in d'oraisa",
+        "Application in ishus cases"
+      ],
+      "rishonim_who_discuss": ["Rashi", "Tosafos", "Rashba", "Shach"],
+      "related_sugyos": ["ta'anas_besulim", "chezkas_haguf_vs_mammon"],
+      "category": "kelalei_hapsak",
+      "confidence": "high"
+    },
+    
+    {
+      "id": "ein_davar_sheb_ervah",
+      "names": {
+        "hebrew": ["אין דבר שבערוה פחות משנים", "דבר שבערוה"],
+        "english": ["matters of ervah require two witnesses", "davar sheb'ervah"],
+        "transliterations": ["ein davar sheberva", "davar shebervah"]
+      },
+      "primary_gemara": [
+        {
+          "ref": "Kesubos 9a-9b",
+          "he_ref": "כתובות ט.-ט:",
+          "description": "Whether petach pasuach requires witnesses like gittin/kiddushin"
+        }
+      ],
+      "also_discussed": [
+        {"ref": "Kiddushin 65a", "context": "Source for the rule"},
+        {"ref": "Gittin 2a", "context": "Application to gittin"}
+      ],
+      "key_terms": ["דבר שבערוה", "עדי קיום", "אין דבר שבערוה פחות משנים"],
+      "key_concepts": [
+        "Gezeiras hakasuv from sotah",
+        "Difference between znus (from act) and kiddushin/gittin (need witnesses)",
+        "Lo ivru sahadei ela l'shakrei"
+      ],
+      "rishonim_who_discuss": ["Rashi", "Tosafos", "Rashba", "Ritva", "R' Chaim"],
+      "related_sugyos": ["petach_pasuach", "shavya_anafshei", "kinui_v_stirah"],
+      "category": "dinei_eidus",
+      "confidence": "high"
+    },
+    
+    {
+      "id": "ruba_v_chazakah",
+      "names": {
+        "hebrew": ["רובא וחזקה", "רובא וחזקה רובא עדיף"],
+        "english": ["majority vs presumption", "rov vs chazakah"],
+        "transliterations": ["ruba vchazakah", "rov v'chazakah", "ruba v'chazakah"]
+      },
+      "primary_gemara": [
+        {
+          "ref": "Kesubos 75b-76a",
+          "he_ref": "כתובות עה:-עו.",
+          "description": "When rov and chazakah conflict, rov prevails - but not chezkas haguf"
+        }
+      ],
+      "key_terms": ["רובא וחזקה רובא עדיף", "חזקת הגוף", "אין הולכין בממון אחר הרוב"],
+      "key_concepts": [
+        "Hierarchy of halachic presumptions",
+        "Chezkas haguf is stronger than other chazakos",
+        "Shmuel - ein holchin b'mammon achar harov"
+      ],
+      "rishonim_who_discuss": ["Rashi", "Tosafos", "Ramban", "Ran", "Beis Yaakov"],
+      "related_sugyos": ["chezkas_haguf_vs_mammon", "bari_v_shema"],
+      "category": "kelalei_hapsak",
+      "confidence": "high"
+    },
+    
+    {
+      "id": "kinui_v_stirah",
+      "names": {
+        "hebrew": ["קינוי וסתירה", "קנא לה ונסתרה"],
+        "english": ["warning and seclusion", "kinui v'stirah"],
+        "transliterations": ["kinui v'stirah", "kinui ustirah", "kana lah v'nistrah"]
+      },
+      "primary_gemara": [
+        {
+          "ref": "Kesubos 9a-10a",
+          "he_ref": "כתובות ט.-י.",
+          "description": "Compared to petach pasuach - ein ha'isha ne'eseres ela al yedei kinui v'stirah"
+        },
+        {
+          "ref": "Sotah 2a-3a",
+          "he_ref": "סוטה ב.-ג.",
+          "description": "Main sugya of kinui v'stirah"
+        }
+      ],
+      "key_terms": ["קינוי וסתירה", "אשה נאסרת", "סוטה"],
+      "key_concepts": [
+        "Process that makes a woman sotah",
+        "Kinui - husband's warning",
+        "Stirah - seclusion with the man",
+        "Why petach pasuach works without this"
+      ],
+      "rishonim_who_discuss": ["Rashi", "Tosafos", "Rashba"],
+      "related_sugyos": ["petach_pasuach", "safek_sotah", "shavya_anafshei"],
+      "category": "ishus",
+      "confidence": "high"
+    },
+    
+    {
+      "id": "chametz_noksheh",
+      "names": {
+        "hebrew": ["חמץ נוקשה", "חמץ על ידי תערובות"],
+        "english": ["semi-chametz", "weakened chametz", "chametz noksheh"],
+        "transliterations": ["chametz nukshah", "chametz noksheh", "chametz nuksheh"]
+      },
+      "primary_gemara": [
+        {
+          "ref": "Pesachim 43a",
+          "he_ref": "פסחים מג.",
+          "description": "Status of weakened chametz"
+        }
+      ],
+      "also_discussed": [
+        {"ref": "Pesachim 2a Tosafos", "context": "Whether bedikah applies to it"}
+      ],
+      "key_terms": ["חמץ נוקשה", "תערובת חמץ", "בל יראה"],
+      "key_concepts": [
+        "Chametz that's not full chametz",
+        "Machlokes Rashi/R\"T if bal yiraeh applies",
+        "Whether bedikah obligation applies"
+      ],
+      "machlokes_rishonim": {
+        "bal_yiraeh_applicability": {
+          "rashi": "Bal yiraeh applies",
+          "rabbeinu_tam": "Bal yiraeh does not apply"
+        }
+      },
+      "rishonim_who_discuss": ["Rashi", "Tosafos", "Rosh", "Ran"],
+      "related_sugyos": ["bal_yiraeh", "bedikah_vs_bitul"],
+      "category": "hilchos_pesach",
+      "confidence": "high"
+    },
+    
+    {
+      "id": "peh_she_asar",
+      "names": {
+        "hebrew": ["פה שאסר הוא הפה שהתיר", "הפה שאסר"],
+        "english": ["the mouth that prohibited is the mouth that permitted"],
+        "transliterations": ["peh she'asar", "hapeh sheasar"]
+      },
+      "primary_gemara": [
+        {
+          "ref": "Kesubos 22a",
+          "he_ref": "כתובות כב.",
+          "description": "Isha she'amra eishes ish hayisi v'gerusha ani"
+        }
+      ],
+      "key_terms": ["הפה שאסר הוא הפה שהתיר", "מיגו"],
+      "key_concepts": [
+        "If only source of prohibition is her own words, she can also permit",
+        "Connection to migu",
+        "Grw\"a on whether shavya anafshei applies when contradicted"
+      ],
+      "rishonim_who_discuss": ["Rashi", "Tosafos", "Rashba", "Grw\"a"],
+      "related_sugyos": ["shavya_anafshei", "migo"],
+      "category": "dinei_ne_emanus",
+      "confidence": "high"
+    }
+  ]
+}

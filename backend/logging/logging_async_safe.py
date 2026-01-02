@@ -11,7 +11,7 @@ Usage:
     from logging_async_safe import setup_logging, stop_logging
     
     # At application start:
-    setup_logging(log_dir=Path("logs"))
+    setup_logging(log_dir=Path(__file__).resolve().parent / "logs")
     
     # At application shutdown:
     stop_logging()

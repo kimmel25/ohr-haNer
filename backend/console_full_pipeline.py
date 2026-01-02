@@ -69,8 +69,8 @@ def setup_console_logging(debug: bool = False) -> None:
     console_handler.setLevel(level)
     console_handler.setFormatter(formatter)
     
-    # File handler
-    log_dir = SCRIPT_DIR / "logs"
+    # File handler (canonical backend/logging/logs; avoid backend/logs)
+    log_dir = SCRIPT_DIR / "logging" / "logs"
     log_dir.mkdir(exist_ok=True)
     log_file = log_dir / f"ohr_haner_{datetime.now().strftime('%Y%m%d')}.log"
     

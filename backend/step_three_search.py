@@ -1,43 +1,18 @@
 """
-Step 3: SEARCH - V4 with Nuance Query Support
-=============================================
+Step 3: SEARCH - V5 with Topic-Filtered Commentary and Line-Level Targeting
+============================================================================
 
-V4 PHILOSOPHY:
-    For NUANCE queries: Find the LANDMARK, expand only around it
-    For GENERAL queries: Expand from all verified refs (existing behavior)
+V5 CHANGES FROM V4:
+1. PROPER SOURCE MAPPING: Ran writes on Rif, not directly on Gemara
+2. TOPIC-FILTERED COMMENTARIES: Only fetch commentaries on relevant segments
+3. LINE-LEVEL TARGETING: Score gemara segments, expand only high-scoring lines
+4. BETTER CATEGORY MATCHING: Fix false positives (Likutei Moharan != Ran)
+5. AUTHOR-SPECIFIC FETCHING: When asking for Ran's shittah, prioritize Ran sources
 
-V4 FLOW FOR NUANCE QUERIES:
-    1. PHASE 1A: Verify Claude's suggested landmark
-       - Check if it exists in Sefaria
-       - Check if it contains focus_terms + topic_terms
-       - If verified: USE AS ANCHOR
-       
-    2. PHASE 1B: Discovery via achronim (if landmark not verified)
-       - Search Shulchan Aruch/Tur for focus_terms + topic_terms
-       - Extract citations from matching simanim
-       - Score cited sources by focus_term presence
-       - Highest scorer = discovered landmark
-       
-    3. PHASE 1C: Cheap Claude validation (if needed)
-       - Send ref list + nuance description to Claude
-       - Ask Claude to pick 1-2 most relevant
-       - ~$0.001 cost (200 tokens in, 10 out)
-       
-    4. PHASE 2: Expand from landmark
-       - Trickle UP: Get commentaries on the landmark
-       - Trickle DOWN: Get the gemara the landmark references
-       
-    5. PHASE 3: Include contrast refs (no expansion)
-       - Fetch text only for context
-       
-    6. PHASE 4: Score & Rank by focus_terms
-       - Mark keystone (highest focus_term score)
-       - Organize into tiers: Primary → Context → Background
-
-COST SAVINGS:
-    Before V4: All refs expanded equally → 300+ sources
-    After V4: Only landmark expanded → 30-50 focused sources
-    Cheap Claude call: Only when discovery needed, ~$0.001
+KEY IMPROVEMENTS:
+- trickle_up_filtered(): Only gets commentaries on segments containing focus terms
+- fetch_author_commentary(): Specifically fetches one author's commentary
+- RISHON_SEFARIA_MAP: Maps rishon names to correct Sefaria patterns
 """
 
 import logging
@@ -119,7 +94,7 @@ except ImportError:
         ACHARONIM = "acharonim"
         OTHER = "other"
 
-# Import Step 2 V4 structures
+# Import Step 2 V5 structures
 try:
     from step_two_understand import (
         QueryAnalysis, RefHint, SearchVariants,
@@ -165,6 +140,9 @@ except ImportError:
     class QueryType(str, Enum):
         TOPIC = "topic"
         NUANCE = "nuance"
+        SHITTAH = "shittah"
+        COMPARISON = "comparison"
+        MACHLOKES = "machlokes"
         UNKNOWN = "unknown"
 
 # Import local corpus handler
@@ -184,9 +162,77 @@ MAX_CONCURRENT_REQUESTS = 5
 
 
 # =============================================================================
-#  CATEGORY MAPPING
+#  V5: PROPER RISHON-TO-SEFARIA MAPPING
 # =============================================================================
 
+# Maps rishon names to their ACTUAL Sefaria patterns
+# This is critical because different rishonim have different structures
+
+RISHON_SEFARIA_MAP = {
+    # Ran writes on RIF, not directly on Gemara
+    "ran": {
+        "patterns": ["Ran on Rif", "Chiddushei HaRan"],
+        "sefaria_prefix": "Ran on Rif",
+        "writes_on": "rif",
+        "fallback_search": "ran",
+    },
+    
+    # Direct gemara commentaries
+    "rashi": {
+        "patterns": ["Rashi on"],
+        "sefaria_prefix": "Rashi on",
+        "writes_on": "gemara",
+    },
+    "tosafos": {
+        "patterns": ["Tosafot on", "Tosafos on"],
+        "sefaria_prefix": "Tosafot on",
+        "writes_on": "gemara",
+    },
+    "rashba": {
+        "patterns": ["Rashba on"],
+        "sefaria_prefix": "Rashba on",
+        "writes_on": "gemara",
+    },
+    "ritva": {
+        "patterns": ["Ritva on"],
+        "sefaria_prefix": "Ritva on",
+        "writes_on": "gemara",
+    },
+    "ramban": {
+        "patterns": ["Ramban on"],
+        "sefaria_prefix": "Ramban on",
+        "writes_on": "gemara",
+    },
+    "meiri": {
+        "patterns": ["Meiri on"],
+        "sefaria_prefix": "Meiri on",
+        "writes_on": "gemara",
+    },
+    
+    # Rosh has its own structure (chapter:siman)
+    "rosh": {
+        "patterns": ["Rosh on"],
+        "sefaria_prefix": "Rosh on",
+        "writes_on": "gemara",
+        "structure": "chapter_siman",
+    },
+    
+    # Rif (Alfasi)
+    "rif": {
+        "patterns": ["Rif"],
+        "sefaria_prefix": "Rif",
+        "writes_on": "gemara",
+    },
+    
+    # Rambam - Mishneh Torah
+    "rambam": {
+        "patterns": ["Mishneh Torah", "Rambam"],
+        "sefaria_prefix": "Mishneh Torah",
+        "writes_on": "halacha",
+    },
+}
+
+# V5: Better category-to-level mapping with exclusions
 CATEGORY_TO_LEVEL = {
     "Tanakh": SourceLevel.CHUMASH,
     "Torah": SourceLevel.CHUMASH,
@@ -207,18 +253,19 @@ CATEGORY_TO_LEVEL = {
     "Acharonim": SourceLevel.ACHARONIM,
 }
 
+# V5: Expanded source name map with proper patterns
 SOURCE_NAME_MAP = {
     "gemara": ["Talmud", "Bavli"],
-    "rashi": ["Rashi"],
-    "tosafos": ["Tosafot", "Tosafos"],
-    "ran": ["Ran"],
-    "rashba": ["Rashba"],
-    "ritva": ["Ritva"],
-    "ramban": ["Ramban"],
+    "rashi": ["Rashi on"],
+    "tosafos": ["Tosafot on", "Tosafos on"],
+    "ran": ["Ran on Rif", "Chiddushei HaRan"],  # V5: Fixed - Ran writes on Rif!
+    "rashba": ["Rashba on"],
+    "ritva": ["Ritva on"],
+    "ramban": ["Ramban on"],
     "rambam": ["Rambam", "Mishneh Torah"],
-    "rosh": ["Rosh"],
-    "rif": ["Rif"],
-    "meiri": ["Meiri"],
+    "rosh": ["Rosh on"],
+    "rif": ["Rif "],  # Note the space to avoid matching other things
+    "meiri": ["Meiri on"],
     "shulchan_arukh": ["Shulchan Arukh"],
     "mishnah_berurah": ["Mishnah Berurah"],
     "taz": ["Taz", "Turei Zahav"],
@@ -227,6 +274,13 @@ SOURCE_NAME_MAP = {
     "ketzos": ["Ketzot HaChoshen", "Ketzos"],
     "nesivos": ["Netivot HaMishpat", "Nesivos"],
     "chumash": ["Torah", "Tanakh"],
+}
+
+# V5: Exclusion patterns - refs that should NOT match certain categories
+EXCLUSION_PATTERNS = {
+    "ran": ["Likutei Moharan", "Otzar", "Midrash"],  # These are NOT Ran
+    "rashi": ["Otzar", "Likutei"],
+    "tosafos": ["Piskei Tosafot"],  # This is a summary, not Tosafos itself
 }
 
 
@@ -249,9 +303,11 @@ class Source:
     verification_keywords_found: List[str] = field(default_factory=list)
     # V4: Nuance scoring
     is_landmark: bool = False
-    is_primary: bool = True  # Primary vs contrast
-    focus_score: float = 0.0  # Score based on focus_terms
-    tier: str = "background"  # "landmark", "primary", "context", "background"
+    is_primary: bool = True
+    focus_score: float = 0.0
+    tier: str = "background"
+    # V5: Segment info
+    segment_index: Optional[int] = None  # Which segment of the daf this is from
 
 
 @dataclass
@@ -270,7 +326,7 @@ class VerificationResult:
 class LandmarkResult:
     """Result of landmark discovery."""
     landmark_ref: Optional[str] = None
-    discovery_method: str = "none"  # "claude_verified", "achronim_discovery", "claude_tiebreaker", "none"
+    discovery_method: str = "none"
     confidence: str = "low"
     reasoning: str = ""
     focus_keywords_found: List[str] = field(default_factory=list)
@@ -279,10 +335,10 @@ class LandmarkResult:
 
 @dataclass
 class SearchResult:
-    """Complete search result - V4 with tiered sources."""
+    """Complete search result - V5 with topic-filtered sources."""
     original_query: str
     
-    # V4: Tiered sources for nuance queries
+    # V5: Tiered sources
     landmark_source: Optional[Source] = None
     primary_sources: List[Source] = field(default_factory=list)
     context_sources: List[Source] = field(default_factory=list)
@@ -292,6 +348,9 @@ class SearchResult:
     foundation_stones: List[Source] = field(default_factory=list)
     commentary_sources: List[Source] = field(default_factory=list)
     earlier_sources: List[Source] = field(default_factory=list)
+    
+    # V5: Author-specific sources (for shittah queries)
+    author_sources: Dict[str, List[Source]] = field(default_factory=dict)
     
     all_sources: List[Source] = field(default_factory=list)
     sources_by_level: Dict[str, List[Source]] = field(default_factory=dict)
@@ -303,12 +362,14 @@ class SearchResult:
     needs_clarification: bool = False
     clarification_question: Optional[str] = None
     
-    # V4: Nuance search stats
+    # V5: Enhanced stats
     is_nuance_result: bool = False
     landmark_discovery: Optional[LandmarkResult] = None
     refs_verified: int = 0
     refs_checked: int = 0
     verification_method: str = "programmatic"
+    segments_analyzed: int = 0
+    segments_relevant: int = 0
 
 
 # =============================================================================
@@ -439,6 +500,10 @@ def determine_level(categories: List[str], ref: str) -> SourceLevel:
     if "tur " in ref_lower:
         return SourceLevel.TUR
     
+    # V5: Check for Ran on Rif specifically
+    if "ran on rif" in ref_lower:
+        return SourceLevel.RISHONIM
+    
     # Check categories
     for cat in categories:
         if cat in CATEGORY_TO_LEVEL:
@@ -510,7 +575,7 @@ def generate_keyword_variants(keyword: str) -> List[str]:
 GENERIC_KEYWORDS = {
     'חזקה', 'ספק', 'רוב', 'מום', 'גוף', 'ממון', 'טהור', 'טמא',
     'אמר', 'רבא', 'אביי', 'רב', 'שמואל', 'מתני', 'גמרא',
-    'ברי', 'שמא',  # Added for bari v'shema
+    'ברי', 'שמא', 'דאמר', 'תנן', 'מאי',
 }
 
 
@@ -587,7 +652,139 @@ def verify_text_contains_keywords(
 
 
 # =============================================================================
-#  PHASE 1A: VERIFY CLAUDE'S SUGGESTED LANDMARK
+#  V5: SOURCE MATCHING WITH EXCLUSIONS
+# =============================================================================
+
+def matches_source_target(
+    link_ref: str,
+    categories: str,
+    collective_title: str,
+    target: str
+) -> bool:
+    """
+    V5: Check if a link matches the target source with proper exclusions.
+    """
+    target_lower = target.lower().replace(" ", "_")
+    
+    # Get search patterns
+    search_patterns = SOURCE_NAME_MAP.get(target_lower, [target])
+    
+    # Get exclusion patterns
+    exclusions = EXCLUSION_PATTERNS.get(target_lower, [])
+    
+    # Check exclusions first
+    for excl in exclusions:
+        if excl.lower() in link_ref.lower():
+            return False
+        if excl.lower() in categories.lower():
+            return False
+        if excl.lower() in collective_title.lower():
+            return False
+    
+    # Check for positive match
+    for pattern in search_patterns:
+        pattern_lower = pattern.lower()
+        if pattern_lower in categories.lower():
+            return True
+        if pattern_lower in collective_title.lower():
+            return True
+        if pattern_lower in link_ref.lower():
+            return True
+    
+    return False
+
+
+# =============================================================================
+#  V5: SEGMENT-LEVEL ANALYSIS
+# =============================================================================
+
+def analyze_segments(
+    sefaria_response: Dict,
+    focus_terms: List[str],
+    topic_terms: List[str]
+) -> List[Dict]:
+    """
+    V5: Analyze each segment of a daf to find which contain the topic.
+    
+    Returns list of dicts with:
+    - segment_index: position in the text
+    - segment_text: the Hebrew text
+    - focus_score: score based on focus terms
+    - topic_score: score based on topic terms
+    - is_relevant: True if above threshold
+    """
+    he_content = sefaria_response.get("he", [])
+    
+    # Handle non-list content
+    if not isinstance(he_content, list):
+        he_content = [he_content] if he_content else []
+    
+    results = []
+    all_keywords = focus_terms + topic_terms
+    
+    for idx, segment in enumerate(he_content):
+        if isinstance(segment, list):
+            # Nested structure - flatten
+            segment_text = " ".join(flatten_text(segment))
+        else:
+            segment_text = str(segment) if segment else ""
+        
+        if not segment_text.strip():
+            continue
+        
+        # Score this segment
+        _, focus_found, focus_score = verify_text_contains_keywords(
+            segment_text, focus_terms, min_score=0
+        )
+        _, topic_found, topic_score = verify_text_contains_keywords(
+            segment_text, topic_terms, min_score=0
+        )
+        
+        total_score = focus_score * 2 + topic_score
+        
+        results.append({
+            "segment_index": idx,
+            "segment_text": segment_text[:200],  # First 200 chars for logging
+            "focus_found": focus_found,
+            "topic_found": topic_found,
+            "focus_score": focus_score,
+            "topic_score": topic_score,
+            "total_score": total_score,
+            "is_relevant": total_score >= 3.0  # Threshold for relevance
+        })
+    
+    return results
+
+
+def get_relevant_segment_refs(
+    base_ref: str,
+    sefaria_response: Dict,
+    focus_terms: List[str],
+    topic_terms: List[str],
+    min_score: float = 3.0
+) -> List[str]:
+    """
+    V5: Get specific ref strings for segments that contain focus/topic terms.
+    
+    For example, if Pesachim 6b has discussion on segment 5,
+    returns "Pesachim 6b:5" rather than the whole daf.
+    """
+    segments = analyze_segments(sefaria_response, focus_terms, topic_terms)
+    
+    relevant_refs = []
+    for seg in segments:
+        if seg["total_score"] >= min_score:
+            # Build specific ref
+            # Sefaria uses 1-indexed segments
+            segment_ref = f"{base_ref}:{seg['segment_index'] + 1}"
+            relevant_refs.append(segment_ref)
+            logger.debug(f"    Relevant segment: {segment_ref} (score: {seg['total_score']})")
+    
+    return relevant_refs
+
+
+# =============================================================================
+#  PHASE 1: LANDMARK VERIFICATION & DISCOVERY
 # =============================================================================
 
 async def verify_landmark(
@@ -597,13 +794,7 @@ async def verify_landmark(
     topic_terms: List[str],
     session: aiohttp.ClientSession
 ) -> LandmarkResult:
-    """
-    Verify Claude's suggested landmark.
-    
-    For the landmark to be verified, it must:
-    1. Exist in Sefaria
-    2. Contain at least one focus_term AND at least one topic_term
-    """
+    """Verify Claude's suggested landmark."""
     log_subsection("PHASE 1A: VERIFY CLAUDE'S LANDMARK")
     
     if not suggested_landmark:
@@ -622,7 +813,7 @@ async def verify_landmark(
         logger.warning(f"  ✗ Landmark doesn't exist: {suggested_landmark}")
         return LandmarkResult(
             discovery_method="none",
-            reasoning=f"Landmark '{suggested_landmark}' not found in Sefaria - possible hallucination"
+            reasoning=f"Landmark '{suggested_landmark}' not found in Sefaria - possible hallucination or wrong format"
         )
     
     he_text, en_text = extract_text_content(response)
@@ -675,44 +866,30 @@ async def verify_landmark(
         )
 
 
-# =============================================================================
-#  PHASE 1B: DISCOVER LANDMARK VIA ACHRONIM
-# =============================================================================
-
 async def discover_via_achronim(
     focus_terms: List[str],
     topic_terms: List[str],
     session: aiohttp.ClientSession,
     target_chelek: Optional[str] = None
 ) -> LandmarkResult:
-    """
-    Discover landmark by searching achronim (SA, Tur, MB) for focus + topic terms.
-    
-    Process:
-    1. Search SA/Tur for both focus_terms and topic_terms
-    2. Extract citations from matching simanim
-    3. Fetch cited sources
-    4. Score each by focus_term presence
-    5. Return highest-scoring as landmark
-    """
+    """Discover landmark by searching achronim."""
     log_subsection("PHASE 1B: DISCOVER VIA ACHRONIM")
     
     if not focus_terms and not topic_terms:
         logger.info("  No terms to search for")
         return LandmarkResult(discovery_method="none", reasoning="No search terms provided")
     
-    # Build search query: combine focus + topic terms
+    # Build search query
     search_terms = []
     if focus_terms:
-        search_terms.extend(focus_terms[:2])  # Top 2 focus terms
+        search_terms.extend(focus_terms[:2])
     if topic_terms:
-        search_terms.extend(topic_terms[:2])  # Top 2 topic terms
+        search_terms.extend(topic_terms[:2])
     
     search_query = " ".join(search_terms)
     logger.info(f"  Search query: {search_query}")
     
-    # Search Sefaria
-    # Try SA first, then Tur
+    # Search collections
     search_collections = [
         ("Shulchan Arukh", target_chelek),
         ("Tur", target_chelek),
@@ -734,7 +911,7 @@ async def discover_via_achronim(
             hits = results["hits"]["hits"]
             logger.info(f"    Found {len(hits)} hits")
             
-            for hit in hits[:10]:  # Top 10 hits
+            for hit in hits[:10]:
                 source = hit.get("_source", {})
                 ref = source.get("ref", "")
                 if ref:
@@ -748,13 +925,12 @@ async def discover_via_achronim(
     
     logger.info(f"  Found {len(candidate_refs)} candidate refs")
     
-    # Now extract citations from these refs and find rishonim
+    # Extract citations and find rishonim
     rishonim_candidates = []
     
-    for ref in candidate_refs[:5]:  # Check top 5
+    for ref in candidate_refs[:5]:
         logger.info(f"  Checking citations in: {ref}")
         
-        # Get related/links for this ref
         links = await fetch_links(ref, session)
         
         if not links:
@@ -782,10 +958,10 @@ async def discover_via_achronim(
     
     logger.info(f"  Found {len(rishonim_candidates)} rishon candidates")
     
-    # Score each candidate by focus_terms
+    # Score each candidate
     scored_candidates = []
     
-    for candidate in rishonim_candidates[:10]:  # Check top 10
+    for candidate in rishonim_candidates[:10]:
         ref = candidate["ref"]
         logger.info(f"  Scoring: {ref}")
         
@@ -797,7 +973,6 @@ async def discover_via_achronim(
         if not he_text:
             continue
         
-        # Score by focus terms (high weight) and topic terms (lower weight)
         _, focus_found, _ = verify_text_contains_keywords(he_text, focus_terms, min_score=0)
         _, topic_found, _ = verify_text_contains_keywords(he_text, topic_terms, min_score=0)
         
@@ -819,11 +994,9 @@ async def discover_via_achronim(
     if not scored_candidates:
         return LandmarkResult(discovery_method="none", reasoning="Could not score any rishon candidates")
     
-    # Sort by total score
     scored_candidates.sort(key=lambda x: x["total_score"], reverse=True)
     best = scored_candidates[0]
     
-    # Only accept if it has BOTH focus and topic terms
     if best["focus_found"] and best["topic_found"]:
         logger.info(f"  ✓ DISCOVERED LANDMARK: {best['ref']}")
         return LandmarkResult(
@@ -842,160 +1015,41 @@ async def discover_via_achronim(
         )
 
 
-# =============================================================================
-#  PHASE 1C: CHEAP CLAUDE VALIDATION (TIEBREAKER)
-# =============================================================================
-
-async def cheap_claude_validation(
-    candidate_refs: List[str],
-    nuance_description: str,
-    focus_terms: List[str]
-) -> Optional[str]:
-    """
-    Use a cheap Claude call to pick the best landmark from candidates.
-    
-    Cost: ~$0.001 (200 tokens in, 10 tokens out)
-    
-    Only used when:
-    - We have multiple candidates
-    - Programmatic scoring is unclear
-    """
-    log_subsection("PHASE 1C: CHEAP CLAUDE VALIDATION")
-    
-    if not candidate_refs:
-        logger.info("  No candidates to validate")
-        return None
-    
-    if len(candidate_refs) == 1:
-        logger.info(f"  Only one candidate, using: {candidate_refs[0]}")
-        return candidate_refs[0]
-    
-    logger.info(f"  Asking Claude to pick from {len(candidate_refs)} candidates")
-    logger.info(f"  Nuance: {nuance_description}")
-    
-    try:
-        from anthropic import Anthropic
-        client = Anthropic(api_key=settings.anthropic_api_key)
-        
-        # Build minimal prompt
-        refs_list = "\n".join([f"{i+1}. {ref}" for i, ref in enumerate(candidate_refs[:10])])
-        
-        prompt = f"""Which 1-2 of these sources is most likely THE landmark source for:
-"{nuance_description}"
-
-Focus terms: {focus_terms[:5]}
-
-Refs:
-{refs_list}
-
-Return ONLY the number(s), e.g. "2" or "2, 5". Nothing else."""
-
-        response = client.messages.create(
-            model="claude-sonnet-4-5-20250929",
-            max_tokens=20,
-            temperature=0,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        
-        answer = response.content[0].text.strip()
-        logger.info(f"  Claude's answer: {answer}")
-        
-        # Parse the number(s)
-        import re
-        numbers = re.findall(r'\d+', answer)
-        
-        if numbers:
-            idx = int(numbers[0]) - 1  # Convert to 0-indexed
-            if 0 <= idx < len(candidate_refs):
-                selected = candidate_refs[idx]
-                logger.info(f"  ✓ Selected: {selected}")
-                return selected
-        
-        logger.warning(f"  Could not parse Claude's response: {answer}")
-        return candidate_refs[0]  # Fallback to first
-        
-    except Exception as e:
-        logger.error(f"  Claude validation error: {e}")
-        return candidate_refs[0]  # Fallback to first
-
-
-# =============================================================================
-#  COMBINED LANDMARK FINDING
-# =============================================================================
-
 async def find_landmark(
     analysis: 'QueryAnalysis',
     session: aiohttp.ClientSession
 ) -> LandmarkResult:
-    """
-    Find the landmark source for a nuance query.
-    
-    Order:
-    1. Try Claude's suggestion (verify it)
-    2. If fails, try discovery via achronim
-    3. If multiple candidates, use cheap Claude validation
-    """
+    """Find the landmark source for a nuance query."""
     log_section("FINDING LANDMARK FOR NUANCE QUERY")
     
-    # Get nuance info from analysis
-    suggested_landmark = getattr(analysis, 'suggested_landmark', None)
-    landmark_confidence = getattr(analysis, 'landmark_confidence', LandmarkConfidence.NONE)
+    nuance_desc = getattr(analysis, 'nuance_description', '')
     focus_terms = getattr(analysis, 'focus_terms', [])
     topic_terms = getattr(analysis, 'topic_terms', [])
+    suggested_landmark = getattr(analysis, 'suggested_landmark', None)
+    landmark_confidence = getattr(analysis, 'landmark_confidence', LandmarkConfidence.NONE)
     target_chelek = getattr(analysis, 'target_chelek', None)
-    nuance_description = getattr(analysis, 'nuance_description', '')
     
-    logger.info(f"  Nuance: {nuance_description}")
+    logger.info(f"  Nuance: {nuance_desc}")
     logger.info(f"  Focus terms: {focus_terms}")
     logger.info(f"  Topic terms: {topic_terms}")
     
-    # PHASE 1A: Try Claude's suggestion
-    if suggested_landmark and landmark_confidence.value != "none":
+    # Phase 1A: Try Claude's suggested landmark
+    if suggested_landmark:
         result = await verify_landmark(
-            suggested_landmark,
-            landmark_confidence,
-            focus_terms,
-            topic_terms,
-            session
+            suggested_landmark, landmark_confidence,
+            focus_terms, topic_terms, session
         )
-        
         if result.landmark_ref:
             return result
-        
-        logger.info("  Claude's suggestion didn't verify, trying discovery...")
     
-    # PHASE 1B: Try discovery via achronim
+    # Phase 1B: Discover via achronim
     result = await discover_via_achronim(
-        focus_terms,
-        topic_terms,
-        session,
-        target_chelek
+        focus_terms, topic_terms, session, target_chelek
     )
-    
     if result.landmark_ref:
         return result
     
-    # PHASE 1C: If we have primary_refs but no landmark, use cheap Claude
-    primary_refs = getattr(analysis, 'primary_refs', [])
-    
-    if primary_refs and nuance_description:
-        # Try to find landmark among primary refs
-        selected = await cheap_claude_validation(
-            primary_refs[:5],
-            nuance_description,
-            focus_terms
-        )
-        
-        if selected:
-            return LandmarkResult(
-                landmark_ref=selected,
-                discovery_method="claude_tiebreaker",
-                confidence="medium",
-                reasoning="Selected by Claude from primary refs"
-            )
-    
-    # No landmark found
-    logger.warning("  ✗ Could not find landmark")
+    # All methods failed
     return LandmarkResult(
         discovery_method="none",
         confidence="low",
@@ -1004,26 +1058,509 @@ async def find_landmark(
 
 
 # =============================================================================
-#  PHASE 2: EXPAND FROM REFS
+#  V5: TOPIC-FILTERED TRICKLE UP
 # =============================================================================
 
-async def trickle_up(
+async def trickle_up_filtered(
     foundation_refs: List[str],
     target_sources: List[str],
+    focus_terms: List[str],
+    topic_terms: List[str],
     session: aiohttp.ClientSession
-) -> List[Source]:
-    """Fetch commentaries (trickle up) for foundation stones."""
-    log_subsection("TRICKLE UP (COMMENTARIES)")
+) -> Tuple[List[Source], int, int]:
+    """
+    V5: Fetch commentaries only on segments that contain focus/topic terms.
+    
+    Returns:
+    - List of commentary sources
+    - Number of segments analyzed
+    - Number of segments found relevant
+    """
+    log_subsection("TRICKLE UP FILTERED (V5)")
     
     if not foundation_refs:
         logger.info("  No foundation refs to trickle up from")
-        return []
+        return [], 0, 0
     
     target_lower = [t.lower().replace(" ", "_") for t in target_sources]
     
     logger.info(f"  Foundation refs: {foundation_refs}")
     logger.info(f"  Target sources: {target_lower}")
+    logger.info(f"  Focus terms: {focus_terms}")
+    logger.info(f"  Topic terms: {topic_terms}")
     
+    commentary_sources = []
+    seen_refs = set()
+    total_segments = 0
+    relevant_segments = 0
+    
+    for ref in foundation_refs:
+        logger.info(f"  Analyzing segments for: {ref}")
+        
+        # First, fetch the base text and find relevant segments
+        base_response = await fetch_text(ref, session)
+        if not base_response:
+            continue
+        
+        # Analyze which segments contain our terms
+        segments = analyze_segments(base_response, focus_terms, topic_terms)
+        total_segments += len(segments)
+        
+        # Get relevant segment refs
+        relevant_seg_indices = []
+        for seg in segments:
+            if seg["is_relevant"]:
+                relevant_segments += 1
+                relevant_seg_indices.append(seg["segment_index"])
+        
+        logger.info(f"    Found {len(relevant_seg_indices)}/{len(segments)} relevant segments")
+        
+        # If no relevant segments found, use the whole ref but with lower priority
+        if not relevant_seg_indices:
+            logger.info(f"    No focused segments, using whole ref")
+            relevant_seg_indices = list(range(min(5, len(segments))))  # First 5 at most
+        
+        # Get related for each relevant segment
+        for seg_idx in relevant_seg_indices[:10]:  # Max 10 segments
+            seg_ref = f"{ref}:{seg_idx + 1}"
+            
+            related = await fetch_related(seg_ref, session)
+            if not related:
+                # Fall back to base ref if segment ref doesn't work
+                related = await fetch_related(ref, session)
+                if not related:
+                    continue
+            
+            links = related.get("links", [])
+            for link in links:
+                link_ref = link.get("ref", "")
+                if not link_ref or link_ref in seen_refs:
+                    continue
+                
+                categories = link.get("category", "")
+                collective_title = link.get("collectiveTitle", {}).get("en", "")
+                
+                # V5: Use improved matching with exclusions
+                is_target = False
+                matched_target = None
+                
+                for target in target_lower:
+                    if target == "gemara":
+                        continue
+                    
+                    if matches_source_target(link_ref, categories, collective_title, target):
+                        is_target = True
+                        matched_target = target
+                        break
+                
+                if not is_target:
+                    continue
+                
+                seen_refs.add(link_ref)
+                
+                text_response = await fetch_text(link_ref, session)
+                if not text_response:
+                    continue
+                
+                he_text, en_text = extract_text_content(text_response)
+                
+                # V5: Score this commentary by focus terms
+                _, kw_found, score = verify_text_contains_keywords(
+                    he_text, focus_terms + topic_terms, min_score=0
+                )
+                
+                source = Source(
+                    ref=link_ref,
+                    he_ref=text_response.get("heRef", link_ref),
+                    level=determine_level(text_response.get("categories", []), link_ref),
+                    hebrew_text=he_text,
+                    english_text=en_text,
+                    author=collective_title,
+                    categories=text_response.get("categories", []),
+                    is_foundation=False,
+                    is_verified=score >= 2.0,
+                    verification_keywords_found=kw_found,
+                    focus_score=score,
+                    segment_index=seg_idx
+                )
+                
+                # Only add if it scores above threshold or is from a primary target
+                if score >= 2.0 or matched_target in ["rashi", "tosafos"]:
+                    commentary_sources.append(source)
+                    logger.debug(f"      Added: {link_ref} ({matched_target}) score={score}")
+                else:
+                    logger.debug(f"      Skipped low-scoring: {link_ref} score={score}")
+    
+    # Sort by focus score
+    commentary_sources.sort(key=lambda s: s.focus_score, reverse=True)
+    
+    logger.info(f"  Found {len(commentary_sources)} filtered commentaries")
+    logger.info(f"  Segments: {relevant_segments}/{total_segments} relevant")
+    
+    return commentary_sources, total_segments, relevant_segments
+
+
+# =============================================================================
+#  V5: AUTHOR-SPECIFIC FETCHING
+# =============================================================================
+
+async def fetch_author_commentary(
+    author: str,
+    foundation_refs: List[str],
+    focus_terms: List[str],
+    topic_terms: List[str],
+    session: aiohttp.ClientSession
+) -> List[Source]:
+    """
+    V5: Specifically fetch one author's commentary with proper Sefaria mapping.
+    
+    For example, if author="Ran" and foundation_ref="Pesachim 6b":
+    - Knows Ran writes on Rif
+    - Fetches "Ran on Rif Pesachim" instead
+    """
+    log_subsection(f"FETCHING {author.upper()} COMMENTARY")
+    
+    author_lower = author.lower().replace(" ", "_")
+    author_info = RISHON_SEFARIA_MAP.get(author_lower, {})
+    
+    sources = []
+    
+    if not author_info:
+        logger.warning(f"  No mapping for author: {author}")
+        return sources
+    
+    writes_on = author_info.get("writes_on", "gemara")
+    sefaria_prefix = author_info.get("sefaria_prefix", f"{author} on")
+    patterns = author_info.get("patterns", [])
+    
+    logger.info(f"  Author: {author}")
+    logger.info(f"  Writes on: {writes_on}")
+    logger.info(f"  Sefaria prefix: {sefaria_prefix}")
+    
+    for base_ref in foundation_refs:
+        # Extract tractate and daf from base ref
+        # e.g., "Pesachim 6b" -> tractate="Pesachim", daf="6b"
+        parts = base_ref.split()
+        if len(parts) < 2:
+            continue
+        
+        tractate = parts[0]
+        daf = parts[1] if len(parts) > 1 else ""
+        
+        # Build the correct ref based on what this author writes on
+        if writes_on == "rif":
+            # Ran writes on Rif - different daf numbers!
+            # Try the ref but note Rif has different pagination
+            test_ref = f"{sefaria_prefix} {tractate}"
+            logger.info(f"  Looking for: {test_ref}")
+            
+            # Search for this author's commentary on this tractate
+            search_query = f"{author} {tractate} {' '.join(topic_terms[:2])}"
+            results = await sefaria_search(search_query, session)
+            
+            if results and results.get("hits", {}).get("hits"):
+                for hit in results["hits"]["hits"][:5]:
+                    hit_ref = hit.get("_source", {}).get("ref", "")
+                    
+                    # Check if it matches our author's patterns
+                    is_match = any(p.lower() in hit_ref.lower() for p in patterns)
+                    if not is_match:
+                        continue
+                    
+                    logger.info(f"    Found: {hit_ref}")
+                    
+                    response = await fetch_text(hit_ref, session)
+                    if not response:
+                        continue
+                    
+                    he_text, en_text = extract_text_content(response)
+                    _, kw_found, score = verify_text_contains_keywords(
+                        he_text, focus_terms + topic_terms, min_score=0
+                    )
+                    
+                    sources.append(Source(
+                        ref=hit_ref,
+                        he_ref=response.get("heRef", hit_ref),
+                        level=SourceLevel.RISHONIM,
+                        hebrew_text=he_text,
+                        english_text=en_text,
+                        author=author,
+                        categories=response.get("categories", []),
+                        is_foundation=False,
+                        is_verified=score >= 3.0,
+                        verification_keywords_found=kw_found,
+                        focus_score=score,
+                        is_primary=True
+                    ))
+        
+        elif writes_on == "gemara":
+            # Direct gemara commentary
+            test_ref = f"{sefaria_prefix} {base_ref}"
+            logger.info(f"  Trying: {test_ref}")
+            
+            response = await fetch_text(test_ref, session)
+            if response:
+                he_text, en_text = extract_text_content(response)
+                _, kw_found, score = verify_text_contains_keywords(
+                    he_text, focus_terms + topic_terms, min_score=0
+                )
+                
+                sources.append(Source(
+                    ref=test_ref,
+                    he_ref=response.get("heRef", test_ref),
+                    level=SourceLevel.RISHONIM,
+                    hebrew_text=he_text,
+                    english_text=en_text,
+                    author=author,
+                    categories=response.get("categories", []),
+                    is_foundation=False,
+                    is_verified=score >= 3.0,
+                    verification_keywords_found=kw_found,
+                    focus_score=score,
+                    is_primary=True
+                ))
+            else:
+                logger.warning(f"    Not found: {test_ref}")
+    
+    # Sort by score
+    sources.sort(key=lambda s: s.focus_score, reverse=True)
+    
+    logger.info(f"  Found {len(sources)} {author} sources")
+    return sources
+
+
+# =============================================================================
+#  MAIN QUERY HANDLERS
+# =============================================================================
+
+async def handle_nuance_query(
+    analysis: 'QueryAnalysis',
+    session: aiohttp.ClientSession
+) -> SearchResult:
+    """Handle nuance queries (including shittah, comparison, machlokes)."""
+    log_section("HANDLING NUANCE/SHITTAH QUERY (V5)")
+    
+    result = SearchResult(
+        original_query=analysis.original_query,
+        is_nuance_result=True
+    )
+    
+    focus_terms = getattr(analysis, 'focus_terms', [])
+    topic_terms = getattr(analysis, 'topic_terms', [])
+    target_authors = getattr(analysis, 'target_authors', [])
+    primary_author = getattr(analysis, 'primary_author', None)
+    
+    logger.info(f"  Focus terms: {focus_terms}")
+    logger.info(f"  Topic terms: {topic_terms}")
+    logger.info(f"  Target authors: {target_authors}")
+    logger.info(f"  Primary author: {primary_author}")
+    
+    # Phase 1: Find landmark
+    landmark_result = await find_landmark(analysis, session)
+    result.landmark_discovery = landmark_result
+    
+    if landmark_result.landmark_ref:
+        # Fetch landmark text
+        response = await fetch_text(landmark_result.landmark_ref, session)
+        if response:
+            he_text, en_text = extract_text_content(response)
+            landmark_source = Source(
+                ref=landmark_result.landmark_ref,
+                he_ref=response.get("heRef", landmark_result.landmark_ref),
+                level=determine_level(response.get("categories", []), landmark_result.landmark_ref),
+                hebrew_text=he_text,
+                english_text=en_text,
+                categories=response.get("categories", []),
+                is_landmark=True,
+                is_foundation=True,
+                is_verified=True,
+                tier="landmark",
+                focus_score=100.0,
+                verification_keywords_found=landmark_result.focus_keywords_found + landmark_result.topic_keywords_found
+            )
+            result.landmark_source = landmark_source
+            result.foundation_stones.append(landmark_source)
+    
+    # Get primary refs for expansion
+    primary_refs = getattr(analysis, 'primary_refs', [])
+    expansion_refs = [landmark_result.landmark_ref] if landmark_result.landmark_ref else []
+    expansion_refs.extend([r for r in primary_refs if r not in expansion_refs])
+    expansion_refs = expansion_refs[:5]  # Max 5 expansion refs
+    
+    logger.info(f"  Expansion refs: {expansion_refs}")
+    
+    # V5: If this is a shittah query, prioritize fetching that author's commentary
+    if primary_author or target_authors:
+        authors_to_fetch = [primary_author] if primary_author else []
+        authors_to_fetch.extend([a for a in target_authors if a not in authors_to_fetch])
+        
+        for author in authors_to_fetch[:3]:  # Max 3 authors
+            author_sources = await fetch_author_commentary(
+                author, expansion_refs, focus_terms, topic_terms, session
+            )
+            result.author_sources[author] = author_sources
+            result.primary_sources.extend(author_sources)
+    
+    # Phase 2: Topic-filtered trickle up
+    if expansion_refs and analysis.trickle_direction in [TrickleDirection.UP, TrickleDirection.BOTH]:
+        commentaries, total_seg, relevant_seg = await trickle_up_filtered(
+            expansion_refs,
+            analysis.target_sources,
+            focus_terms,
+            topic_terms,
+            session
+        )
+        result.commentary_sources = commentaries
+        result.segments_analyzed = total_seg
+        result.segments_relevant = relevant_seg
+    
+    # Phase 3: Contrast refs (no expansion)
+    contrast_refs = getattr(analysis, 'contrast_refs', [])
+    if contrast_refs:
+        log_subsection("FETCHING CONTRAST REFS")
+        for ref in contrast_refs[:2]:
+            response = await fetch_text(ref, session)
+            if response:
+                he_text, en_text = extract_text_content(response)
+                source = Source(
+                    ref=ref,
+                    he_ref=response.get("heRef", ref),
+                    level=determine_level(response.get("categories", []), ref),
+                    hebrew_text=he_text,
+                    english_text=en_text,
+                    categories=response.get("categories", []),
+                    is_foundation=False,
+                    is_primary=False,
+                    tier="context"
+                )
+                result.context_sources.append(source)
+    
+    return result
+
+
+async def handle_general_query(
+    analysis: 'QueryAnalysis',
+    session: aiohttp.ClientSession
+) -> SearchResult:
+    """Handle general (non-nuance) queries."""
+    log_section("HANDLING GENERAL QUERY (V5)")
+    
+    result = SearchResult(original_query=analysis.original_query)
+    
+    ref_hints = getattr(analysis, 'ref_hints', [])
+    
+    if not ref_hints and hasattr(analysis, 'suggested_refs'):
+        for ref in analysis.suggested_refs:
+            ref_hints.append(RefHint(
+                ref=ref,
+                confidence=RefConfidence.POSSIBLE,
+                verification_keywords=[],
+                buffer_size=DEFAULT_BUFFER_SIZE
+            ))
+    
+    if not ref_hints:
+        result.needs_clarification = True
+        result.clarification_question = "I couldn't identify specific sources. Could you provide more details?"
+        result.confidence = ConfidenceLevel.LOW
+        return result
+    
+    # Verify refs
+    search_variants = getattr(analysis, 'search_variants', None)
+    verified_refs = []
+    focus_terms = getattr(analysis, 'focus_terms', [])
+    topic_terms = getattr(analysis, 'topic_terms', [])
+    
+    log_subsection("VERIFYING REFS")
+    
+    for hint in ref_hints:
+        logger.info(f"  Checking: {hint.ref}")
+        
+        if hint.confidence.value == "certain":
+            verified_refs.append(hint.ref)
+            response = await fetch_text(hint.ref, session)
+            if response:
+                he_text, en_text = extract_text_content(response)
+                source = Source(
+                    ref=hint.ref,
+                    he_ref=response.get("heRef", hint.ref),
+                    level=determine_level(response.get("categories", []), hint.ref),
+                    hebrew_text=he_text,
+                    english_text=en_text,
+                    categories=response.get("categories", []),
+                    is_foundation=True,
+                    is_verified=True
+                )
+                result.foundation_stones.append(source)
+            continue
+        
+        keywords = list(hint.verification_keywords) if hint.verification_keywords else []
+        if search_variants:
+            keywords.extend(search_variants.aramaic_forms)
+        
+        response = await fetch_text(hint.ref, session)
+        if response:
+            he_text, en_text = extract_text_content(response)
+            
+            if keywords:
+                verified, found, score = verify_text_contains_keywords(he_text, keywords, min_score=3.0)
+            else:
+                verified = True
+                found = []
+            
+            if verified or hint.confidence in [RefConfidence.CERTAIN, RefConfidence.LIKELY]:
+                verified_refs.append(hint.ref)
+                source = Source(
+                    ref=hint.ref,
+                    he_ref=response.get("heRef", hint.ref),
+                    level=determine_level(response.get("categories", []), hint.ref),
+                    hebrew_text=he_text,
+                    english_text=en_text,
+                    categories=response.get("categories", []),
+                    is_foundation=True,
+                    is_verified=verified,
+                    verification_keywords_found=found
+                )
+                result.foundation_stones.append(source)
+    
+    result.refs_checked = len(ref_hints)
+    result.refs_verified = len(verified_refs)
+    
+    # V5: Use topic-filtered trickle up even for general queries
+    if analysis.trickle_direction in [TrickleDirection.UP, TrickleDirection.BOTH]:
+        if focus_terms or topic_terms:
+            commentaries, total_seg, relevant_seg = await trickle_up_filtered(
+                verified_refs,
+                analysis.target_sources,
+                focus_terms,
+                topic_terms,
+                session
+            )
+            result.commentary_sources = commentaries
+            result.segments_analyzed = total_seg
+            result.segments_relevant = relevant_seg
+        else:
+            # Fallback to unfiltered for truly general queries
+            result.commentary_sources = await trickle_up_unfiltered(
+                verified_refs,
+                analysis.target_sources,
+                session
+            )
+    
+    return result
+
+
+async def trickle_up_unfiltered(
+    foundation_refs: List[str],
+    target_sources: List[str],
+    session: aiohttp.ClientSession
+) -> List[Source]:
+    """Original trickle up without filtering (for general queries without focus terms)."""
+    log_subsection("TRICKLE UP (UNFILTERED)")
+    
+    if not foundation_refs:
+        return []
+    
+    target_lower = [t.lower().replace(" ", "_") for t in target_sources]
     commentary_sources = []
     seen_refs = set()
     
@@ -1050,13 +1587,9 @@ async def trickle_up(
                 if target == "gemara":
                     continue
                 
-                search_patterns = SOURCE_NAME_MAP.get(target, [target])
-                for pattern in search_patterns:
-                    if pattern.lower() in categories.lower() or pattern.lower() in collective_title.lower() or pattern.lower() in link_ref.lower():
-                        is_target = True
-                        matched_target = target
-                        break
-                if is_target:
+                if matches_source_target(link_ref, categories, collective_title, target):
+                    is_target = True
+                    matched_target = target
                     break
             
             if not is_target:
@@ -1088,413 +1621,22 @@ async def trickle_up(
     return commentary_sources
 
 
-async def trickle_down(
-    foundation_refs: List[str],
-    foundation_type: FoundationType,
-    session: aiohttp.ClientSession
-) -> List[Source]:
-    """Find earlier sources (trickle down) - Mishna, Pasuk, etc."""
-    log_subsection("TRICKLE DOWN (EARLIER SOURCES)")
-    
-    if not foundation_refs:
-        logger.info("  No foundation refs to trickle down from")
-        return []
-    
-    if foundation_type in [FoundationType.HALACHA_SA, FoundationType.HALACHA_RAMBAM]:
-        logger.info("  Halacha query - skipping trickle down")
-        return []
-    
-    earlier_sources = []
-    seen_refs = set()
-    
-    for ref in foundation_refs:
-        logger.info(f"  Finding earlier sources for: {ref}")
-        
-        links = await fetch_links(ref, session)
-        if not links:
-            continue
-        
-        for link in links:
-            if not isinstance(link, dict):
-                continue
-            
-            link_ref = link.get("ref", "")
-            if not link_ref or link_ref in seen_refs:
-                continue
-            
-            categories = link.get("category", "")
-            
-            is_earlier = any(cat in categories for cat in ["Tanakh", "Torah", "Mishnah", "Tosefta"])
-            
-            if not is_earlier:
-                continue
-            
-            seen_refs.add(link_ref)
-            
-            text_response = await fetch_text(link_ref, session)
-            if not text_response:
-                continue
-            
-            he_text, en_text = extract_text_content(text_response)
-            
-            source = Source(
-                ref=link_ref,
-                he_ref=text_response.get("heRef", link_ref),
-                level=determine_level(text_response.get("categories", []), link_ref),
-                hebrew_text=he_text,
-                english_text=en_text,
-                categories=text_response.get("categories", []),
-                is_foundation=False,
-                is_verified=False
-            )
-            earlier_sources.append(source)
-            logger.debug(f"    Added: {link_ref}")
-    
-    logger.info(f"  Found {len(earlier_sources)} earlier sources")
-    return earlier_sources
-
-
-# =============================================================================
-#  PHASE 4: SCORE AND RANK BY FOCUS TERMS
-# =============================================================================
-
-def score_sources_by_focus(
-    sources: List[Source],
-    focus_terms: List[str],
-    topic_terms: List[str]
-) -> List[Source]:
-    """Score all sources by focus term presence and assign tiers."""
-    if not sources:
-        return sources
-    
-    for source in sources:
-        # Score by focus terms
-        _, focus_found, focus_score = verify_text_contains_keywords(
-            source.hebrew_text, focus_terms, min_score=0
-        )
-        # Score by topic terms (lower weight)
-        _, topic_found, topic_score = verify_text_contains_keywords(
-            source.hebrew_text, topic_terms, min_score=0
-        )
-        
-        # Focus terms get 2x weight
-        source.focus_score = focus_score * 2 + topic_score
-        source.verification_keywords_found = focus_found + topic_found
-        
-        # Assign tier based on score
-        if source.focus_score >= 10:
-            source.tier = "primary"
-        elif source.focus_score >= 5:
-            source.tier = "context"
-        else:
-            source.tier = "background"
-    
-    # Sort by score
-    sources.sort(key=lambda s: s.focus_score, reverse=True)
-    
-    return sources
-
-
-# =============================================================================
-#  GENERAL QUERY HANDLER (NON-NUANCE)
-# =============================================================================
-
-async def handle_general_query(
-    analysis: 'QueryAnalysis',
-    session: aiohttp.ClientSession
-) -> SearchResult:
-    """Handle general (non-nuance) queries with existing logic."""
-    log_section("HANDLING GENERAL QUERY")
-    
-    result = SearchResult(original_query=analysis.original_query)
-    
-    # Get ref hints
-    ref_hints = getattr(analysis, 'ref_hints', [])
-    
-    if not ref_hints and hasattr(analysis, 'suggested_refs'):
-        for ref in analysis.suggested_refs:
-            ref_hints.append(RefHint(
-                ref=ref,
-                confidence=RefConfidence.POSSIBLE,
-                verification_keywords=[],
-                buffer_size=DEFAULT_BUFFER_SIZE
-            ))
-    
-    if not ref_hints:
-        result.needs_clarification = True
-        result.clarification_question = "I couldn't identify specific sources. Could you provide more details?"
-        result.confidence = ConfidenceLevel.LOW
-        return result
-    
-    # Verify all refs
-    search_variants = getattr(analysis, 'search_variants', None)
-    verified_refs = []
-    
-    log_subsection("VERIFYING REFS")
-    
-    for hint in ref_hints:
-        logger.info(f"  Checking: {hint.ref}")
-        
-        # For certain confidence, trust without verification
-        if hint.confidence.value == "certain":
-            verified_refs.append(hint.ref)
-            response = await fetch_text(hint.ref, session)
-            if response:
-                he_text, en_text = extract_text_content(response)
-                source = Source(
-                    ref=hint.ref,
-                    he_ref=response.get("heRef", hint.ref),
-                    level=determine_level(response.get("categories", []), hint.ref),
-                    hebrew_text=he_text,
-                    english_text=en_text,
-                    categories=response.get("categories", []),
-                    is_foundation=True,
-                    is_verified=True
-                )
-                result.foundation_stones.append(source)
-            continue
-        
-        # Verify using keywords
-        keywords = list(hint.verification_keywords) if hint.verification_keywords else []
-        if search_variants:
-            keywords.extend(search_variants.aramaic_forms)
-        
-        response = await fetch_text(hint.ref, session)
-        if response:
-            he_text, en_text = extract_text_content(response)
-            
-            if keywords:
-                verified, found, score = verify_text_contains_keywords(he_text, keywords, min_score=3.0)
-            else:
-                verified = True  # No keywords = trust
-                found = []
-            
-            if verified or hint.confidence in [RefConfidence.CERTAIN, RefConfidence.LIKELY]:
-                verified_refs.append(hint.ref)
-                source = Source(
-                    ref=hint.ref,
-                    he_ref=response.get("heRef", hint.ref),
-                    level=determine_level(response.get("categories", []), hint.ref),
-                    hebrew_text=he_text,
-                    english_text=en_text,
-                    categories=response.get("categories", []),
-                    is_foundation=True,
-                    is_verified=verified,
-                    verification_keywords_found=found
-                )
-                result.foundation_stones.append(source)
-    
-    result.refs_checked = len(ref_hints)
-    result.refs_verified = len(verified_refs)
-    
-    # Trickle up/down
-    if analysis.trickle_direction in [TrickleDirection.UP, TrickleDirection.BOTH]:
-        result.commentary_sources = await trickle_up(
-            verified_refs,
-            analysis.target_sources,
-            session
-        )
-    
-    if analysis.trickle_direction in [TrickleDirection.DOWN, TrickleDirection.BOTH]:
-        result.earlier_sources = await trickle_down(
-            verified_refs,
-            analysis.foundation_type,
-            session
-        )
-    
-    return result
-
-
-# =============================================================================
-#  NUANCE QUERY HANDLER
-# =============================================================================
-
-async def handle_nuance_query(
-    analysis: 'QueryAnalysis',
-    session: aiohttp.ClientSession
-) -> SearchResult:
-    """
-    Handle nuance queries with landmark-focused expansion.
-    
-    Flow:
-    1. Find landmark (verify Claude's suggestion or discover)
-    2. Expand only from landmark (trickle up/down)
-    3. Include contrast refs as context (no expansion)
-    4. Score all sources by focus terms
-    5. Organize into tiers
-    """
-    log_section("HANDLING NUANCE QUERY")
-    
-    result = SearchResult(
-        original_query=analysis.original_query,
-        is_nuance_result=True
-    )
-    
-    focus_terms = getattr(analysis, 'focus_terms', [])
-    topic_terms = getattr(analysis, 'topic_terms', [])
-    
-    logger.info(f"  Nuance: {analysis.nuance_description}")
-    logger.info(f"  Focus terms: {focus_terms}")
-    logger.info(f"  Topic terms: {topic_terms}")
-    
-    # =========================================================================
-    # PHASE 1: Find landmark
-    # =========================================================================
-    landmark_result = await find_landmark(analysis, session)
-    result.landmark_discovery = landmark_result
-    
-    landmark_refs = []
-    
-    if landmark_result.landmark_ref:
-        landmark_refs.append(landmark_result.landmark_ref)
-        
-        # Fetch the landmark source
-        response = await fetch_text(landmark_result.landmark_ref, session)
-        if response:
-            he_text, en_text = extract_text_content(response)
-            landmark_source = Source(
-                ref=landmark_result.landmark_ref,
-                he_ref=response.get("heRef", landmark_result.landmark_ref),
-                level=determine_level(response.get("categories", []), landmark_result.landmark_ref),
-                hebrew_text=he_text,
-                english_text=en_text,
-                categories=response.get("categories", []),
-                is_foundation=True,
-                is_verified=True,
-                is_landmark=True,
-                tier="landmark",
-                verification_keywords_found=landmark_result.focus_keywords_found + landmark_result.topic_keywords_found
-            )
-            result.landmark_source = landmark_source
-            result.foundation_stones.append(landmark_source)
-    
-    # =========================================================================
-    # PHASE 2: Expand from landmark (and primary refs)
-    # =========================================================================
-    
-    # Also include primary refs (but not as landmarks)
-    primary_refs = getattr(analysis, 'primary_refs', [])
-    expansion_refs = landmark_refs + [r for r in primary_refs if r not in landmark_refs]
-    
-    # Limit expansion refs for nuance queries
-    expansion_refs = expansion_refs[:3]  # Max 3 refs to expand from
-    
-    logger.info(f"  Expanding from: {expansion_refs}")
-    
-    # Fetch primary ref texts (if not already fetched)
-    for ref in primary_refs:
-        if ref == landmark_result.landmark_ref:
-            continue
-        
-        # Find the ref hint for this ref
-        ref_hints = getattr(analysis, 'ref_hints', [])
-        hint = next((h for h in ref_hints if h.ref == ref), None)
-        
-        response = await fetch_text(ref, session)
-        if response:
-            he_text, en_text = extract_text_content(response)
-            source = Source(
-                ref=ref,
-                he_ref=response.get("heRef", ref),
-                level=determine_level(response.get("categories", []), ref),
-                hebrew_text=he_text,
-                english_text=en_text,
-                categories=response.get("categories", []),
-                is_foundation=True,
-                is_verified=True,
-                is_primary=True,
-                tier="primary"
-            )
-            result.foundation_stones.append(source)
-            result.primary_sources.append(source)
-    
-    # Trickle UP from expansion refs
-    if expansion_refs and analysis.trickle_direction in [TrickleDirection.UP, TrickleDirection.BOTH]:
-        commentaries = await trickle_up(
-            expansion_refs,
-            analysis.target_sources,
-            session
-        )
-        result.commentary_sources = commentaries
-    
-    # Trickle DOWN from landmark
-    if landmark_refs and analysis.trickle_direction in [TrickleDirection.DOWN, TrickleDirection.BOTH]:
-        earlier = await trickle_down(
-            landmark_refs,
-            analysis.foundation_type,
-            session
-        )
-        result.earlier_sources = earlier
-    
-    # =========================================================================
-    # PHASE 3: Include contrast refs (no expansion)
-    # =========================================================================
-    contrast_refs = getattr(analysis, 'contrast_refs', [])
-    
-    if contrast_refs:
-        log_subsection("FETCHING CONTRAST REFS (NO EXPANSION)")
-        
-        for ref in contrast_refs[:2]:  # Max 2 contrast refs
-            logger.info(f"  Fetching contrast ref: {ref}")
-            
-            response = await fetch_text(ref, session)
-            if response:
-                he_text, en_text = extract_text_content(response)
-                source = Source(
-                    ref=ref,
-                    he_ref=response.get("heRef", ref),
-                    level=determine_level(response.get("categories", []), ref),
-                    hebrew_text=he_text,
-                    english_text=en_text,
-                    categories=response.get("categories", []),
-                    is_foundation=False,
-                    is_primary=False,
-                    tier="context"
-                )
-                result.context_sources.append(source)
-    
-    # =========================================================================
-    # PHASE 4: Score and rank by focus terms
-    # =========================================================================
-    log_subsection("SCORING SOURCES BY FOCUS TERMS")
-    
-    all_sources = (
-        result.foundation_stones +
-        result.commentary_sources +
-        result.earlier_sources +
-        result.context_sources
-    )
-    
-    # Score all sources
-    all_sources = score_sources_by_focus(all_sources, focus_terms, topic_terms)
-    
-    # Log top scorers
-    logger.info(f"  Top scoring sources:")
-    for s in all_sources[:5]:
-        logger.info(f"    {s.ref}: {s.focus_score:.1f} ({s.tier})")
-    
-    return result
-
-
 # =============================================================================
 #  MAIN SEARCH FUNCTION
 # =============================================================================
 
 async def search(analysis: 'QueryAnalysis') -> SearchResult:
     """
-    Main search function - V4 with nuance query support.
-    
-    Routes to:
-    - handle_nuance_query() for nuance queries (landmark-focused)
-    - handle_general_query() for general queries (existing behavior)
+    Main search function - V5 with topic filtering and author-specific fetching.
     """
-    log_section("STEP 3: SEARCH [V4 - NUANCE SUPPORT]")
+    log_section("STEP 3: SEARCH [V5 - TOPIC FILTERED]")
     
     logger.info(f"  Query: {analysis.original_query}")
     logger.info(f"  Query type: {analysis.query_type.value}")
     logger.info(f"  Is nuance: {getattr(analysis, 'is_nuance_query', False)}")
     logger.info(f"  Foundation type: {analysis.foundation_type.value}")
     logger.info(f"  Trickle direction: {analysis.trickle_direction.value}")
+    logger.info(f"  Target authors: {getattr(analysis, 'target_authors', [])}")
     
     # Handle clarification case
     if analysis.needs_clarification:
@@ -1507,7 +1649,6 @@ async def search(analysis: 'QueryAnalysis') -> SearchResult:
         )
     
     async with aiohttp.ClientSession() as session:
-        # Route to appropriate handler
         is_nuance = getattr(analysis, 'is_nuance_query', False)
         
         if is_nuance:
@@ -1515,17 +1656,21 @@ async def search(analysis: 'QueryAnalysis') -> SearchResult:
         else:
             result = await handle_general_query(analysis, session)
     
-    # =========================================================================
     # Organize results
-    # =========================================================================
-    
     all_sources = (
         result.foundation_stones +
+        result.primary_sources +
         result.commentary_sources +
         result.earlier_sources +
         result.context_sources +
         result.background_sources
     )
+    
+    # Add author sources
+    for author, sources in result.author_sources.items():
+        for s in sources:
+            if s not in all_sources:
+                all_sources.append(s)
     
     # Deduplicate
     seen_refs = set()
@@ -1557,12 +1702,12 @@ async def search(analysis: 'QueryAnalysis') -> SearchResult:
     # Summary
     if result.is_nuance_result:
         landmark_info = f"Landmark: {result.landmark_source.ref}" if result.landmark_source else "No landmark found"
+        author_info = f"Authors: {list(result.author_sources.keys())}" if result.author_sources else ""
         result.search_description = (
-            f"Nuance query. {landmark_info}. "
-            f"Discovery: {result.landmark_discovery.discovery_method if result.landmark_discovery else 'none'}. "
-            f"Found {len(result.foundation_stones)} foundations, "
-            f"{len(result.commentary_sources)} commentaries, "
-            f"{len(result.context_sources)} context sources. "
+            f"Nuance query. {landmark_info}. {author_info}"
+            f"Found {len(result.primary_sources)} primary, "
+            f"{len(result.commentary_sources)} commentaries. "
+            f"Segments: {result.segments_relevant}/{result.segments_analyzed} relevant. "
             f"Total: {result.total_sources} sources."
         )
     else:
@@ -1570,22 +1715,20 @@ async def search(analysis: 'QueryAnalysis') -> SearchResult:
             f"General query. "
             f"Verified {result.refs_verified}/{result.refs_checked} refs. "
             f"Found {len(result.foundation_stones)} foundations, "
-            f"{len(result.commentary_sources)} commentaries, "
-            f"{len(result.earlier_sources)} earlier sources. "
+            f"{len(result.commentary_sources)} commentaries. "
             f"Total: {result.total_sources} sources."
         )
     
-    # =========================================================================
     # Log summary
-    # =========================================================================
-    log_section("SEARCH COMPLETE (V4)")
+    log_section("SEARCH COMPLETE (V5)")
     logger.info(f"  Is nuance: {result.is_nuance_result}")
     if result.is_nuance_result:
         logger.info(f"  Landmark: {result.landmark_source.ref if result.landmark_source else 'None'}")
-        logger.info(f"  Discovery method: {result.landmark_discovery.discovery_method if result.landmark_discovery else 'none'}")
+        logger.info(f"  Author sources: {list(result.author_sources.keys())}")
+        logger.info(f"  Segments: {result.segments_relevant}/{result.segments_analyzed} relevant")
     logger.info(f"  Foundation stones: {[s.ref for s in result.foundation_stones]}")
+    logger.info(f"  Primary sources: {len(result.primary_sources)}")
     logger.info(f"  Commentaries: {len(result.commentary_sources)}")
-    logger.info(f"  Context sources: {len(result.context_sources)}")
     logger.info(f"  Total: {result.total_sources}")
     logger.info(f"  Confidence: {result.confidence.value}")
     
@@ -1607,4 +1750,5 @@ __all__ = [
     'SourceLevel',
     'LandmarkResult',
     'VerificationResult',
+    'RISHON_SEFARIA_MAP',
 ]
