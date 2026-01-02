@@ -8,6 +8,8 @@ output/
 
 Sefaria-Export/
 
+Sefaria-Export-*/
+
 # Python
 __pycache__/
 *.py[cod]
