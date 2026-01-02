@@ -295,6 +295,18 @@ def _parse_ref_hint(ref_data: dict) -> RefHint:
 
 def _parse_search_variants(data: dict) -> SearchVariants:
     """Parse SearchVariants from JSON data."""
+    # Claude occasionally returns a list instead of an object.
+    # Be permissive so Step 2 doesn't crash on enrichment.
+    if data is None:
+        data = {}
+    if isinstance(data, list):
+        # Treat as primary Hebrew search terms.
+        return SearchVariants(primary_hebrew=[x for x in data if isinstance(x, str)])
+    if isinstance(data, str):
+        return SearchVariants(primary_hebrew=[data])
+    if not isinstance(data, dict):
+        return SearchVariants()
+
     return SearchVariants(
         primary_hebrew=data.get("primary_hebrew", []),
         aramaic_forms=data.get("aramaic_forms", []),

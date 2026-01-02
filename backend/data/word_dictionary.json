@@ -870,9 +870,9 @@
   "chezkas haguf": {
     "hebrew": "חזקת הגוף",
     "confidence": "high",
-    "usage_count": 54,
+    "usage_count": 56,
     "source": "manual",
-    "last_used": "2026-01-01T08:39:29.430950"
+    "last_used": "2026-01-01T23:24:12.735232"
   },
   "chezka haguf": {
     "hebrew": "חזקת הגוף",
@@ -2046,9 +2046,9 @@
   "chezkas mammon": {
     "hebrew": "חזקת ממון",
     "confidence": "high",
-    "usage_count": 2,
+    "usage_count": 4,
     "source": "manual_fix",
-    "last_used": "2026-01-01T08:39:29.438948"
+    "last_used": "2026-01-01T23:24:12.739232"
   },
   "chometz": {
     "hebrew": "חמץ",
