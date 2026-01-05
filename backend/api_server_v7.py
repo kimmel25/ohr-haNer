@@ -33,6 +33,11 @@ from fastapi.middleware.cors import CORSMiddleware
 THIS_DIR = Path(__file__).parent.resolve()
 sys.path.insert(0, str(THIS_DIR))
 
+# Also add backend/logging to the path for local logging helpers.
+# We cannot import them as "logging.*" because that collides with Python's stdlib "logging" module.
+LOGGING_DIR = THIS_DIR / "logging"
+sys.path.insert(0, str(LOGGING_DIR))
+
 # Import centralized models and config
 from config import get_settings
 from models import (
@@ -44,6 +49,8 @@ from models import (
     SearchRequest,
     ConfidenceLevel,
     ValidationMode,
+    FeedbackRequest,
+    FeedbackResponse,
 )
 from utils.serialization import enum_value, serialize_word_validations
 
@@ -72,7 +79,7 @@ def _configure_logging() -> None:
 
 
 # Import async-safe logging
-from logging.logging_async_safe import setup_logging, stop_logging
+from logging_async_safe import setup_logging, stop_logging
 
 
 @asynccontextmanager
@@ -258,13 +265,144 @@ async def reject_decipher(request: RejectRequest) -> Dict[str, Any]:
     logger.info(f"[/decipher/reject] Query: '{request.original_query}'")
     if request.feedback:
         logger.info(f"[/decipher/reject] Feedback: {request.feedback}")
-    
+
     _pending_sessions.pop(request.original_query, None)
-    
+
     return {
         "success": True,
         "message": "Thank you for the feedback.",
     }
+
+
+# ==========================================
+#  FEEDBACK ENDPOINTS (Source Quality)
+# ==========================================
+
+# Initialize feedback cache (lazy loaded)
+_feedback_cache = None
+
+def _get_feedback_cache():
+    """Get or create the feedback cache singleton."""
+    global _feedback_cache
+    if _feedback_cache is None:
+        from feedback_cache import create_feedback_cache
+        cache_dir = settings.cache_dir / "feedback"
+        _feedback_cache = create_feedback_cache(
+            storage_type="json",
+            cache_dir=str(cache_dir),
+        )
+    return _feedback_cache
+
+
+@app.post("/feedback", response_model=FeedbackResponse)
+async def submit_feedback(request: FeedbackRequest) -> FeedbackResponse:
+    """
+    Submit user feedback on search results.
+
+    Accepts overall satisfaction + per-source thumbs up/down.
+    Caches positive results for future queries.
+    """
+    logger.info(f"[/feedback] Query ID: {request.query_id}")
+    logger.info(f"[/feedback] Overall: {request.overall_satisfaction}")
+    logger.info(f"[/feedback] Sources rated: {len(request.source_feedbacks)}")
+
+    try:
+        from user_feedback import (
+            QueryFeedback,
+            FeedbackCalculator,
+            SourceFeedback,
+            FeedbackRating,
+            SatisfactionLevel,
+        )
+
+        # Convert API request to internal feedback model
+        source_feedbacks = [
+            SourceFeedback(
+                source_ref=sf.source_ref,
+                rating=FeedbackRating(sf.rating),
+            )
+            for sf in request.source_feedbacks
+        ]
+
+        feedback = QueryFeedback(
+            query_id=request.query_id,
+            original_query=request.original_query,
+            hebrew_terms=request.hebrew_terms,
+            overall_satisfaction=SatisfactionLevel(request.overall_satisfaction),
+            source_feedbacks=source_feedbacks,
+            overall_comment=request.comment,
+        )
+
+        # Calculate feedback scores
+        calculator = FeedbackCalculator()
+        result = calculator.calculate(feedback)
+
+        logger.info(f"[/feedback] Combined score: {result.combined_score:.2f}")
+        logger.info(f"[/feedback] Should cache: {result.should_cache}")
+
+        # If positive, cache the result (we need the sources from the search)
+        # For now, just store the feedback - actual source caching happens
+        # when we have the sources available
+        if result.should_cache:
+            cache = _get_feedback_cache()
+            # Update source histories for priority adjustments
+            for ref in result.thumbs_up_refs:
+                cache.storage.update_source_history(ref, FeedbackRating.THUMBS_UP)
+            for ref in result.thumbs_down_refs:
+                cache.storage.update_source_history(ref, FeedbackRating.THUMBS_DOWN)
+            logger.info(f"[/feedback] Source histories updated")
+
+        return FeedbackResponse(
+            success=True,
+            message=result.reasoning,
+            should_cache=result.should_cache,
+            combined_score=result.combined_score,
+        )
+
+    except Exception as e:
+        logger.exception(f"[/feedback] Error: {e}")
+        return FeedbackResponse(
+            success=False,
+            message=f"Error processing feedback: {str(e)}",
+            should_cache=False,
+            combined_score=0.0,
+        )
+
+
+@app.get("/feedback/source/{source_ref:path}")
+async def get_source_feedback_history(source_ref: str) -> Dict[str, Any]:
+    """
+    Get feedback history for a specific source.
+
+    Returns thumbs up/down counts and priority adjustment.
+    """
+    try:
+        cache = _get_feedback_cache()
+        history = cache.storage.get_source_history(source_ref)
+
+        if history:
+            return {
+                "success": True,
+                "source_ref": source_ref,
+                "thumbs_up_count": history.thumbs_up_count,
+                "thumbs_down_count": history.thumbs_down_count,
+                "priority_adjustment": history.priority_adjustment,
+            }
+        else:
+            return {
+                "success": True,
+                "source_ref": source_ref,
+                "thumbs_up_count": 0,
+                "thumbs_down_count": 0,
+                "priority_adjustment": 0.0,
+            }
+
+    except Exception as e:
+        logger.exception(f"[/feedback/source] Error: {e}")
+        return {
+            "success": False,
+            "error": str(e),
+        }
 
 
 # ==========================================

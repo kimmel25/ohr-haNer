@@ -13,7 +13,7 @@
  * - "Better annoy with asking than getting it wrong"
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import './App.css';
 import Header from './components/Header';
 import SearchForm from './components/SearchForm';
@@ -22,6 +22,7 @@ import ResultBox from './components/ResultBox';
 import ValidationBox from './components/ValidationBox';
 import FeedbackBox from './components/FeedbackBox'
 import SearchResults from './components/SearchResults';
+import SourceFeedbackPanel from './components/SourceFeedbackPanel';
 
 // API base URL - change for production
 const API_BASE = 'http://localhost:8000';
@@ -52,6 +53,11 @@ function App() {
   const [searchResult, setSearchResult] = useState(null);
   const [searchLoading, setSearchLoading] = useState(false);
 
+  // Source feedback state
+  const [queryId, setQueryId] = useState(null);
+  const [sourceRatings, setSourceRatings] = useState({});
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+
   // ==========================================
   //  API CALLS
   // ==========================================
@@ -65,7 +71,13 @@ function App() {
 
     setSearchLoading(true)
     setSearchResult(null)
-    
+    // Reset feedback state for new search
+    setSourceRatings({})
+    setFeedbackSubmitted(false)
+    // Generate unique query ID for this search session
+    const newQueryId = `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`
+    setQueryId(newQueryId)
+
     try {
       const response = await fetch(`${API_BASE}/search`, {
         method: 'POST',
@@ -75,14 +87,14 @@ function App() {
         // the transliterated term would collapse mixed queries to a single term.
         body: JSON.stringify({ query: searchQuery })
       })
-      
+
       if (!response.ok) {
         throw new Error('Failed to search sources')
       }
-      
+
       const data = await response.json()
       setSearchResult(data)
-      
+
     } catch (err) {
       setError('Error searching for sources. Make sure the backend is running.')
       console.error(err)
@@ -287,6 +299,34 @@ function App() {
     document.querySelector('.query-input')?.focus()
   }, [])
 
+  // Source feedback handlers
+  const handleSourceRate = useCallback((sourceRef, rating) => {
+    setSourceRatings(prev => {
+      const current = prev[sourceRef]
+      // Toggle off if clicking same rating
+      if (current === rating) {
+        const { [sourceRef]: _, ...rest } = prev
+        return rest
+      }
+      return { ...prev, [sourceRef]: rating }
+    })
+  }, [])
+
+  const handleFeedbackSubmitted = useCallback((result) => {
+    setFeedbackSubmitted(true)
+    console.log('[Feedback] Submitted:', result)
+  }, [])
+
+  // Get all sources for feedback panel
+  const allSources = useMemo(() => {
+    if (!searchResult) return []
+    if (searchResult.sources?.length) return searchResult.sources
+    if (searchResult.sources_by_level) {
+      return Object.values(searchResult.sources_by_level).flat()
+    }
+    return []
+  }, [searchResult])
+
   // ==========================================
   //  RENDER
   // ==========================================
@@ -319,11 +359,26 @@ function App() {
         />
       )}
       {/* Search Results */}
-      <SearchResults 
-        searchResult={searchResult} 
+      <SearchResults
+        searchResult={searchResult}
         apiBase={API_BASE}
         onSuggestionSelect={handleClarificationSelect}
+        sourceRatings={sourceRatings}
+        onSourceRate={handleSourceRate}
       />
+      {/* Source Feedback Panel */}
+      {searchResult && allSources.length > 0 && !feedbackSubmitted && (
+        <SourceFeedbackPanel
+          queryId={queryId}
+          originalQuery={searchResult.original_query || query}
+          hebrewTerms={searchResult.hebrew_terms || (searchResult.hebrew_term ? [searchResult.hebrew_term] : [])}
+          sources={allSources}
+          apiBase={API_BASE}
+          onFeedbackSubmitted={handleFeedbackSubmitted}
+          sourceRatings={sourceRatings}
+          onSourceRate={handleSourceRate}
+        />
+      )}
       {/* Search Loading Indicator */}
       {searchLoading && (
         <div className="loading-box">

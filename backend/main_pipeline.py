@@ -189,9 +189,10 @@ async def search_sources(query: str) -> MareiMekomosResult:
     logger.info(f"Step 2 complete:")
     logger.info(f"  Query type: {analysis.query_type.value}")
     logger.info(f"  Search topics (INYAN): {analysis.search_topics_hebrew}")
-    logger.info(f"  Target masechtos: {analysis.target_masechtos}")
-    logger.info(f"  Target authors: {analysis.target_authors}")
-    logger.info(f"  Search method: {analysis.search_method.value}")
+    logger.info(f"  Primary refs: {getattr(analysis, 'primary_refs', [])}")
+    logger.info(f"  Contrast refs: {getattr(analysis, 'contrast_refs', [])}")
+    logger.info(f"  Target sources: {getattr(analysis, 'target_sources', [])}")
+    logger.info(f"  Target authors: {getattr(analysis, 'target_authors', [])}")
     
     # Check if clarification needed
     if analysis.needs_clarification:
@@ -217,16 +218,29 @@ async def search_sources(query: str) -> MareiMekomosResult:
     logger.info(f"Step 3 complete:")
     logger.info(f"  Total sources: {search_result.total_sources}")
     logger.info(f"  Main sugyos: {getattr(search_result, 'discovered_dapim', [])}")
-    logger.info(f"  Levels: {search_result.levels_found}")
+    levels_found = list(getattr(search_result, "sources_by_level", {}) or {})
+    logger.info(f"  Levels: {levels_found}")
     
     logger.info("\n" + "=" * 80)
     logger.info("FULL PIPELINE COMPLETE")
     logger.info("=" * 80)
-    logger.info(f"Final result: {search_result.total_sources} sources across {len(search_result.levels_found)} levels")
-    
-    sources_payload = [_serialize_source(source) for source in search_result.sources]
+    logger.info(f"Final result: {search_result.total_sources} sources across {len(levels_found)} levels")
+
+    sources_list = (
+        getattr(search_result, "all_sources", None)
+        or getattr(search_result, "sources", None)
+        or []
+    )
+    if not sources_list:
+        sources_list = (
+            list(getattr(search_result, "foundation_stones", []) or [])
+            + list(getattr(search_result, "commentary_sources", []) or [])
+            + list(getattr(search_result, "earlier_sources", []) or [])
+        )
+
+    sources_payload = [_serialize_source(source) for source in sources_list]
     sources_by_level = {}
-    for level, sources in search_result.sources_by_level.items():
+    for level, sources in (getattr(search_result, "sources_by_level", {}) or {}).items():
         sources_by_level[level] = [_serialize_source(source) for source in sources]
 
     needs_clarification = bool(
@@ -246,21 +260,21 @@ async def search_sources(query: str) -> MareiMekomosResult:
         transliteration_method=step1_result.method,
         is_mixed_query=bool(getattr(step1_result, "is_mixed_query", False)),
         query_type=_map_query_type(analysis.query_type),
-        primary_source=analysis.target_refs[0] if analysis.target_refs else None,
+        primary_source=(analysis.primary_refs[0] if getattr(analysis, "primary_refs", []) else None),
         primary_source_he=None,
-        primary_sources=list(analysis.target_refs or []),
-        interpretation=analysis.reasoning or analysis.search_description,
+        primary_sources=list(getattr(analysis, "primary_refs", []) or []),
+        interpretation=(getattr(analysis, "reasoning", "") or getattr(analysis, "inyan_description", "")),
         sources=sources_payload,
         sources_by_level=sources_by_level,
         sources_by_term={},
         related_sugyos=[],
         total_sources=search_result.total_sources,
-        levels_included=search_result.levels_found,
+        levels_included=levels_found,
         success=True,
         confidence=search_result.confidence,
         needs_clarification=needs_clarification,
         clarification_prompt=clarification_prompt,
-        message=search_result.search_description,
+        message=getattr(search_result, "search_description", ""),
         clarification_options=clarification_options,
     )
 

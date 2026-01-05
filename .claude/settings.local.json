@@ -3,7 +3,8 @@
     "allow": [
       "Bash(pip install:*)",
       "Bash(python hybrid_resolver.py:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(del \"c:\\\\Projects\\\\marei-mekomos\\\\backend\\\\test_v6_fix.py\")"
     ],
     "deny": [],
     "ask": []

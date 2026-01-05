@@ -1328,3 +1328,194 @@ button:disabled {
   color: #4a5568;
   line-height: 1.5;
 }
+
+/* ==========================================
+   SOURCE FEEDBACK PANEL
+   ========================================== */
+
+.feedback-panel {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  padding: 25px;
+  margin-top: 20px;
+  border-left: 5px solid #38a169;
+  animation: slideIn 0.3s ease-out;
+}
+
+.feedback-panel h3 {
+  font-size: 1.2rem;
+  color: #276749;
+  margin-bottom: 20px;
+}
+
+.feedback-panel.feedback-submitted {
+  background: linear-gradient(135deg, #f0fff4 0%, #e6fffa 100%);
+  text-align: center;
+  padding: 30px;
+}
+
+.feedback-panel.feedback-submitted h3 {
+  color: #276749;
+  margin-bottom: 10px;
+}
+
+.feedback-cached {
+  color: #38a169;
+  font-size: 0.95rem;
+}
+
+.feedback-score {
+  color: #718096;
+  font-size: 0.85rem;
+  margin-top: 10px;
+}
+
+/* Satisfaction Section */
+.satisfaction-section {
+  margin-bottom: 20px;
+}
+
+.feedback-label {
+  font-size: 0.95rem;
+  color: #4a5568;
+  margin-bottom: 10px;
+  display: block;
+}
+
+.satisfaction-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.satisfaction-btn {
+  padding: 12px 16px;
+  background: #f7fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.satisfaction-btn:hover {
+  border-color: #38a169;
+  background: #f0fff4;
+}
+
+.satisfaction-btn.selected {
+  border-color: #38a169;
+  background: linear-gradient(135deg, #c6f6d5 0%, #9ae6b4 100%);
+  box-shadow: 0 2px 8px rgba(56, 161, 105, 0.2);
+}
+
+.satisfaction-emoji {
+  font-size: 1.5rem;
+}
+
+/* Source Ratings Summary */
+.source-ratings-summary {
+  margin-bottom: 20px;
+  padding: 15px;
+  background: #f7fafc;
+  border-radius: 10px;
+}
+
+.rating-counts {
+  margin-left: 8px;
+  font-weight: 600;
+  color: #38a169;
+}
+
+.feedback-hint {
+  font-size: 0.85rem;
+  color: #718096;
+  margin-top: 6px;
+}
+
+/* Comment Section */
+.comment-section {
+  margin-bottom: 20px;
+}
+
+.feedback-comment {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 60px;
+  margin-top: 8px;
+}
+
+.feedback-comment:focus {
+  outline: none;
+  border-color: #38a169;
+  box-shadow: 0 0 0 3px rgba(56, 161, 105, 0.15);
+}
+
+.feedback-error {
+  color: #c53030;
+  font-size: 0.9rem;
+  margin-bottom: 15px;
+  padding: 10px;
+  background: #fff5f5;
+  border-radius: 8px;
+}
+
+/* Submit Button (overrides for feedback panel) */
+.feedback-panel .submit-feedback-btn {
+  background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+  padding: 14px 28px;
+  font-size: 1rem;
+}
+
+.feedback-panel .submit-feedback-btn:hover:not(:disabled) {
+  box-shadow: 0 4px 12px rgba(56, 161, 105, 0.3);
+}
+
+/* Source Rating Buttons (inline on each source) */
+.source-rating-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.rating-btn {
+  padding: 6px 12px;
+  background: #f7fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 1rem;
+}
+
+.rating-btn:hover {
+  transform: scale(1.1);
+}
+
+.rating-btn.thumbs-up:hover {
+  border-color: #38a169;
+  background: #f0fff4;
+}
+
+.rating-btn.thumbs-down:hover {
+  border-color: #e53e3e;
+  background: #fff5f5;
+}
+
+.rating-btn.thumbs-up.selected {
+  border-color: #38a169;
+  background: #c6f6d5;
+}
+
+.rating-btn.thumbs-down.selected {
+  border-color: #e53e3e;
+  background: #fed7d7;
+}

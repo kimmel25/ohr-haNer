@@ -230,6 +230,100 @@ RISHON_SEFARIA_MAP = {
         "sefaria_prefix": "Mishneh Torah",
         "writes_on": "halacha",
     },
+
+    # === ACHARONIM ON GEMARA ===
+    # Note: Keys use underscores since fetch_author_commentary normalizes with replace(" ", "_")
+    "pnei_yehoshua": {
+        "patterns": ["Penei Yehoshua on", "Pnei Yehoshua on"],
+        "sefaria_prefix": "Penei Yehoshua on",
+        "writes_on": "gemara",
+    },
+    "shitah_yeshanah": {
+        "patterns": ["Shitah Mekubetzet on"],  # Often Shitah Yeshanah is in Shitah Mekubetzet
+        "sefaria_prefix": "Shitah Mekubetzet on",
+        "writes_on": "gemara",
+    },
+    "shita_mekubetzet": {
+        "patterns": ["Shitah Mekubetzet on"],
+        "sefaria_prefix": "Shitah Mekubetzet on",
+        "writes_on": "gemara",
+    },
+    "shitah_mekubetzet": {
+        "patterns": ["Shitah Mekubetzet on"],
+        "sefaria_prefix": "Shitah Mekubetzet on",
+        "writes_on": "gemara",
+    },
+
+    # === ACHARONIM ON SHULCHAN ARUCH ===
+    "ketzos": {
+        "patterns": ["Ketzot HaChoshen", "Ketzos HaChoshen"],
+        "sefaria_prefix": "Ketzot HaChoshen",
+        "writes_on": "choshen_mishpat",
+    },
+    "ketzos_hachoshen": {
+        "patterns": ["Ketzot HaChoshen"],
+        "sefaria_prefix": "Ketzot HaChoshen",
+        "writes_on": "choshen_mishpat",
+    },
+    "ketzot_hachoshen": {
+        "patterns": ["Ketzot HaChoshen"],
+        "sefaria_prefix": "Ketzot HaChoshen",
+        "writes_on": "choshen_mishpat",
+    },
+    "nesivos": {
+        "patterns": ["Netivot HaMishpat", "Nesivos HaMishpat"],
+        "sefaria_prefix": "Netivot HaMishpat",
+        "writes_on": "choshen_mishpat",
+    },
+    "nesivos_hamishpat": {
+        "patterns": ["Netivot HaMishpat"],
+        "sefaria_prefix": "Netivot HaMishpat",
+        "writes_on": "choshen_mishpat",
+    },
+    "netivot_hamishpat": {
+        "patterns": ["Netivot HaMishpat"],
+        "sefaria_prefix": "Netivot HaMishpat",
+        "writes_on": "choshen_mishpat",
+    },
+    "taz": {
+        "patterns": ["Turei Zahav on Shulchan Arukh"],
+        "sefaria_prefix": "Turei Zahav on Shulchan Arukh",
+        "writes_on": "shulchan_aruch",
+    },
+    "shach": {
+        "patterns": ["Siftei Kohen on Shulchan Arukh"],
+        "sefaria_prefix": "Siftei Kohen on Shulchan Arukh",
+        "writes_on": "shulchan_aruch",
+    },
+    "gra": {
+        "patterns": ["Biur HaGra on Shulchan Arukh"],
+        "sefaria_prefix": "Biur HaGra on Shulchan Arukh",
+        "writes_on": "shulchan_aruch",
+    },
+    "pri_chadash": {
+        "patterns": ["Pri Chadash on Shulchan Arukh"],
+        "sefaria_prefix": "Pri Chadash on Shulchan Arukh",
+        "writes_on": "shulchan_aruch",
+    },
+
+    # === OTHER ACHARONIM ===
+    "noda_byehuda": {
+        "patterns": ["Noda BiYehuda"],
+        "sefaria_prefix": "Noda BiYehuda",
+        "writes_on": "responsa",
+        "fallback_search": "noda biyehuda",
+    },
+    "noda_b'yehuda": {
+        "patterns": ["Noda BiYehuda"],
+        "sefaria_prefix": "Noda BiYehuda",
+        "writes_on": "responsa",
+        "fallback_search": "noda biyehuda",
+    },
+    "beis_yaakov": {
+        "patterns": ["Beit Ya'akov"],  # On Ketubot
+        "sefaria_prefix": "Beit Ya'akov on",
+        "writes_on": "gemara",
+    },
 }
 
 # V5: Better category-to-level mapping with exclusions
@@ -484,6 +578,63 @@ def flatten_text(text_obj) -> List[str]:
     return result
 
 
+def extract_text_segments(sefaria_response: Dict) -> List[Dict]:
+    """
+    V6 FIX: Extract individual segments from Sefaria response.
+
+    Instead of flattening all text into one blob, returns a list of segments
+    with their index, Hebrew text, and English text.
+
+    Returns:
+        List of dicts with keys: index, he_text, en_text
+    """
+    segments = []
+
+    if not sefaria_response:
+        return segments
+
+    he = sefaria_response.get("he", "")
+    en = sefaria_response.get("text", "")
+
+    # Handle string case (single segment)
+    if isinstance(he, str):
+        if he.strip():
+            segments.append({
+                "index": 1,
+                "he_text": he,
+                "en_text": en if isinstance(en, str) else ""
+            })
+        return segments
+
+    # Handle list case (multiple segments)
+    if isinstance(he, list):
+        for i, he_item in enumerate(he):
+            # Get corresponding English text
+            en_item = ""
+            if isinstance(en, list) and i < len(en):
+                en_item = en[i] if isinstance(en[i], str) else ""
+
+            # Flatten nested arrays within this segment
+            if isinstance(he_item, list):
+                he_text = " ".join(flatten_text(he_item))
+            else:
+                he_text = str(he_item) if he_item else ""
+
+            if isinstance(en_item, list):
+                en_text = " ".join(flatten_text(en_item))
+            else:
+                en_text = str(en_item) if en_item else ""
+
+            if he_text.strip():
+                segments.append({
+                    "index": i + 1,  # 1-indexed like Sefaria
+                    "he_text": he_text,
+                    "en_text": en_text
+                })
+
+    return segments
+
+
 def determine_level(categories: List[str], ref: str) -> SourceLevel:
     """Determine the source level from Sefaria categories."""
     ref_lower = ref.lower()
@@ -551,23 +702,50 @@ def normalize_for_search(text: str) -> str:
 def generate_keyword_variants(keyword: str) -> List[str]:
     """Generate variations of a keyword for flexible matching."""
     variants = [keyword]
-    
+
     # Smichut: ה ↔ ת
     if keyword.endswith('ה'):
         variants.append(keyword[:-1] + 'ת')
     if keyword.endswith('ת'):
         variants.append(keyword[:-1] + 'ה')
-    
+
     # Handle דגופא / דממונא spacing
     if ' ד' in keyword:
         variants.append(keyword.replace(' ד', 'ד'))
-    
+
     # Handle הגוף / גוף
     if 'הגוף' in keyword:
         variants.append(keyword.replace('הגוף', 'גוף'))
     if 'גוף' in keyword and 'הגוף' not in keyword:
         variants.append(keyword.replace('גוף', 'הגוף'))
-    
+
+    # V6 FIX: For multi-word phrases, also include significant individual words
+    # This helps match when gemara uses shorter forms (e.g., "חזקה" instead of "חזקת הגוף")
+    words = keyword.split()
+    if len(words) > 1:
+        # Add individual words that are significant (> 2 chars)
+        for word in words:
+            # Skip articles and prefixes
+            if len(word) > 2 and word not in {'את', 'על', 'אל', 'מן', 'עם'}:
+                variants.append(word)
+                # Also add smichut variants for individual words
+                if word.endswith('ה'):
+                    variants.append(word[:-1] + 'ת')
+                if word.endswith('ת'):
+                    variants.append(word[:-1] + 'ה')
+
+    # Add common Aramaic forms for Hebrew terms
+    aramaic_mappings = {
+        'חזקה': ['חזקא', 'דחזקה', 'דחזקא'],
+        'ממון': ['ממונא', 'דממונא', 'דממון'],
+        'גוף': ['גופא', 'דגופא', 'דגוף'],
+        'מוחזק': ['מוחזקת', 'מוחזקין'],
+        'רוב': ['רובא', 'דרובא'],
+    }
+    for base, aramaic_forms in aramaic_mappings.items():
+        if base in keyword:
+            variants.extend(aramaic_forms)
+
     return list(set(variants))
 
 
@@ -1294,31 +1472,55 @@ async def fetch_author_commentary(
                     ))
         
         elif writes_on == "gemara":
-            # Direct gemara commentary
+            # Direct gemara commentary - V6 FIX: Filter by segment
             test_ref = f"{sefaria_prefix} {base_ref}"
             logger.info(f"  Trying: {test_ref}")
-            
+
             response = await fetch_text(test_ref, session)
             if response:
-                he_text, en_text = extract_text_content(response)
-                _, kw_found, score = verify_text_contains_keywords(
-                    he_text, focus_terms + topic_terms, min_score=0
-                )
-                
-                sources.append(Source(
-                    ref=test_ref,
-                    he_ref=response.get("heRef", test_ref),
-                    level=SourceLevel.RISHONIM,
-                    hebrew_text=he_text,
-                    english_text=en_text,
-                    author=author,
-                    categories=response.get("categories", []),
-                    is_foundation=False,
-                    is_verified=score >= 3.0,
-                    verification_keywords_found=kw_found,
-                    focus_score=score,
-                    is_primary=True
-                ))
+                # V6: Extract individual segments and score each one
+                segments = extract_text_segments(response)
+                logger.info(f"    Found {len(segments)} segments in {test_ref}")
+
+                matching_segments = []
+                for seg in segments:
+                    _, kw_found, score = verify_text_contains_keywords(
+                        seg["he_text"], focus_terms + topic_terms, min_score=0
+                    )
+                    if score >= 2.0:  # Only include segments with keyword matches
+                        matching_segments.append({
+                            **seg,
+                            "kw_found": kw_found,
+                            "score": score
+                        })
+
+                logger.info(f"    {len(matching_segments)}/{len(segments)} segments match focus terms")
+
+                if matching_segments:
+                    # Add each matching segment as a separate source
+                    for seg in matching_segments[:5]:  # Max 5 segments per ref
+                        seg_ref = f"{test_ref}:{seg['index']}"
+                        he_ref_base = response.get("heRef", test_ref)
+
+                        sources.append(Source(
+                            ref=seg_ref,
+                            he_ref=f"{he_ref_base}:{seg['index']}",
+                            level=SourceLevel.RISHONIM,
+                            hebrew_text=seg["he_text"],
+                            english_text=seg["en_text"],
+                            author=author,
+                            categories=response.get("categories", []),
+                            is_foundation=False,
+                            is_verified=True,
+                            verification_keywords_found=seg["kw_found"],
+                            focus_score=seg["score"],
+                            is_primary=True,
+                            segment_index=seg["index"]
+                        ))
+                        logger.info(f"      Added segment {seg['index']} (score={seg['score']:.1f}): {seg['kw_found'][:3]}...")
+                else:
+                    # No matching segments - log but don't add unfiltered content
+                    logger.info(f"    No segments matched focus terms for {author} on {base_ref}")
             else:
                 logger.warning(f"    Not found: {test_ref}")
     

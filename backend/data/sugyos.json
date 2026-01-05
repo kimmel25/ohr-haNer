@@ -17,22 +17,35 @@
       },
       "primary_gemara": [
         {
-          "ref": "Kesubos 12b",
+          "ref": "Ketubot 12b",
           "he_ref": "כתובות יב:",
           "description": "Main sugya discussing the clash between bodily presumption and monetary presumption in kesubah disputes"
         },
         {
-          "ref": "Kesubos 75b-76a",
-          "he_ref": "כתובות עה:-עו.",
+          "ref": "Ketubot 75b",
+          "he_ref": "כתובות עה:",
           "description": "Discussion of ruba and chazakah, chezkas haguf being stronger than other chazakos"
+        },
+        {
+          "ref": "Ketubot 76a",
+          "he_ref": "כתובות עו.",
+          "description": "Continuation - chezkas haguf stronger than other chazakos"
         }
       ],
       "also_discussed": [
-        {"ref": "Kesubos 16a", "context": "Ad kan lo ka'amar R\"G - bari v'shema and chazakah"},
-        {"ref": "Kesubos 13a", "context": "Connection to mukas etz case"},
-        {"ref": "Bava Basra 55a", "context": "Safek sefeika discussion"}
+        {"ref": "Ketubot 16a", "context": "Ad kan lo ka'amar R\"G - bari v'shema and chazakah"},
+        {"ref": "Ketubot 13a", "context": "Connection to mukas etz case"},
+        {"ref": "Bava Batra 55a", "context": "Safek sefeika discussion"}
       ],
       "key_terms": ["חזקת הגוף", "חזקת ממון", "מוחזק", "להוציא ממון", "רובא וחזקה"],
+      "gemara_keywords": [
+        "חזקה", "חזקת", "גוף", "גופא", "ממון", "ממונא",
+        "בתולה", "בעולה", "כתובה", "מוכת עץ", "דרוסת איש",
+        "העמד", "אוקמה", "אחזקתה", "אחזקתיה",
+        "המוציא מחבירו", "עליו הראיה",
+        "ברי ושמא", "ברי", "שמא",
+        "רובא", "רוב", "ספק"
+      ],
       "key_concepts": [
         "Bodily presumption (woman born a besulah)",
         "Monetary presumption (husband holding the kesubah money)",
@@ -57,7 +70,7 @@
       },
       "primary_gemara": [
         {
-          "ref": "Kesubos 9a",
+          "ref": "Ketubot 9a",
           "he_ref": "כתובות ט.",
           "description": "R' Elazar's teaching that one who says petach pasuach is believed to prohibit her upon himself"
         },
@@ -67,13 +80,13 @@
           "description": "Source mishna - ha'omer l'isha kidashtic"
         },
         {
-          "ref": "Kesubos 22a",
+          "ref": "Ketubot 22a",
           "he_ref": "כתובות כב.",
           "description": "Isha she'amra eishes ish ani"
         }
       ],
       "also_discussed": [
-        {"ref": "Yevamos 47a", "context": "Ger she'nisgayer beino l'vein atzmo"},
+        {"ref": "Yevamot 47a", "context": "Ger she'nisgayer beino l'vein atzmo"},
         {"ref": "Kiddushin 66a", "context": "Shitas R\"I HaZaken"}
       ],
       "key_terms": ["שויא אנפשיה", "חתיכה דאיסורא", "נאמן על עצמו", "אדם נאמן על עצמו יותר ממאה עדים"],
@@ -107,13 +120,18 @@
       },
       "primary_gemara": [
         {
-          "ref": "Kesubos 2a-3a",
-          "he_ref": "כתובות ב.-ג.",
-          "description": "Mishna and gemara establishing why a virgin marries on Wednesday"
+          "ref": "Ketubot 2a",
+          "he_ref": "כתובות ב.",
+          "description": "Mishna establishing why a virgin marries on Wednesday"
+        },
+        {
+          "ref": "Ketubot 3a",
+          "he_ref": "כתובות ג.",
+          "description": "Gemara discussion of the takanah"
         }
       ],
       "also_discussed": [
-        {"ref": "Kesubos 9a", "context": "Connection to ta'anas besulim"}
+        {"ref": "Ketubot 9a", "context": "Connection to ta'anas besulim"}
       ],
       "key_terms": ["בתולה נשאת ביום ד'", "טענת בתולים", "שקדו חכמים", "משכים לב\"ד"],
       "key_concepts": [
@@ -143,14 +161,19 @@
       },
       "primary_gemara": [
         {
-          "ref": "Kesubos 9a-10a",
-          "he_ref": "כתובות ט.-י.",
+          "ref": "Ketubot 9a",
+          "he_ref": "כתובות ט.",
           "description": "R' Elazar - one who says petach pasuach is believed to prohibit her"
+        },
+        {
+          "ref": "Ketubot 10a",
+          "he_ref": "כתובות י.",
+          "description": "Kim lei discussion - is he expert in petach pasuach"
         }
       ],
       "also_discussed": [
-        {"ref": "Kesubos 9b", "context": "Kinui v'stirah discussion"},
-        {"ref": "Kesubos 10a", "context": "Kim lei discussion - is he expert in petach pasuach"}
+        {"ref": "Ketubot 9b", "context": "Kinui v'stirah discussion"},
+        {"ref": "Ketubot 10a", "context": "Kim lei discussion - is he expert in petach pasuach"}
       ],
       "key_terms": ["פתח פתוח", "נאמן לאוסרה עליו", "קים ליה", "בקי ומכיר"],
       "key_concepts": [
@@ -174,19 +197,25 @@
       },
       "primary_gemara": [
         {
-          "ref": "Kesubos 12b-13a",
-          "he_ref": "כתובות יב:-יג.",
+          "ref": "Ketubot 12b",
+          "he_ref": "כתובות יב:",
           "description": "Core discussion of bari v'shema in kesubah disputes"
         },
         {
-          "ref": "Kesubos 16a",
+          "ref": "Ketubot 13a",
+          "he_ref": "כתובות יג.",
+          "description": "Continuation of bari v'shema discussion"
+        },
+        {
+          "ref": "Ketubot 16a",
           "he_ref": "כתובות טז.",
           "description": "Ad kan lo ka'amar R\"G ela b'bari v'shema"
         }
       ],
       "also_discussed": [
         {"ref": "Bava Kamma 46a", "context": "Hamotzi mechavero alav hara'ayah"},
-        {"ref": "Kesubos 75b-76a", "context": "With chazakah"}
+        {"ref": "Ketubot 75b", "context": "With chazakah"},
+        {"ref": "Ketubot 76a", "context": "Continuation"}
       ],
       "key_terms": ["ברי ושמא", "ברי עדיף", "טענת ברי", "טענת שמא"],
       "key_concepts": [
@@ -210,13 +239,18 @@
       },
       "primary_gemara": [
         {
-          "ref": "Kesubos 12b-13a",
-          "he_ref": "כתובות יב:-יג.",
+          "ref": "Ketubot 12b",
+          "he_ref": "כתובות יב:",
           "description": "She says mukas etz, he says druasas ish"
+        },
+        {
+          "ref": "Ketubot 13a",
+          "he_ref": "כתובות יג.",
+          "description": "Continuation - role of chezkas haguf"
         }
       ],
       "also_discussed": [
-        {"ref": "Kesubos 11b", "context": "Definition of mukas etz"}
+        {"ref": "Ketubot 11b", "context": "Definition of mukas etz"}
       ],
       "key_terms": ["מוכת עץ", "דרוסת איש", "בתולה", "חזקת הגוף"],
       "key_concepts": [
@@ -240,9 +274,19 @@
       },
       "primary_gemara": [
         {
-          "ref": "Pesachim 2a-7a",
-          "he_ref": "פסחים ב.-ז.",
-          "description": "Core sugya on obligation to check and nullify chametz"
+          "ref": "Pesachim 2a",
+          "he_ref": "פסחים ב.",
+          "description": "Mishna - or l'arba'ah asar, core sugya on bedikah obligation"
+        },
+        {
+          "ref": "Pesachim 4b",
+          "he_ref": "פסחים ד:",
+          "description": "Bedikas chametz d'rabbanan - min haTorah bitul b'alma sagi"
+        },
+        {
+          "ref": "Pesachim 6b",
+          "he_ref": "פסחים ו:",
+          "description": "Habodek tzarich sheyevatel - one who checks must also nullify"
         },
         {
           "ref": "Pesachim 4b",
@@ -294,9 +338,14 @@
       },
       "primary_gemara": [
         {
-          "ref": "Pesachim 4b-5a",
-          "he_ref": "פסחים ד:-ה.",
+          "ref": "Pesachim 4b",
+          "he_ref": "פסחים ד:",
           "description": "What constitutes hashbasah - destruction vs nullification"
+        },
+        {
+          "ref": "Pesachim 5a",
+          "he_ref": "פסחים ה.",
+          "description": "Continuation - methods of tashbisu"
         },
         {
           "ref": "Pesachim 21a",
@@ -305,7 +354,8 @@
         }
       ],
       "also_discussed": [
-        {"ref": "Pesachim 27b-28a", "context": "Machlokes tana'im on method of biur"}
+        {"ref": "Pesachim 27b", "context": "Machlokes tana'im on method of biur"},
+        {"ref": "Pesachim 28a", "context": "Continuation of biur methods"}
       ],
       "key_terms": ["תשביתו", "השבתה", "ביעור", "אין השבתה אלא בלב"],
       "key_concepts": [
@@ -329,9 +379,19 @@
       },
       "primary_gemara": [
         {
-          "ref": "Pesachim 5b-6b",
-          "he_ref": "פסחים ה:-ו:",
+          "ref": "Pesachim 5b",
+          "he_ref": "פסחים ה:",
           "description": "Scope and nature of the prohibition"
+        },
+        {
+          "ref": "Pesachim 6a",
+          "he_ref": "פסחים ו.",
+          "description": "Further discussion of bal yiraeh"
+        },
+        {
+          "ref": "Pesachim 6b",
+          "he_ref": "פסחים ו:",
+          "description": "Continuation of bal yiraeh bal yimatzei"
         },
         {
           "ref": "Pesachim 21a",
@@ -364,9 +424,14 @@
       },
       "primary_gemara": [
         {
-          "ref": "Pesachim 6b-7a",
-          "he_ref": "פסחים ו:-ז.",
+          "ref": "Pesachim 6b",
+          "he_ref": "פסחים ו:",
           "description": "Does one violate bal yiraeh on unknown chametz?"
+        },
+        {
+          "ref": "Pesachim 7a",
+          "he_ref": "פסחים ז.",
+          "description": "Continuation - chametz she'eino yadua"
         },
         {
           "ref": "Pesachim 21a",
@@ -402,9 +467,14 @@
       },
       "primary_gemara": [
         {
-          "ref": "Pesachim 10a-10b",
-          "he_ref": "פסחים י.-י:",
+          "ref": "Pesachim 10a",
+          "he_ref": "פסחים י.",
           "description": "Does one need to retrieve bread from inaccessible location?"
+        },
+        {
+          "ref": "Pesachim 10b",
+          "he_ref": "פסחים י:",
+          "description": "Continuation - kikar b'shemei korah"
         }
       ],
       "key_terms": ["ככר בשמי קורה", "זימנין דנפיל", "אתי למיכליה"],
@@ -460,14 +530,14 @@
       },
       "primary_gemara": [
         {
-          "ref": "Kesubos 9a",
+          "ref": "Ketubot 9a",
           "he_ref": "כתובות ט.",
           "description": "Safek sefeikah in ta'anas besulim cases"
         }
       ],
       "also_discussed": [
-        {"ref": "Kesubos 15a", "context": "Safek sefeikah l'kula"},
-        {"ref": "Yevamos 119a", "context": "General principles"},
+        {"ref": "Ketubot 15a", "context": "Safek sefeikah l'kula"},
+        {"ref": "Yevamot 119a", "context": "General principles"},
         {"ref": "Yoma 83a", "context": "Safek sefeikah in pikuach nefesh"}
       ],
       "key_terms": ["ספק ספיקא", "תרי ספיקי", "ספק ספיקא להקל"],
@@ -491,9 +561,14 @@
       },
       "primary_gemara": [
         {
-          "ref": "Kesubos 9a-9b",
-          "he_ref": "כתובות ט.-ט:",
+          "ref": "Ketubot 9a",
+          "he_ref": "כתובות ט.",
           "description": "Whether petach pasuach requires witnesses like gittin/kiddushin"
+        },
+        {
+          "ref": "Ketubot 9b",
+          "he_ref": "כתובות ט:",
+          "description": "Continuation - ein davar sheb'ervah"
         }
       ],
       "also_discussed": [
@@ -521,9 +596,14 @@
       },
       "primary_gemara": [
         {
-          "ref": "Kesubos 75b-76a",
-          "he_ref": "כתובות עה:-עו.",
+          "ref": "Ketubot 75b",
+          "he_ref": "כתובות עה:",
           "description": "When rov and chazakah conflict, rov prevails - but not chezkas haguf"
+        },
+        {
+          "ref": "Ketubot 76a",
+          "he_ref": "כתובות עו.",
+          "description": "Continuation - hierarchy of halachic presumptions"
         }
       ],
       "key_terms": ["רובא וחזקה רובא עדיף", "חזקת הגוף", "אין הולכין בממון אחר הרוב"],
@@ -547,14 +627,24 @@
       },
       "primary_gemara": [
         {
-          "ref": "Kesubos 9a-10a",
-          "he_ref": "כתובות ט.-י.",
+          "ref": "Ketubot 9a",
+          "he_ref": "כתובות ט.",
           "description": "Compared to petach pasuach - ein ha'isha ne'eseres ela al yedei kinui v'stirah"
         },
         {
-          "ref": "Sotah 2a-3a",
-          "he_ref": "סוטה ב.-ג.",
+          "ref": "Ketubot 10a",
+          "he_ref": "כתובות י.",
+          "description": "Continuation - kinui v'stirah discussion"
+        },
+        {
+          "ref": "Sotah 2a",
+          "he_ref": "סוטה ב.",
           "description": "Main sugya of kinui v'stirah"
+        },
+        {
+          "ref": "Sotah 3a",
+          "he_ref": "סוטה ג.",
+          "description": "Continuation - kinui v'stirah"
         }
       ],
       "key_terms": ["קינוי וסתירה", "אשה נאסרת", "סוטה"],
@@ -614,7 +704,7 @@
       },
       "primary_gemara": [
         {
-          "ref": "Kesubos 22a",
+          "ref": "Ketubot 22a",
           "he_ref": "כתובות כב.",
           "description": "Isha she'amra eishes ish hayisi v'gerusha ani"
         }

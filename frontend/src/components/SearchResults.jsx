@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { SourceRatingButtons } from './SourceFeedbackPanel';
 
 /**
  * SearchResults Component
@@ -8,8 +9,10 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
  * - searchResult: The result object from the search API.
  * - apiBase: Base URL for API calls (used for /sources).
  * - onSuggestionSelect: Optional handler for clarification suggestions.
+ * - sourceRatings: Object mapping source refs to ratings.
+ * - onSourceRate: Callback (sourceRef, rating) => void for rating sources.
  */
-const SearchResults = ({ searchResult, apiBase, onSuggestionSelect }) => {
+const SearchResults = ({ searchResult, apiBase, onSuggestionSelect, sourceRatings = {}, onSourceRate }) => {
   if (!searchResult) return null;
 
   const baseUrl = apiBase || '';
@@ -225,6 +228,13 @@ const SearchResults = ({ searchResult, apiBase, onSuggestionSelect }) => {
               ? 'Hide full text'
               : 'Show full text'}
           </button>
+          {onSourceRate && (
+            <SourceRatingButtons
+              sourceRef={ref}
+              currentRating={sourceRatings[ref]}
+              onRate={onSourceRate}
+            />
+          )}
         </div>
 
         {sourceErrors[ref] && <p className="source-error">{sourceErrors[ref]}</p>}

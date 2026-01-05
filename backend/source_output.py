@@ -15,7 +15,7 @@ import html
 
 # Initialize logging
 try:
-    from logging.logging_config import setup_logging
+    from logging_config import setup_logging
     setup_logging()
 except ImportError:
     logging.basicConfig(

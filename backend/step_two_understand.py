@@ -41,7 +41,7 @@ from anthropic import Anthropic
 
 # Initialize logging
 try:
-    from logging.logging_config import setup_logging
+    from logging_config import setup_logging
     setup_logging()
 except ImportError:
     logging.basicConfig(
@@ -604,15 +604,31 @@ def _build_analysis_from_known_sugya(
     trickle_direction = TrickleDirection.UP
     is_nuance = False
     nuance_description = ""
-    target_authors = []
+
+    # V6 FIX: Use rishonim_who_discuss from known_sugyos as default target_authors
+    # This ensures we search for the specific commentators who discuss this sugya
+    target_authors = list(known_match.rishonim_who_discuss) if known_match.rishonim_who_discuss else []
     primary_author = None
-    focus_terms = []
-    topic_terms = known_match.key_terms
+
+    # V6 FIX: Use gemara_keywords from known_sugyos if available
+    # These are actual words that appear in the gemara text, better for filtering
+    gemara_keywords = known_match.raw_data.get("gemara_keywords", []) if known_match.raw_data else []
+    if gemara_keywords:
+        # gemara_keywords are better for filtering - they're actual text words
+        focus_terms = gemara_keywords
+        topic_terms = known_match.key_terms + gemara_keywords
+        logger.info(f"[V6] Using gemara_keywords for filtering: {gemara_keywords[:5]}...")
+    else:
+        focus_terms = known_match.key_terms
+        topic_terms = known_match.key_terms
+
     search_variants = None
     inyan_description = ""
     target_sources = ["gemara", "rashi", "tosafos"]
     reasoning = f"Matched known sugya: {known_match.sugya_id}"
-    
+
+    logger.info(f"[V6] Using rishonim_who_discuss as target_authors: {target_authors}")
+
     if claude_enrichment:
         # Use Claude's classification/enrichment but keep our refs
         query_type = _parse_enum(claude_enrichment.get("query_type"), QueryType, QueryType.TOPIC)
@@ -621,9 +637,28 @@ def _build_analysis_from_known_sugya(
         trickle_direction = _parse_enum(claude_enrichment.get("trickle_direction"), TrickleDirection, TrickleDirection.UP)
         is_nuance = claude_enrichment.get("is_nuance_query", False)
         nuance_description = claude_enrichment.get("nuance_description", "")
-        target_authors = claude_enrichment.get("target_authors", [])
+        # V6 FIX: Merge Claude's target_authors with known_sugyos rishonim
+        # If Claude provides specific authors, use both (deduped)
+        claude_authors = claude_enrichment.get("target_authors", [])
+        if claude_authors:
+            combined_authors = list(target_authors)  # Start with known_sugyos rishonim
+            for author in claude_authors:
+                if author not in combined_authors:
+                    combined_authors.append(author)
+            target_authors = combined_authors
         primary_author = claude_enrichment.get("primary_author")
-        focus_terms = claude_enrichment.get("focus_terms", [])
+        # V6 FIX: Merge Claude's focus_terms with gemara_keywords, not replace
+        claude_focus = claude_enrichment.get("focus_terms", [])
+        if claude_focus and gemara_keywords:
+            # Combine both - gemara_keywords first (more reliable), then Claude's
+            combined_focus = list(gemara_keywords)
+            for term in claude_focus:
+                if term not in combined_focus:
+                    combined_focus.append(term)
+            focus_terms = combined_focus
+        elif claude_focus:
+            focus_terms = claude_focus
+        # else keep gemara_keywords as focus_terms
         search_variants = _parse_search_variants(claude_enrichment.get("search_variants", {}))
         inyan_description = claude_enrichment.get("inyan_description", "")
         target_sources = claude_enrichment.get("target_sources", target_sources)

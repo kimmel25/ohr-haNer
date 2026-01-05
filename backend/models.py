@@ -374,3 +374,31 @@ class RejectRequest(BaseModel):
     """User rejected all options."""
     original_query: str
     feedback: Optional[str] = None
+
+
+# ==========================================
+#  FEEDBACK MODELS (for API)
+# ==========================================
+
+class SourceFeedbackItem(BaseModel):
+    """Feedback for a single source from frontend."""
+    source_ref: str
+    rating: str  # "thumbs_up", "thumbs_down", "neutral"
+
+
+class FeedbackRequest(BaseModel):
+    """Request to submit feedback on search results."""
+    query_id: str
+    original_query: str
+    hebrew_terms: List[str] = []
+    overall_satisfaction: str  # "very_satisfied", "satisfied", "neutral", "dissatisfied", "very_dissatisfied"
+    source_feedbacks: List[SourceFeedbackItem] = []
+    comment: Optional[str] = None
+
+
+class FeedbackResponse(BaseModel):
+    """Response after submitting feedback."""
+    success: bool
+    message: str
+    should_cache: bool = False
+    combined_score: float = 0.0
