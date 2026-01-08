@@ -195,6 +195,9 @@ class QueryAnalysis:
     # V5: NUANCE DETECTION (includes shittah, comparison, machlokes)
     is_nuance_query: bool = False
     nuance_description: str = ""  # What specific nuance is being asked about
+
+    # V6: DEFINITION QUERY - tight scope, core sugya only
+    is_definition_query: bool = False
     
     # V5: Target authors (for shittah/comparison queries)
     target_authors: List[str] = field(default_factory=list)  # ["Ran", "Rashi", "Tosafos"]
@@ -332,25 +335,75 @@ def _load_author_kb() -> tuple:
     return is_author, authors
 
 
+def _expand_daf_range(tractate: str, start_daf: str, end_daf: str) -> List[str]:
+    """
+    Expand a daf range into individual daf references.
+
+    Examples:
+        "Pesachim", "4a", "5b" -> ["Pesachim 4a", "Pesachim 4b", "Pesachim 5a", "Pesachim 5b"]
+        "Pesachim", "4a", "4b" -> ["Pesachim 4a", "Pesachim 4b"]
+    """
+    import re
+
+    # Parse start and end
+    start_match = re.match(r'(\d+)([ab])', start_daf.lower())
+    end_match = re.match(r'(\d+)([ab])', end_daf.lower())
+
+    if not start_match or not end_match:
+        return [f"{tractate} {start_daf}"]
+
+    start_num = int(start_match.group(1))
+    start_amud = start_match.group(2)
+    end_num = int(end_match.group(1))
+    end_amud = end_match.group(2)
+
+    refs = []
+    current_num = start_num
+    current_amud = start_amud
+
+    while True:
+        refs.append(f"{tractate} {current_num}{current_amud}")
+
+        # Check if we've reached the end
+        if current_num == end_num and current_amud == end_amud:
+            break
+
+        # Advance to next daf/amud
+        if current_amud == 'a':
+            current_amud = 'b'
+        else:
+            current_amud = 'a'
+            current_num += 1
+
+        # Safety: don't expand more than 10 dapim
+        if len(refs) > 20:
+            logger.warning(f"  Range too large, limiting to first 20 dapim")
+            break
+
+    return refs
+
+
 def _validate_and_fix_refs(refs: List[str]) -> List[str]:
-    """V5: Validate and fix common ref format issues."""
+    """V5: Validate and fix common ref format issues, expanding ranges."""
+    import re
     fixed_refs = []
-    
+
     for ref in refs:
         if not ref:
             continue
-        
-        # Check for range refs like "2a-6b" and split them
-        range_match = None
-        import re
+
+        # Check for range refs like "Pesachim 2a-6b" and expand them
         range_pattern = r'(.+?)\s+(\d+[ab])\s*-\s*(\d+[ab])'
         match = re.match(range_pattern, ref)
         if match:
-            base = match.group(1)
+            base = match.group(1).strip()
             start = match.group(2)
-            # Just take the start of the range
-            fixed_refs.append(f"{base} {start}".strip())
-            logger.warning(f"  Converted range ref '{ref}' to '{base} {start}'")
+            end = match.group(3)
+
+            # Expand the range into individual refs
+            expanded = _expand_daf_range(base, start, end)
+            fixed_refs.extend(expanded)
+            logger.info(f"  Expanded range ref '{ref}' to {len(expanded)} refs: {expanded[:3]}{'...' if len(expanded) > 3 else ''}")
             continue
         
         # Fix "Ran on X" to "Ran on Rif X" if needed
@@ -372,10 +425,70 @@ def _validate_and_fix_refs(refs: List[str]) -> List[str]:
             else:
                 fixed_refs.append(ref)
             continue
-        
+
         fixed_refs.append(ref)
-    
+
+    # Post-processing: ensure we include both sides of each daf
+    # If we have "Pesachim 4a" but not "Pesachim 4b", add "Pesachim 4b"
+    fixed_refs = _ensure_both_amudim(fixed_refs)
+
     return fixed_refs
+
+
+def _ensure_both_amudim(refs: List[str]) -> List[str]:
+    """
+    Ensure that if we have one side of a daf, we include the other side too.
+
+    Examples:
+        ["Pesachim 4a"] -> ["Pesachim 4a", "Pesachim 4b"]
+        ["Pesachim 4a", "Pesachim 4b"] -> ["Pesachim 4a", "Pesachim 4b"]
+        ["Pesachim 4a", "Pesachim 6a"] -> ["Pesachim 4a", "Pesachim 4b", "Pesachim 6a", "Pesachim 6b"]
+    """
+    import re
+
+    # Parse all refs to find tractate/daf pairs
+    daf_pattern = r'^(.+?)\s+(\d+)([ab])$'
+    parsed = []
+    for ref in refs:
+        match = re.match(daf_pattern, ref.strip())
+        if match:
+            tractate = match.group(1)
+            daf_num = int(match.group(2))
+            amud = match.group(3)
+            parsed.append((tractate, daf_num, amud, ref))
+        else:
+            parsed.append((None, None, None, ref))
+
+    # Find which dapim are present
+    present_dapim = set()
+    for tractate, daf_num, amud, _ in parsed:
+        if tractate and daf_num:
+            present_dapim.add((tractate, daf_num, amud))
+
+    # Add missing amudim
+    result = list(refs)  # Start with original refs
+    added = set()
+
+    for tractate, daf_num, amud, original_ref in parsed:
+        if tractate is None:
+            continue
+
+        other_amud = 'b' if amud == 'a' else 'a'
+        if (tractate, daf_num, other_amud) not in present_dapim:
+            new_ref = f"{tractate} {daf_num}{other_amud}"
+            if new_ref not in added and new_ref not in refs:
+                # Insert after the original ref to maintain order
+                idx = result.index(original_ref)
+                if amud == 'a':
+                    # Insert 'b' after 'a'
+                    result.insert(idx + 1, new_ref)
+                else:
+                    # Insert 'a' before 'b'
+                    result.insert(idx, new_ref)
+                added.add(new_ref)
+                logger.info(f"  Added complementary amud: {new_ref} (from {original_ref})")
+
+    return result
 
 
 def _detect_query_vagueness(query: str, hebrew_terms: List[str]) -> tuple[bool, str]:
@@ -438,6 +551,19 @@ General explorations without specific focus:
 - "sugyos in ketubot" (broad)
 - "explain the concept of migu" (general)
 
+### DEFINITION queries - KEEP SCOPE TIGHT!
+When someone asks for a DEFINITION or basic explanation of a term:
+- "maschir socher in psachim" = definition of landlord/tenant in chametz context
+- "what is X" = asking for the core concept
+
+For definition queries:
+1. **ONLY include the PRIMARY sugya** - usually 1-2 dapim max
+2. **DO NOT include tangential sugyos** that mention the term but aren't the main discussion
+3. The user wants to UNDERSTAND the concept, not see every mention
+4. Example: "maschir socher" is PRIMARILY on Pesachim 4a-4b.
+   - DON'T include 5a, 6a, 7a even if they mention it
+   - ONLY include the mishna/gemara where the concept is DEFINED and EXPLAINED
+
 ## FOCUS TERMS vs TOPIC TERMS
 
 TOPIC TERMS are generic words for the broad topic:
@@ -479,11 +605,12 @@ CRITICAL: Different rishonim have different Sefaria formats!
 Return ONLY valid JSON:
 ```json
 {
-  "query_type": "topic|nuance|shittah|comparison|machlokes|question|source_request|sugya|pasuk|halacha|unknown",
+  "query_type": "topic|definition|nuance|shittah|comparison|machlokes|question|source_request|sugya|pasuk|halacha|unknown",
   "foundation_type": "gemara|mishna|chumash|halacha_sa|halacha_rambam|midrash|rishon|unknown",
   "breadth": "narrow|standard|wide|exhaustive",
   "trickle_direction": "up|down|both|none",
-  
+
+  "is_definition_query": true/false,
   "is_nuance_query": true/false,
   "nuance_description": "What specific nuance is being asked (if nuance)",
   
@@ -789,13 +916,31 @@ search_variants, inyan_description, target_sources, reasoning."""
             logger.warning(f"[V6] Claude enrichment failed (non-critical): {e}")
             claude_enrichment = None
         
-        # Build analysis from known sugya + Claude enrichment
-        analysis = _build_analysis_from_known_sugya(query, hebrew_terms, known_match, claude_enrichment)
-        
-        log_subsection("ANALYSIS RESULTS (FROM KNOWN SUGYOS)")
-        _log_analysis_results(analysis)
-        
-        return analysis
+        # V4.4: Check if Claude's enrichment indicates the match is bad
+        # If Claude says it's "unrelated" or "wrong", fall back to full analysis
+        if claude_enrichment:
+            reasoning = claude_enrichment.get("reasoning", "").lower()
+            bad_match_indicators = ["unrelated", "not related", "wrong topic", "incorrect match",
+                                    "different topic", "no connection", "does not match",
+                                    "completely unrelated", "nothing to do with"]
+
+            if any(indicator in reasoning for indicator in bad_match_indicators):
+                logger.warning(f"[V6] Claude indicates known_sugya match is BAD - falling back to full analysis")
+                logger.warning(f"[V6]   Reason: {reasoning[:100]}...")
+                # Fall through to full Claude analysis below instead of using known_sugyos
+                known_match = None  # Clear the match so we use full analysis
+
+        # Only use known_sugya if it's still valid after Claude check
+        if known_match:
+            # Build analysis from known sugya + Claude enrichment
+            analysis = _build_analysis_from_known_sugya(query, hebrew_terms, known_match, claude_enrichment)
+
+            log_subsection("ANALYSIS RESULTS (FROM KNOWN SUGYOS)")
+            _log_analysis_results(analysis)
+
+            return analysis
+
+        # If we get here, Claude indicated the match was bad - continue to full analysis
     
     # ==========================================================================
     # NO KNOWN SUGYA - FALL BACK TO FULL CLAUDE ANALYSIS (V5 behavior)
@@ -908,7 +1053,13 @@ Return ONLY valid JSON."""
         # Force nuance for shittah/comparison/machlokes
         query_type = _parse_enum(data.get("query_type"), QueryType, QueryType.UNKNOWN)
         is_nuance = data.get("is_nuance_query", False)
-        
+        is_definition = data.get("is_definition_query", False)
+
+        # Auto-detect definition queries based on query_type
+        if query_type.value == "definition" or data.get("query_type") == "definition":
+            is_definition = True
+            logger.info(f"  Detected definition query - will limit scope")
+
         if query_type in [QueryType.SHITTAH, QueryType.COMPARISON, QueryType.MACHLOKES]:
             if not is_nuance:
                 logger.warning(f"Forcing is_nuance_query=true for {query_type.value} query")
@@ -925,6 +1076,7 @@ Return ONLY valid JSON."""
             trickle_direction=_parse_enum(data.get("trickle_direction"), TrickleDirection, TrickleDirection.UP),
             
             is_nuance_query=is_nuance,
+            is_definition_query=is_definition,
             nuance_description=data.get("nuance_description", ""),
             
             target_authors=data.get("target_authors", []),

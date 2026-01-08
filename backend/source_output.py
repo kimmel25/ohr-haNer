@@ -75,13 +75,74 @@ def get_level_str(source) -> str:
     return str(source.level)
 
 
+def extract_daf_number(ref: str) -> tuple:
+    """
+    Extract tractate, daf number, and amud from a reference for sorting.
+
+    Examples:
+        "Pesachim 4a" -> ("Pesachim", 4, 0)
+        "Pesachim 4b" -> ("Pesachim", 4, 1)
+        "Rashi on Pesachim 4a:5:1" -> ("Pesachim", 4, 0)
+        "Tosafot on Pesachim 4a:9:1" -> ("Pesachim", 4, 0)
+
+    Returns tuple of (tractate, daf_num, amud) for sorting.
+    amud: 0 for 'a', 1 for 'b'
+    """
+    import re
+
+    # Pattern to extract daf reference like "4a", "4b", "104a", etc.
+    # Handle refs like "Pesachim 4a", "Rashi on Pesachim 4a:5:1", etc.
+    daf_pattern = r'(\d+)([ab])'
+
+    match = re.search(daf_pattern, ref.lower())
+    if match:
+        daf_num = int(match.group(1))
+        amud = 0 if match.group(2) == 'a' else 1
+
+        # Extract tractate name (first word, or word after "on")
+        tractate_match = re.search(r'(?:on\s+)?([A-Z][a-z]+)', ref)
+        tractate = tractate_match.group(1) if tractate_match else ""
+
+        return (tractate, daf_num, amud)
+
+    # Fallback for refs without standard daf pattern
+    return ("", 999, 0)
+
+
 def sort_sources_by_level(sources: List["Source"]) -> List["Source"]:
     """Sort sources by traditional learning hierarchy."""
     def get_level_priority(source):
         level_str = get_level_str(source)
         return LEVEL_ORDER.get(level_str, 99)
-    
+
     return sorted(sources, key=get_level_priority)
+
+
+def sort_sources_chronologically(sources: List["Source"]) -> List["Source"]:
+    """
+    Sort sources by:
+    1. Level (gemara -> rashi -> tosfos -> rishonim, etc.)
+    2. Within each level, by daf order (4a, 4b, 5a, 5b, etc.)
+
+    This provides a traditional learning flow.
+    """
+    def get_sort_key(source):
+        level_str = get_level_str(source)
+        level_priority = LEVEL_ORDER.get(level_str, 99)
+
+        # Extract daf info for secondary sorting
+        ref = source.ref or ""
+        tractate, daf_num, amud = extract_daf_number(ref)
+
+        # Return tuple: (level_priority, tractate, daf_num, amud)
+        # This ensures:
+        # - Primary sort by level (gemara first, then rashi, then tosfos)
+        # - Secondary sort by tractate (in case of multiple tractates)
+        # - Tertiary sort by daf number
+        # - Quaternary sort by amud (a before b)
+        return (level_priority, tractate, daf_num, amud)
+
+    return sorted(sources, key=get_sort_key)
 
 
 def group_sources_by_level(sources: List["Source"]) -> Dict[str, List["Source"]]:

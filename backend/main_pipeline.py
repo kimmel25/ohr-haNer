@@ -17,6 +17,7 @@ import asyncio
 import logging
 
 from models import MareiMekomosResult, ConfidenceLevel, QueryType, SourceLevel
+from source_output import sort_sources_chronologically
 
 logger = logging.getLogger(__name__)
 
@@ -165,12 +166,24 @@ async def search_sources(query: str) -> MareiMekomosResult:
     logger.info(f"  Hebrew term: {step1_result.hebrew_term}")
     logger.info(f"  All terms: {step1_result.hebrew_terms}")
     logger.info(f"  Method: {step1_result.method}")
-    
-    if not step1_result.success or not step1_result.hebrew_terms:
+    logger.info(f"  Is pure English: {getattr(step1_result, 'is_pure_english', False)}")
+
+    # V4.4: Handle pure English queries - they don't need Hebrew terms
+    is_pure_english = getattr(step1_result, 'is_pure_english', False)
+
+    if not step1_result.success and not is_pure_english:
         logger.warning("Step 1 failed - cannot continue")
         return _build_failure_result(query, step1_result, "Could not transliterate query")
-    
+
+    if not step1_result.hebrew_terms and not is_pure_english:
+        logger.warning("No Hebrew terms found and not a pure English query - cannot continue")
+        return _build_failure_result(query, step1_result, "Could not transliterate query")
+
     hebrew_terms = step1_result.hebrew_terms
+
+    # V4.4: For pure English queries, Claude will interpret the topic from original query
+    if is_pure_english:
+        logger.info("Pure English query detected - Claude will interpret topic from original query")
     
     # Step 2: Understand
     logger.info("\n--- STEP 2: UNDERSTAND ---")
@@ -238,10 +251,15 @@ async def search_sources(query: str) -> MareiMekomosResult:
             + list(getattr(search_result, "earlier_sources", []) or [])
         )
 
+    # Sort sources chronologically: by level (gemara→rashi→tosfos), then by daf order
+    sources_list = sort_sources_chronologically(sources_list)
+
     sources_payload = [_serialize_source(source) for source in sources_list]
     sources_by_level = {}
     for level, sources in (getattr(search_result, "sources_by_level", {}) or {}).items():
-        sources_by_level[level] = [_serialize_source(source) for source in sources]
+        # Sort sources within each level by daf order
+        sorted_sources = sort_sources_chronologically(sources)
+        sources_by_level[level] = [_serialize_source(source) for source in sorted_sources]
 
     needs_clarification = bool(
         analysis.needs_clarification

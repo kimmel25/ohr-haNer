@@ -217,16 +217,16 @@ def _calculate_match_score(
 def lookup_known_sugya(
     query: str,
     hebrew_terms: List[str] = None,
-    threshold: float = 0.4
+    threshold: float = 0.5  # V4.4: Raised from 0.4 to reduce false positives
 ) -> Optional[KnownSugyaMatch]:
     """
     Look up a query in the known sugyos database.
-    
+
     Args:
         query: The user's query string
         hebrew_terms: Hebrew terms from Step 1 (decipher)
         threshold: Minimum match score (0-1) to consider a match
-    
+
     Returns:
         KnownSugyaMatch if found, None otherwise
     """

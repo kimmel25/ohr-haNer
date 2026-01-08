@@ -870,9 +870,9 @@
   "chezkas haguf": {
     "hebrew": "חזקת הגוף",
     "confidence": "high",
-    "usage_count": 67,
+    "usage_count": 69,
     "source": "manual",
-    "last_used": "2026-01-04T22:02:48.932743"
+    "last_used": "2026-01-06T23:36:10.410092"
   },
   "chezka haguf": {
     "hebrew": "חזקת הגוף",
@@ -1666,9 +1666,9 @@
   "maschir socher": {
     "hebrew": "משכיר שוכר",
     "confidence": "high",
-    "usage_count": 4,
+    "usage_count": 23,
     "source": "sefaria",
-    "last_used": "2026-01-04T22:07:49.060199"
+    "last_used": "2026-01-07T23:25:33.033734"
   },
   "migu lehotzi mamon": {
     "hebrew": "מיגו להוצי ממון",
@@ -2046,16 +2046,80 @@
   "chezkas mammon": {
     "hebrew": "חזקת ממון",
     "confidence": "high",
-    "usage_count": 15,
+    "usage_count": 17,
     "source": "manual_fix",
-    "last_used": "2026-01-04T22:02:48.935335"
+    "last_used": "2026-01-06T23:36:10.416087"
   },
   "chometz": {
     "hebrew": "חמץ",
     "confidence": "high",
+    "usage_count": 4,
+    "source": "runtime",
+    "last_used": "2026-01-07T23:31:46.225820",
+    "hits": 10000
+  },
+  "source": {
+    "hebrew": "שורק",
+    "confidence": "high",
     "usage_count": 2,
     "source": "runtime",
-    "last_used": "2025-12-31T22:56:11.814727",
+    "last_used": "2026-01-07T23:26:56.059648",
+    "hits": 759
+  },
+  "woman": {
+    "hebrew": "ומן",
+    "confidence": "high",
+    "usage_count": 2,
+    "source": "runtime",
+    "last_used": "2026-01-07T23:26:56.067082",
+    "hits": 10000
+  },
+  "rava": {
+    "hebrew": "רבה",
+    "confidence": "high",
+    "usage_count": 2,
+    "source": "runtime",
+    "last_used": "2026-01-07T23:31:46.216815",
+    "hits": 10000
+  },
+  "assur": {
+    "hebrew": "אסור",
+    "confidence": "high",
+    "usage_count": 2,
+    "source": "runtime",
+    "last_used": "2026-01-07T23:31:46.236903",
+    "hits": 10000
+  },
+  "6 hour": {
+    "hebrew": "6 חור",
+    "confidence": "low",
+    "usage_count": 2,
+    "source": "runtime",
+    "last_used": "2026-01-07T23:31:46.246817",
+    "hits": 1
+  },
+  "sourc": {
+    "hebrew": "שורך",
+    "confidence": "high",
+    "usage_count": 2,
+    "source": "runtime",
+    "last_used": "2026-01-07T23:35:12.159739",
+    "hits": 956
+  },
+  "women": {
+    "hebrew": "ומן",
+    "confidence": "high",
+    "usage_count": 2,
+    "source": "runtime",
+    "last_used": "2026-01-07T23:35:12.169742",
+    "hits": 10000
+  },
+  "hair": {
+    "hebrew": "הר",
+    "confidence": "high",
+    "usage_count": 2,
+    "source": "runtime",
+    "last_used": "2026-01-07T23:35:12.176739",
     "hits": 10000
   }
 }

@@ -163,42 +163,142 @@ ENGLISH_MARKERS = {
     'what', 'which', 'how', 'why', 'when', 'where', 'who', 'whose',
     'does', 'do', 'did', 'is', 'are', 'was', 'were', 'can', 'could',
     'would', 'should', 'will',
-    
+
     # Common verbs
     'explain', 'describe', 'compare', 'define', 'tell', 'show',
-    'find', 'get', 'give', 'list', 'search', 'look',
+    'find', 'get', 'give', 'list', 'search', 'look', 'looking',
     'learn', 'study', 'teach', 'read', 'write', 'understand',
     'know', 'think', 'say', 'said', 'says', 'talk', 'discuss',
     'analyze', 'interpret', 'translate', 'mean', 'means',
-    
-    # Articles & prepositions  
+    'need', 'want', 'cover', 'covering', 'covered', 'covers',
+    'have', 'has', 'had', 'having', 'been', 'being', 'be',
+
+    # Articles & prepositions
     'the', 'a', 'an', 'of', 'in', 'on', 'at', 'to', 'for', 'from',
     'with', 'by', 'about', 'into', 'through', 'during', 'before',
     'after', 'above', 'below', 'between', 'under', 'again',
-    
+
     # Adverbs & directions
     'up', 'down', 'out', 'over', 'off', 'away', 'back', 'here', 'there',
     'now', 'then', 'always', 'never', 'often', 'sometimes', 'usually',
     'very', 'too', 'quite', 'rather', 'just', 'only', 'also', 'even',
-    
+
     # Conjunctions & comparisons
     'or', 'and', 'but', 'nor', 'yet', 'so',
     'vs', 'versus', 'than', 'as',
     'stronger', 'better', 'different', 'difference', 'same',
     'similar', 'like', 'unlike',
-    
+
     # Common phrases
     'meaning', 'regarding', 'concerning',
     'me', 'i', 'my', 'you', 'your', 'we', 'our', 'they', 'their',
     'please', 'thanks', 'thank', 'help',
-    
+
     # Pronouns & misc
     'this', 'that', 'these', 'those', 'it', 'its',
     'all', 'any', 'both', 'each', 'every', 'some', 'many', 'few',
     'more', 'most', 'other', 'such', 'no', 'not', 'only', 'own',
+
+    # Common English nouns that appear in Torah queries
+    'sources', 'source', 'references', 'reference', 'texts', 'text',
+    'women', 'woman', 'men', 'man', 'person', 'people',
+    'hair', 'head', 'body', 'hand', 'hands', 'food', 'water', 'wine',
+    'marriage', 'married', 'husband', 'wife', 'children', 'child',
+    'prayer', 'prayers', 'praying', 'blessing', 'blessings',
+    'sabbath', 'holiday', 'holidays', 'passover', 'purim',
+    'law', 'laws', 'rule', 'rules', 'requirement', 'requirements',
+    'obligation', 'obligations', 'forbidden', 'permitted', 'allowed',
+    'reason', 'reasons', 'opinion', 'opinions', 'view', 'views',
+    'concept', 'concepts', 'idea', 'ideas', 'topic', 'topics',
+    'discussion', 'discussions', 'debate', 'debates',
 }
 
 MIN_ENGLISH_MARKERS = 2
+
+
+def is_pure_english_query(query: str) -> bool:
+    """
+    Detect if a query is ENTIRELY English (asking about a topic in English).
+
+    V4.5: Uses improved language_detector module for better classification.
+
+    Examples that should return True:
+    - "sources for women covering hair"
+    - "what is the law about eating on Yom Kippur"
+    - "why do we light candles on Shabbat"
+
+    Examples that should return False (contain Hebrew transliteration):
+    - "what is chezkas haguf"
+    - "explain bari vishema"
+    - "sources for kisui rosh"
+    """
+    # Try using the improved language detector
+    try:
+        from tools.language_detector import analyze_query, is_hebrew_transliteration
+        analysis = analyze_query(query)
+
+        logger.debug(f"[PURE_ENGLISH] Analysis: {analysis['english_count']} English, {analysis['hebrew_count']} Hebrew")
+        for word, classification, reason in analysis['words']:
+            logger.debug(f"  '{word}': {classification} ({reason})")
+
+        # Pure English = no Hebrew words detected
+        if analysis['is_pure_english']:
+            logger.info(f"[PURE_ENGLISH] Query is pure English: '{query}'")
+            return True
+
+        # Even if not "pure", if there's no Hebrew and 3+ English words, treat as pure English
+        if analysis['hebrew_count'] == 0 and analysis['english_count'] >= 3:
+            logger.info(f"[PURE_ENGLISH] Query appears pure English (no Hebrew detected): '{query}'")
+            return True
+
+        return False
+
+    except ImportError:
+        logger.warning("[PURE_ENGLISH] language_detector not available, using fallback")
+        # Fallback to original logic
+        return _is_pure_english_fallback(query)
+
+
+def _is_pure_english_fallback(query: str) -> bool:
+    """Fallback detection when language_detector is not available."""
+    words = query.lower().split()
+    clean_words = [re.sub(r'[?,.\'"!;:]', '', w) for w in words]
+
+    english_count = 0
+    potential_hebrew_count = 0
+
+    for word in clean_words:
+        if not word or len(word) <= 1:
+            continue
+
+        if word in ENGLISH_MARKERS:
+            english_count += 1
+        elif word in AUTHOR_TRANSLITERATIONS:
+            potential_hebrew_count += 1
+        else:
+            # Simple heuristic: Hebrew transliterations often have tz, ch patterns
+            hebrew_indicators = ['tz', 'chm', 'chz', 'shv', 'shm']
+            has_hebrew_indicator = any(ind in word for ind in hebrew_indicators)
+
+            english_endings = ['ing', 'tion', 'ness', 'ment', 'able', 'ible', 'ous', 'ive', 'ly', 'ed']
+            has_english_ending = any(word.endswith(end) for end in english_endings)
+
+            if has_hebrew_indicator and not has_english_ending:
+                potential_hebrew_count += 1
+            elif has_english_ending:
+                english_count += 1
+
+    total_counted = english_count + potential_hebrew_count
+    if total_counted == 0:
+        return False
+
+    english_ratio = english_count / total_counted if total_counted > 0 else 0
+    is_pure_english = english_ratio >= 0.8 and english_count >= 3
+
+    if is_pure_english:
+        logger.debug(f"Pure English (fallback): '{query}' ({english_count} English, {potential_hebrew_count} Hebrew)")
+
+    return is_pure_english
 
 
 # ==========================================
@@ -669,20 +769,42 @@ async def decipher_single(query: str) -> DecipherResult:
 async def decipher(query: str) -> DecipherResult:
     """
     Main entry point for Step 1: Transliteration → Hebrew
-    
-    V4.3 FLOW:
-    1. Check if mixed query (English + Hebrew)
-    2. If mixed:
+
+    V4.4 FLOW:
+    1. Check if PURE ENGLISH query (no Hebrew content) - pass to Claude directly
+    2. Check if mixed query (English + Hebrew)
+    3. If mixed:
        - Extract Hebrew candidates (author-aware, V4.2)
        - Transliterate each candidate
        - Return all terms for Step 2 to verify
-    3. If pure transliteration:
+    4. If pure transliteration:
        - Use single-term flow (dictionary → transliteration → Sefaria)
        - V4.3: Dictionary now uses lookup_all() for multi-term support!
     """
-    log_section("STEP 1: DECIPHER (V4.3) - Multi-Term Dictionary Support")
+    log_section("STEP 1: DECIPHER (V4.4) - Pure English Query Support")
     logger.info("Incoming query: %s", query)
-    
+
+    # ========================================
+    # PURE ENGLISH QUERY DETECTION (V4.4 NEW)
+    # ========================================
+    if is_pure_english_query(query):
+        log_subsection("Pure English Query Detected")
+        logger.info("Query is entirely in English - passing to Step 2 for interpretation")
+        logger.info("Query will be interpreted by Claude as a topic request")
+
+        return DecipherResult(
+            success=True,  # This IS a success - we identified it correctly
+            hebrew_term=None,
+            hebrew_terms=[],  # No Hebrew terms - Step 2 will use the original query
+            confidence=ConfidenceLevel.HIGH,  # High confidence it's English
+            method="pure_english_topic",
+            message="Query is in English. Claude will interpret the topic.",
+            is_mixed_query=False,
+            original_query=query,
+            extraction_confident=True,
+            is_pure_english=True  # New flag for pipeline
+        )
+
     # ========================================
     # MIXED QUERY DETECTION
     # ========================================

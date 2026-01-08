@@ -34,6 +34,11 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 
 
+def strip_niqqud(text: str) -> str:
+    """Strip Hebrew vowel points (niqqud) for text matching."""
+    return re.sub(r'[\u0591-\u05C7]', '', text)
+
+
 def log_section(title: str) -> None:
     """Log a major section header."""
     border = "=" * 70
@@ -635,10 +640,80 @@ def extract_text_segments(sefaria_response: Dict) -> List[Dict]:
     return segments
 
 
+def find_relevant_segments(
+    segments: List[Dict],
+    target_segments: List[str],
+    focus_terms: List[str],
+    context_before: int = 0,  # V6 FIX: Don't add context before (often irrelevant)
+    context_after: int = 5    # V6 FIX: Increase context after for full sugya
+) -> Tuple[List[Dict], int]:
+    """
+    V6 FIX: Find segments that contain target text or focus terms.
+
+    Returns:
+        - List of relevant segments (with context around matches)
+        - Index of the primary matching segment (for reference building)
+
+    Strategy:
+    1. First try to find segments containing target_segments text
+    2. Fall back to focus_terms - find ALL segments with ANY focus term
+    3. Return contiguous range from first to last match + context_after
+    """
+    if not segments:
+        return [], -1
+
+    matching_indices = []
+
+    # Strategy 1: Look for target_segments text (strip niqqud for matching)
+    if target_segments:
+        for target in target_segments:
+            target_stripped = strip_niqqud(target)
+            for seg in segments:
+                he_text = seg.get("he_text", "")
+                he_stripped = strip_niqqud(he_text)
+                if target_stripped in he_stripped:
+                    matching_indices.append(seg["index"] - 1)  # Convert to 0-indexed
+                    logger.debug(f"    Found target segment '{target[:30]}...' at index {seg['index']}")
+                    break
+            if matching_indices:
+                break
+
+    # Strategy 2: Fall back to focus_terms - find ALL matching segments
+    if not matching_indices and focus_terms:
+        for i, seg in enumerate(segments):
+            he_text = seg.get("he_text", "")
+            he_stripped = strip_niqqud(he_text)
+            for term in focus_terms:
+                term_stripped = strip_niqqud(term)
+                if term_stripped in he_stripped:
+                    matching_indices.append(i)
+                    logger.debug(f"    Found focus term '{term}' at index {i + 1}")
+                    break  # Only count each segment once
+
+    # If no matches, return all segments
+    if not matching_indices:
+        logger.debug("    No matching segments found, returning all")
+        return segments, 0
+
+    # V6 FIX: Use the range from first to last matching segment (not just the best one)
+    first_match = min(matching_indices)
+    last_match = max(matching_indices)
+    primary_idx = first_match
+
+    # Include minimal context before (usually 0), and extend after for full sugya
+    start_idx = max(0, first_match - context_before)
+    end_idx = min(len(segments), last_match + context_after + 1)
+
+    relevant = segments[start_idx:end_idx]
+    logger.debug(f"    Returning segments {start_idx + 1} to {end_idx} (first match at {first_match + 1}, last at {last_match + 1})")
+
+    return relevant, primary_idx
+
+
 def determine_level(categories: List[str], ref: str) -> SourceLevel:
     """Determine the source level from Sefaria categories."""
     ref_lower = ref.lower()
-    
+
     # Check ref patterns first
     if "rashi on" in ref_lower:
         return SourceLevel.RASHI
@@ -650,22 +725,46 @@ def determine_level(categories: List[str], ref: str) -> SourceLevel:
         return SourceLevel.SHULCHAN_ARUCH
     if "tur " in ref_lower:
         return SourceLevel.TUR
-    
+
     # V5: Check for Ran on Rif specifically
     if "ran on rif" in ref_lower:
         return SourceLevel.RISHONIM
-    
+
+    # V6 FIX: Check for gemara refs by tractate pattern (e.g., "Pesachim 4a:7-12")
+    # Common Talmud tractate names
+    tractate_patterns = [
+        "berakhot", "shabbat", "eruvin", "pesachim", "shekalim", "yoma",
+        "sukkah", "beitzah", "rosh hashanah", "taanit", "megillah", "moed katan",
+        "chagigah", "yevamot", "ketubot", "nedarim", "nazir", "sotah", "gittin",
+        "kiddushin", "bava kamma", "bava metzia", "bava batra", "sanhedrin",
+        "makkot", "shevuot", "avodah zarah", "horayot", "zevachim", "menachot",
+        "chullin", "bekhorot", "arakhin", "temurah", "keritot", "meilah",
+        "kinnim", "tamid", "middot", "niddah"
+    ]
+    # Check if ref looks like a Talmud tractate ref (tractate name + daf like "4a" or "4b")
+    for tractate in tractate_patterns:
+        if tractate in ref_lower and re.search(r'\d+[ab]', ref_lower):
+            return SourceLevel.GEMARA
+
     # Check categories
     for cat in categories:
         if cat in CATEGORY_TO_LEVEL:
             return CATEGORY_TO_LEVEL[cat]
-    
-    # Check for rishonim patterns
-    rishonim_patterns = ["rashba", "ritva", "ramban", "ran ", "rosh ", "meiri", "nimukei"]
+
+    # V6 FIX: Improved rishonim patterns - handle "harosh", "piskei harosh", etc.
+    rishonim_patterns = [
+        "rashba", "ritva", "ramban", "meiri", "nimukei",
+        "ran on", "ran ",  # Ran
+        r"\brosh\b", "harosh", "piskei"  # Rosh variations
+    ]
     for pattern in rishonim_patterns:
-        if pattern in ref_lower:
+        if pattern.startswith(r"\b"):
+            # Use regex for word boundary
+            if re.search(pattern, ref_lower):
+                return SourceLevel.RISHONIM
+        elif pattern in ref_lower:
             return SourceLevel.RISHONIM
-    
+
     return SourceLevel.OTHER
 
 
@@ -1239,6 +1338,23 @@ async def find_landmark(
 #  V5: TOPIC-FILTERED TRICKLE UP
 # =============================================================================
 
+def extract_segment_from_commentary_ref(ref: str) -> Optional[int]:
+    """
+    V6 FIX: Extract segment index from a commentary reference.
+
+    Examples:
+        "Rashi on Pesachim 4a:1:1" -> 1
+        "Rashi on Pesachim 4a:9:2" -> 9
+        "Tosafot on Pesachim 4a:5:1" -> 5
+        "Rashi on Pesachim 4a" -> None (no segment)
+    """
+    # Pattern: look for daf (e.g., "4a") followed by colon and segment number
+    match = re.search(r'\d+[ab]:(\d+)', ref)
+    if match:
+        return int(match.group(1))
+    return None
+
+
 async def trickle_up_filtered(
     foundation_refs: List[str],
     target_sources: List[str],
@@ -1284,10 +1400,19 @@ async def trickle_up_filtered(
         segments = analyze_segments(base_response, focus_terms, topic_terms)
         total_segments += len(segments)
         
-        # Get relevant segment refs
+        # Get relevant segment refs - V6 FIX: Require CORE focus terms, not just any focus term
         relevant_seg_indices = []
+        # V6 FIX: Use only the first 2 focus terms as "core" terms (usually the most specific)
+        # e.g., for "mashkir socher" we want only segments with משכיר or שוכר, not just "בדיקה"
+        core_focus_terms = focus_terms[:2] if len(focus_terms) >= 2 else focus_terms
         for seg in segments:
-            if seg["is_relevant"]:
+            segment_text = seg.get("segment_text", "")
+            # Check if segment contains CORE focus terms (not just any focus term)
+            has_core_focus = any(
+                strip_niqqud(term) in strip_niqqud(segment_text)
+                for term in core_focus_terms
+            )
+            if seg["is_relevant"] and has_core_focus:
                 relevant_segments += 1
                 relevant_seg_indices.append(seg["segment_index"])
         
@@ -1314,7 +1439,15 @@ async def trickle_up_filtered(
                 link_ref = link.get("ref", "")
                 if not link_ref or link_ref in seen_refs:
                     continue
-                
+
+                # V6 FIX: Check if this commentary is on a relevant segment
+                commentary_segment = extract_segment_from_commentary_ref(link_ref)
+                if commentary_segment is not None:
+                    # Convert to 0-indexed for comparison
+                    if (commentary_segment - 1) not in relevant_seg_indices:
+                        logger.debug(f"      Skipped off-segment: {link_ref} (seg {commentary_segment} not in relevant)")
+                        continue
+
                 categories = link.get("category", "")
                 collective_title = link.get("collectiveTitle", {}).get("en", "")
                 
@@ -1362,10 +1495,14 @@ async def trickle_up_filtered(
                     segment_index=seg_idx
                 )
                 
-                # Only add if it scores above threshold or is from a primary target
-                if score >= 2.0 or matched_target in ["rashi", "tosafos"]:
+                # Only add if it has SOME relevance (score > 0) AND either:
+                # - scores >= 2.0 (clearly relevant), OR
+                # - is from primary target (rashi/tosafos) with any positive score
+                if score > 0 and (score >= 2.0 or matched_target in ["rashi", "tosafos"]):
                     commentary_sources.append(source)
                     logger.debug(f"      Added: {link_ref} ({matched_target}) score={score}")
+                elif score == 0:
+                    logger.debug(f"      Skipped zero-score: {link_ref} ({matched_target}) - no keyword matches")
                 else:
                     logger.debug(f"      Skipped low-scoring: {link_ref} score={score}")
     
@@ -1646,10 +1783,16 @@ async def handle_general_query(
 ) -> SearchResult:
     """Handle general (non-nuance) queries."""
     log_section("HANDLING GENERAL QUERY (V5)")
-    
+
     result = SearchResult(original_query=analysis.original_query)
-    
+
     ref_hints = getattr(analysis, 'ref_hints', [])
+
+    # V6: For definition queries, limit scope to core sugya only
+    is_definition = getattr(analysis, 'is_definition_query', False)
+    if is_definition and len(ref_hints) > 4:
+        logger.info(f"  Definition query: limiting from {len(ref_hints)} to 4 core refs")
+        ref_hints = ref_hints[:4]  # Keep only the first 2 dapim (4 amudim max)
     
     if not ref_hints and hasattr(analysis, 'suggested_refs'):
         for ref in analysis.suggested_refs:
@@ -1676,14 +1819,45 @@ async def handle_general_query(
     
     for hint in ref_hints:
         logger.info(f"  Checking: {hint.ref}")
-        
+
+        # V6 FIX: Get target_segments from hint for precise segment finding
+        hint_target_segments = getattr(hint, 'target_segments', [])
+
         if hint.confidence.value == "certain":
             verified_refs.append(hint.ref)
             response = await fetch_text(hint.ref, session)
             if response:
-                he_text, en_text = extract_text_content(response)
+                # V6 FIX: For definition queries, find the relevant segments
+                if is_definition and (hint_target_segments or focus_terms):
+                    all_segments = extract_text_segments(response)
+                    if len(all_segments) > 1:
+                        relevant_segments, primary_idx = find_relevant_segments(
+                            all_segments, hint_target_segments, focus_terms
+                        )
+                        if relevant_segments:
+                            # Build text from relevant segments only
+                            he_text = " ".join(seg.get("he_text", "") for seg in relevant_segments)
+                            en_text = " ".join(seg.get("en_text", "") for seg in relevant_segments)
+                            # Update ref to show segment range
+                            if primary_idx >= 0 and len(relevant_segments) > 0:
+                                start_seg = relevant_segments[0]["index"]
+                                end_seg = relevant_segments[-1]["index"]
+                                segment_ref = f"{hint.ref}:{start_seg}-{end_seg}" if start_seg != end_seg else f"{hint.ref}:{start_seg}"
+                                logger.info(f"    V6: Using segments {start_seg}-{end_seg} for {hint.ref}")
+                            else:
+                                segment_ref = hint.ref
+                        else:
+                            he_text, en_text = extract_text_content(response)
+                            segment_ref = hint.ref
+                    else:
+                        he_text, en_text = extract_text_content(response)
+                        segment_ref = hint.ref
+                else:
+                    he_text, en_text = extract_text_content(response)
+                    segment_ref = hint.ref
+
                 source = Source(
-                    ref=hint.ref,
+                    ref=segment_ref,
                     he_ref=response.get("heRef", hint.ref),
                     level=determine_level(response.get("categories", []), hint.ref),
                     hebrew_text=he_text,
@@ -1694,25 +1868,50 @@ async def handle_general_query(
                 )
                 result.foundation_stones.append(source)
             continue
-        
+
         keywords = list(hint.verification_keywords) if hint.verification_keywords else []
         if search_variants:
             keywords.extend(search_variants.aramaic_forms)
-        
+
         response = await fetch_text(hint.ref, session)
         if response:
-            he_text, en_text = extract_text_content(response)
-            
+            # V6 FIX: For definition queries, find the relevant segments
+            if is_definition and (hint_target_segments or focus_terms):
+                all_segments = extract_text_segments(response)
+                if len(all_segments) > 1:
+                    relevant_segments, primary_idx = find_relevant_segments(
+                        all_segments, hint_target_segments, focus_terms
+                    )
+                    if relevant_segments:
+                        he_text = " ".join(seg.get("he_text", "") for seg in relevant_segments)
+                        en_text = " ".join(seg.get("en_text", "") for seg in relevant_segments)
+                        if primary_idx >= 0 and len(relevant_segments) > 0:
+                            start_seg = relevant_segments[0]["index"]
+                            end_seg = relevant_segments[-1]["index"]
+                            segment_ref = f"{hint.ref}:{start_seg}-{end_seg}" if start_seg != end_seg else f"{hint.ref}:{start_seg}"
+                            logger.info(f"    V6: Using segments {start_seg}-{end_seg} for {hint.ref}")
+                        else:
+                            segment_ref = hint.ref
+                    else:
+                        he_text, en_text = extract_text_content(response)
+                        segment_ref = hint.ref
+                else:
+                    he_text, en_text = extract_text_content(response)
+                    segment_ref = hint.ref
+            else:
+                he_text, en_text = extract_text_content(response)
+                segment_ref = hint.ref
+
             if keywords:
                 verified, found, score = verify_text_contains_keywords(he_text, keywords, min_score=3.0)
             else:
                 verified = True
                 found = []
-            
+
             if verified or hint.confidence in [RefConfidence.CERTAIN, RefConfidence.LIKELY]:
                 verified_refs.append(hint.ref)
                 source = Source(
-                    ref=hint.ref,
+                    ref=segment_ref,
                     he_ref=response.get("heRef", hint.ref),
                     level=determine_level(response.get("categories", []), hint.ref),
                     hebrew_text=he_text,
@@ -1728,7 +1927,12 @@ async def handle_general_query(
     result.refs_verified = len(verified_refs)
     
     # V5: Use topic-filtered trickle up even for general queries
-    if analysis.trickle_direction in [TrickleDirection.UP, TrickleDirection.BOTH]:
+    # V6 FIX: For definition queries, ALWAYS use trickle_up regardless of Claude's direction
+    should_trickle_up = (
+        analysis.trickle_direction in [TrickleDirection.UP, TrickleDirection.BOTH]
+        or is_definition  # Definition queries always need commentary filtering
+    )
+    if should_trickle_up:
         if focus_terms or topic_terms:
             commentaries, total_seg, relevant_seg = await trickle_up_filtered(
                 verified_refs,

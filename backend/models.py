@@ -97,30 +97,36 @@ class WordValidation(BaseModel):
 class DecipherResult(BaseModel):
     """
     Result from Step 1: Transliteration → Hebrew
-    
+
     V4 UPDATE: Added mixed query support fields:
     - hebrew_terms: List of all extracted Hebrew terms (for mixed queries)
     - is_mixed_query: Whether the input was a mixed English/Hebrew query
     - original_query: The original query string (for Step 2 context)
     - extraction_confident: Whether Step 1 is confident in its extraction
+
+    V4.4 UPDATE: Added pure English query support:
+    - is_pure_english: Query is entirely in English, no Hebrew transliteration
     """
 
     # Core result
     success: bool
     hebrew_term: Optional[str] = None
-    
+
     # V4: Multiple Hebrew terms for mixed queries
     hebrew_terms: List[str] = []
 
     # Metadata
     confidence: ConfidenceLevel
-    method: str  # "dictionary", "sefaria", "transliteration", "mixed_extraction", etc.
+    method: str  # "dictionary", "sefaria", "transliteration", "mixed_extraction", "pure_english_topic", etc.
     message: str = ""
-    
+
     # V4: Mixed query support
     is_mixed_query: bool = False
     original_query: str = ""
     extraction_confident: bool = True
+
+    # V4.4: Pure English query (no Hebrew transliteration content)
+    is_pure_english: bool = False
 
     # Alternatives and validation
     alternatives: List[str] = []
