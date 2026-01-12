@@ -75,7 +75,7 @@ try:
 except ImportError:
     import os
     class Settings:
-        anthropic_api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+        gemini_api_key = os.environ.get("GEMINI_API_KEY", "")
         sefaria_base_url = "https://www.sefaria.org/api"
     settings = Settings()
 

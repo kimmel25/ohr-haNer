@@ -144,6 +144,42 @@ def _normalize_text(text: str) -> str:
     return text
 
 
+def _get_words(text: str) -> set:
+    """Split normalized text into a set of words for word-boundary matching."""
+    return set(text.split())
+
+
+def _phrase_in_text_word_bounded(phrase: str, text: str) -> bool:
+    """
+    Check if a phrase exists in text with proper word boundaries.
+
+    This prevents false positives like "mukas" matching inside "bedikas".
+
+    Args:
+        phrase: The phrase to search for (already normalized)
+        text: The text to search in (already normalized)
+
+    Returns:
+        True only if the phrase appears as complete words in the text
+    """
+    # For single words, check if it's in the word set
+    phrase_words = phrase.split()
+    text_words = _get_words(text)
+
+    if len(phrase_words) == 1:
+        return phrase_words[0] in text_words
+
+    # For multi-word phrases, check if all words appear consecutively
+    # First, all words must be present
+    if not all(w in text_words for w in phrase_words):
+        return False
+
+    # Then check for consecutive appearance using word boundary regex
+    # Escape special regex chars and build pattern
+    pattern = r'\b' + r'\s+'.join(re.escape(w) for w in phrase_words) + r'\b'
+    return bool(re.search(pattern, text))
+
+
 def _calculate_match_score(
     query: str,
     hebrew_terms: List[str],
@@ -153,53 +189,62 @@ def _calculate_match_score(
     Calculate how well a query matches a known sugya.
     Returns (score, reason).
     Score ranges from 0 to 1.
+
+    IMPORTANT: All matching uses word-boundary checking to prevent false positives
+    like "mukas" matching inside "bedikas". See _phrase_in_text_word_bounded().
     """
     score = 0.0
     reasons = []
-    
+
     query_normalized = _normalize_text(query)
+    query_words = _get_words(query_normalized)  # Pre-compute word set
     hebrew_terms_normalized = [_normalize_text(t) for t in hebrew_terms]
-    
+
     names = sugya.get("names", {})
-    
+
     # Check Hebrew names
     for hebrew_name in names.get("hebrew", []):
         hebrew_normalized = _normalize_text(hebrew_name)
-        
+
         # Exact match in hebrew_terms
         if hebrew_normalized in hebrew_terms_normalized:
             score += 0.5
             reasons.append(f"Hebrew term match: {hebrew_name}")
-        
-        # Partial match in query
-        if hebrew_normalized in query_normalized:
+
+        # Word-bounded match in query (not substring!)
+        if _phrase_in_text_word_bounded(hebrew_normalized, query_normalized):
             score += 0.3
             reasons.append(f"Hebrew in query: {hebrew_name}")
-    
+
     # Check English names
     for english_name in names.get("english", []):
         english_normalized = _normalize_text(english_name)
-        
-        if english_normalized in query_normalized:
+
+        # Word-bounded match (not substring!)
+        if _phrase_in_text_word_bounded(english_normalized, query_normalized):
             score += 0.4
             reasons.append(f"English match: {english_name}")
-    
+
     # Check transliterations (most common match type)
     for translit in names.get("transliterations", []):
         translit_normalized = _normalize_text(translit)
-        
-        if translit_normalized in query_normalized:
+
+        # Word-bounded match for full transliteration (not substring!)
+        if _phrase_in_text_word_bounded(translit_normalized, query_normalized):
             score += 0.45
             reasons.append(f"Transliteration match: {translit}")
-        
+
         # Check each word of multi-word transliterations
+        # CRITICAL FIX: Use word set matching, NOT substring matching!
+        # This prevents "mukas" from matching inside "bedikas"
         translit_words = translit_normalized.split()
         if len(translit_words) > 1:
-            matches = sum(1 for w in translit_words if w in query_normalized)
+            # Count how many transliteration words appear as WHOLE WORDS in query
+            matches = sum(1 for w in translit_words if w in query_words)
             if matches >= len(translit_words) - 1:  # Allow one word missing
                 score += 0.3
                 reasons.append(f"Partial transliteration: {translit}")
-    
+
     # Check key terms against hebrew_terms
     key_terms = sugya.get("key_terms", [])
     for term in key_terms:
@@ -207,10 +252,10 @@ def _calculate_match_score(
         if term_normalized in hebrew_terms_normalized:
             score += 0.2
             reasons.append(f"Key term match: {term}")
-    
+
     # Cap at 1.0
     score = min(score, 1.0)
-    
+
     return score, "; ".join(reasons) if reasons else "No match"
 
 

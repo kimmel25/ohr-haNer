@@ -1,11 +1,13 @@
 """
-Step 2: UNDERSTAND - V6 with Known Sugyos Database
-===================================================
+Step 2: UNDERSTAND - V8 with Gemini Flash
+==========================================
+
+V8 CHANGES: Switched from Anthropic Claude to Google Gemini Flash for cost efficiency.
 
 V6 CHANGES FROM V5:
-1. KNOWN SUGYOS DATABASE CHECK - Check database FIRST before Claude
+1. KNOWN SUGYOS DATABASE CHECK - Check database FIRST before LLM
 2. If known sugya found, use those exact locations as primary refs with HIGH confidence
-3. Claude still provides analysis but known refs take priority
+3. LLM still provides analysis but known refs take priority
 4. Solves "Primary Sources Issue" where system returned Rishonim instead of Gemara
 
 PIPELINE LOGIC:
@@ -15,9 +17,9 @@ PIPELINE LOGIC:
    - Use known gemara locations as primary_refs
    - Set confidence HIGH
    - Use key_terms for validation
-   - Claude enriches with search_variants, target_authors, etc.
+   - LLM enriches with search_variants, target_authors, etc.
 4. If NO MATCH:
-   - Fall back to full Claude analysis (same as V5)
+   - Fall back to full LLM analysis (same as V5)
 5. Return QueryAnalysis with refs to Step 3
 
 KEY CLASSIFICATION RULES:
@@ -27,7 +29,7 @@ KEY CLASSIFICATION RULES:
   - SHITTAH: "what is the RAN'S shittah" (specific author's view)
   - COMPARISON: "how does Ran differ from Rashi" (comparing views)
   - MACHLOKES: "machlokes Rashi and Tosafos" (dispute)
-  
+
 All of these need FOCUS TERMS and targeted expansion.
 """
 
@@ -37,7 +39,7 @@ from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field
 from enum import Enum
 
-from anthropic import Anthropic
+import google.generativeai as genai
 
 # Initialize logging
 try:
@@ -71,7 +73,10 @@ try:
 except ImportError:
     import os
     class Settings:
-        anthropic_api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+        gemini_api_key = os.environ.get("GEMINI_API_KEY", "")
+        gemini_model = "gemini-2.0-flash"
+        gemini_max_tokens = 4000
+        gemini_temperature = 0.7
     settings = Settings()
 
 # V6: Import known_sugyos lookup
@@ -531,10 +536,10 @@ def _detect_query_vagueness(query: str, hebrew_terms: List[str]) -> tuple[bool, 
 
 
 # ==============================================================================
-#  CLAUDE SYSTEM PROMPT - V6 (same as V5)
+#  GEMINI SYSTEM PROMPT - V8 (adapted from Claude V6)
 # ==============================================================================
 
-CLAUDE_SYSTEM_PROMPT_V6 = """You are an expert Torah learning assistant for Ohr Haner, a marei mekomos (source finder) system.
+GEMINI_SYSTEM_PROMPT_V8 = """You are an expert Torah learning assistant for Ohr Haner, a marei mekomos (source finder) system.
 
 YOUR JOB: Understand what the user wants and tell us EXACTLY where to look.
 
@@ -965,15 +970,16 @@ async def analyze_with_claude(query: str, hebrew_terms: List[str]) -> QueryAnaly
         # We found a match! Still call Claude for enrichment but use known refs
         logger.info("[V6] Known sugya found - will use database refs as primary")
         
-        # Get Claude enrichment (optional - can skip for speed)
+        # Get Gemini enrichment (optional - can skip for speed)
         claude_enrichment = None
         try:
-            log_subsection("CALLING CLAUDE FOR ENRICHMENT")
-            
-            client = Anthropic(api_key=settings.anthropic_api_key)
-            
+            log_subsection("CALLING GEMINI FOR ENRICHMENT")
+
+            # Configure Gemini
+            genai.configure(api_key=settings.gemini_api_key)
+
             # V4.5: Enhanced prompt to detect qualifiers/nuances beyond the main sugya
-            enrich_prompt = f"""Analyze this Torah query. We matched a known sugya, but check for QUALIFIERS or SUB-TOPICS.
+            enrich_prompt = f"""You are a Torah learning assistant analyzing a query. We matched a known sugya, but check for QUALIFIERS or SUB-TOPICS.
 
 QUERY: {query}
 HEBREW TERMS: {hebrew_terms}
@@ -991,36 +997,39 @@ If the query has qualifiers beyond the base sugya:
 3. Add the qualifier terms to focus_terms (in Hebrew AND transliteration)
 4. Add search_variants that include the qualifier
 
-Return ONLY valid JSON with: query_type, foundation_type, breadth, trickle_direction,
+Return ONLY valid JSON (no markdown code blocks, no explanation) with these fields:
+query_type, foundation_type, breadth, trickle_direction,
 is_nuance_query, nuance_description, target_authors, primary_author, focus_terms,
-search_variants, inyan_description, target_sources, qualifier_terms, reasoning."""
-            
-            model = getattr(settings, "claude_model", "claude-sonnet-4-5-20250929")
-            max_tokens = min(getattr(settings, "claude_max_tokens", 1500), 1500)
-            response = client.messages.create(
-                model=model,
-                max_tokens=max_tokens,
-                temperature=0,
-                system="You are a Torah learning assistant. Provide query classification as JSON.",
-                messages=[{"role": "user", "content": enrich_prompt}]
+search_variants, inyan_description, target_sources, qualifier_terms, reasoning.
+
+RESPOND WITH ONLY THE JSON OBJECT, NO OTHER TEXT."""
+
+            model_name = getattr(settings, "gemini_model", "gemini-2.0-flash")
+            model = genai.GenerativeModel(
+                model_name=model_name,
+                generation_config=genai.types.GenerationConfig(
+                    max_output_tokens=1500,
+                    temperature=0.1,
+                )
             )
-            
-            raw_text = response.content[0].text.strip()
+
+            response = model.generate_content(enrich_prompt)
+            raw_text = response.text.strip()
             json_text = raw_text
             if "```json" in raw_text:
                 json_text = raw_text.split("```json")[1].split("```")[0].strip()
             elif "```" in raw_text:
                 json_text = raw_text.split("```")[1].split("```")[0].strip()
-            
+
             claude_enrichment = json.loads(json_text)
-            logger.info("[V6] Got Claude enrichment")
+            logger.info("[V8] Got Gemini enrichment")
             
         except Exception as e:
-            logger.warning(f"[V6] Claude enrichment failed (non-critical): {e}")
+            logger.warning(f"[V8] Gemini enrichment failed (non-critical): {e}")
             claude_enrichment = None
         
-        # V4.4: Check if Claude's enrichment indicates the match is bad
-        # If Claude says it's "unrelated" or "wrong", fall back to full analysis
+        # V4.4: Check if LLM enrichment indicates the match is bad
+        # If LLM says it's "unrelated" or "wrong", fall back to full analysis
         if claude_enrichment:
             reasoning = claude_enrichment.get("reasoning", "").lower()
             bad_match_indicators = ["unrelated", "not related", "wrong topic", "incorrect match",
@@ -1046,49 +1055,58 @@ search_variants, inyan_description, target_sources, qualifier_terms, reasoning."
         # If we get here, Claude indicated the match was bad - continue to full analysis
     
     # ==========================================================================
-    # NO KNOWN SUGYA - FALL BACK TO FULL CLAUDE ANALYSIS (V5 behavior)
+    # NO KNOWN SUGYA - FALL BACK TO FULL GEMINI ANALYSIS (V8 behavior)
     # ==========================================================================
-    log_subsection("CALLING CLAUDE API (FULL ANALYSIS)")
-    
-    user_prompt = f"""Analyze this Torah query and tell me EXACTLY where to look.
+    log_subsection("CALLING GEMINI API (FULL ANALYSIS)")
+
+    # Build the full prompt with system context included (Gemini doesn't have separate system prompt)
+    full_prompt = f"""{GEMINI_SYSTEM_PROMPT_V8}
+
+---
+
+Now analyze this Torah query and tell me EXACTLY where to look.
 
 QUERY: {query}
 HEBREW TERMS DETECTED: {hebrew_terms}
 
 Remember:
 - SHITTAH queries (asking for one author's view) ARE nuance queries - set is_nuance_query=true
-- COMPARISON queries ARE nuance queries - set is_nuance_query=true  
+- COMPARISON queries ARE nuance queries - set is_nuance_query=true
 - RAN writes on RIF, not directly on gemara - use "Ran on Rif Pesachim" format
 - NO RANGE REFS like "2a-6b" - give specific refs
 - Include target_segments with starting words of relevant discussion when possible
 - If query is unclear, set needs_clarification=true
 
-Return ONLY valid JSON."""
+Return ONLY valid JSON (no markdown code blocks, no explanation before or after the JSON).
+RESPOND WITH ONLY THE JSON OBJECT."""
 
     try:
         import time
         start_time = time.time()
-        
-        client = Anthropic(api_key=settings.anthropic_api_key)
-        
-        model = getattr(settings, "claude_model", "claude-sonnet-4-5-20250929")
-        max_tokens = min(getattr(settings, "claude_max_tokens", 3000), 3000)
-        response = client.messages.create(
-            model=model,
-            max_tokens=max_tokens,
-            temperature=0,
-            system=CLAUDE_SYSTEM_PROMPT_V6,
-            messages=[{"role": "user", "content": user_prompt}]
+
+        # Configure Gemini
+        genai.configure(api_key=settings.gemini_api_key)
+
+        model_name = getattr(settings, "gemini_model", "gemini-2.0-flash")
+        max_tokens = min(getattr(settings, "gemini_max_tokens", 4000), 4000)
+        model = genai.GenerativeModel(
+            model_name=model_name,
+            generation_config=genai.types.GenerationConfig(
+                max_output_tokens=max_tokens,
+                temperature=0.1,
+            )
         )
-        
+
+        response = model.generate_content(full_prompt)
+
         elapsed_ms = int((time.time() - start_time) * 1000)
-        logger.info(f"Claude response received in {elapsed_ms}ms")
-        
-        raw_text = response.content[0].text.strip()
+        logger.info(f"Gemini response received in {elapsed_ms}ms")
+
+        raw_text = response.text.strip()
         logger.info(f"Response length: {len(raw_text)} chars")
         logger.debug(f"Raw response:\n{raw_text}")
         
-        log_subsection("PARSING CLAUDE RESPONSE")
+        log_subsection("PARSING GEMINI RESPONSE")
         
         # Parse JSON
         json_text = raw_text
@@ -1217,17 +1235,17 @@ Return ONLY valid JSON."""
             known_sugya_match=None,
             used_known_sugyos=False,
 
-            # V7: Possible interpretations from Claude (for clarification without extra API call)
+            # V7: Possible interpretations from LLM (for clarification without extra API call)
             possible_interpretations=data.get("possible_interpretations", []),
         )
         
-        log_subsection("ANALYSIS RESULTS (FROM CLAUDE)")
+        log_subsection("ANALYSIS RESULTS (FROM GEMINI)")
         _log_analysis_results(analysis)
         
         return analysis
         
     except Exception as e:
-        logger.error(f"[UNDERSTAND V6] Claude error: {e}")
+        logger.error(f"[UNDERSTAND V8] Gemini error: {e}")
         import traceback
         traceback.print_exc()
         return QueryAnalysis(

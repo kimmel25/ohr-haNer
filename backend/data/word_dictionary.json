@@ -2095,9 +2095,9 @@
   "chometz": {
     "hebrew": "חמץ",
     "confidence": "high",
-    "usage_count": 4,
+    "usage_count": 8,
     "source": "runtime",
-    "last_used": "2026-01-07T23:31:46.225820",
+    "last_used": "2026-01-11T20:27:27.521806",
     "hits": 10000
   },
   "source": {
@@ -2243,5 +2243,13 @@
     "source": "runtime",
     "last_used": "2026-01-08T23:54:58.102371",
     "hits": 740
+  },
+  "bedikas": {
+    "hebrew": "בדקת",
+    "confidence": "medium",
+    "usage_count": 4,
+    "source": "runtime",
+    "last_used": "2026-01-11T20:27:27.517805",
+    "hits": 26
   }
 }

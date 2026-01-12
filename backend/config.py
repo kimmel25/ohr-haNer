@@ -4,6 +4,8 @@ Centralized Configuration for Marei Mekomos V7
 
 Single source of truth for all environment variables and settings.
 Uses Pydantic for validation and type safety.
+
+V8: Switched from Anthropic Claude to Google Gemini Flash for cost efficiency.
 """
 
 import os
@@ -25,10 +27,10 @@ class Settings(BaseSettings):
     #  API KEYS (Required)
     # ==========================================
 
-    anthropic_api_key: str = Field(
+    gemini_api_key: str = Field(
         ...,
-        description="Claude API key from anthropic.com",
-        env="ANTHROPIC_API_KEY"
+        description="Google Gemini API key from Google AI Studio",
+        env="GEMINI_API_KEY"
     )
 
     # ==========================================
@@ -99,14 +101,14 @@ class Settings(BaseSettings):
     transliteration_max_variants: int = Field(15, env="TRANSLITERATION_MAX_VARIANTS")
     transliteration_min_hits: int = Field(1, env="TRANSLITERATION_MIN_HITS")
 
-    # Step 2: Understanding
-    claude_model: str = Field("claude-sonnet-4-5-20250929", env="CLAUDE_MODEL")
-    claude_max_tokens: int = Field(4000, env="CLAUDE_MAX_TOKENS")
-    claude_temperature: float = Field(0.7, env="CLAUDE_TEMPERATURE")
+    # Step 2: Understanding (Gemini Flash)
+    gemini_model: str = Field("gemini-2.0-flash", env="GEMINI_MODEL")
+    gemini_max_tokens: int = Field(4000, env="GEMINI_MAX_TOKENS")
+    gemini_temperature: float = Field(0.7, env="GEMINI_TEMPERATURE")
     # V6.1: Enable LLM clarification by default for better machlokes/nuance options
     clarification_use_llm: bool = Field(True, env="CLARIFICATION_USE_LLM")
-    claude_clarification_max_tokens: int = Field(
-        800, env="CLAUDE_CLARIFICATION_MAX_TOKENS"
+    gemini_clarification_max_tokens: int = Field(
+        1500, env="GEMINI_CLARIFICATION_MAX_TOKENS"
     )
 
     # Step 3: Search
@@ -150,13 +152,13 @@ class Settings(BaseSettings):
             raise ValueError(f'environment must be one of {valid_envs}')
         return v_lower
 
-    @validator('anthropic_api_key')
+    @validator('gemini_api_key')
     def validate_api_key(cls, v):
         """Ensure API key is not empty and looks valid."""
         if not v or len(v) < 10:
             raise ValueError(
-                'ANTHROPIC_API_KEY is required and must be valid. '
-                'Get your key from https://console.anthropic.com/'
+                'GEMINI_API_KEY is required and must be valid. '
+                'Get your key from https://aistudio.google.com/apikey'
             )
         return v
 
@@ -234,8 +236,8 @@ def reload_settings() -> Settings:
 # ==========================================
 
 def get_api_key() -> str:
-    """Get Anthropic API key."""
-    return get_settings().anthropic_api_key
+    """Get Gemini API key."""
+    return get_settings().gemini_api_key
 
 
 def is_development() -> bool:
@@ -270,8 +272,8 @@ if __name__ == "__main__":
         print(f"  CORS Origins: {settings.cors_origins}")
 
         print(f"\nAPI:")
-        print(f"  Anthropic Key: {'*' * 20}...{settings.anthropic_api_key[-4:]}")
-        print(f"  Claude Model: {settings.claude_model}")
+        print(f"  Gemini Key: {'*' * 20}...{settings.gemini_api_key[-4:]}")
+        print(f"  Gemini Model: {settings.gemini_model}")
         print(f"  Sefaria URL: {settings.sefaria_base_url}")
 
         print(f"\nPaths:")
@@ -286,5 +288,5 @@ if __name__ == "__main__":
 
     except Exception as e:
         print(f"\n❌ Configuration error: {e}")
-        print("\nMake sure you have a .env file with ANTHROPIC_API_KEY set.")
+        print("\nMake sure you have a .env file with GEMINI_API_KEY set.")
         exit(1)

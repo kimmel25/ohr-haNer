@@ -93,7 +93,7 @@ class AsyncSafeLogging:
         root_logger.handlers = [queue_handler]
         
         # Suppress noisy third-party loggers
-        for name in ['httpx', 'httpcore', 'anthropic', 'urllib3', 'aiohttp']:
+        for name in ['httpx', 'httpcore', 'google', 'urllib3', 'aiohttp']:
             logging.getLogger(name).setLevel(logging.WARNING)
         
         self._initialized = True

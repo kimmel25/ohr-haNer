@@ -108,7 +108,7 @@ def setup_logging(
     root_logger.addHandler(console_handler)
     
     # Suppress noisy third-party loggers
-    for name in ['httpx', 'httpcore', 'anthropic', 'urllib3', 'aiohttp']:
+    for name in ['httpx', 'httpcore', 'google', 'urllib3', 'aiohttp']:
         logging.getLogger(name).setLevel(logging.WARNING)
     
     # Log startup
