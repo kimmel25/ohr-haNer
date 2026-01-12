@@ -98,7 +98,7 @@ logger = logging.getLogger(__name__)
 def import_modules():
     """Import pipeline modules with helpful error messages."""
     modules = {}
-    
+
     # Step 1: Decipher
     try:
         from step_one_decipher import decipher, DecipherResult
@@ -107,7 +107,7 @@ def import_modules():
     except ImportError as e:
         logger.warning(f"Step 1 import failed: {e}")
         modules['step1'] = None
-    
+
     # Step 2: Understand
     try:
         from step_two_understand import (
@@ -127,7 +127,7 @@ def import_modules():
     except ImportError as e:
         logger.warning(f"Step 2 import failed: {e}")
         modules['step2'] = None
-    
+
     # Step 3: Search
     try:
         from step_three_search import search, SearchResult
@@ -136,7 +136,7 @@ def import_modules():
     except ImportError as e:
         logger.warning(f"Step 3 import failed: {e}")
         modules['step3'] = None
-    
+
     # Output writer
     try:
         from source_output import write_output
@@ -145,7 +145,39 @@ def import_modules():
     except ImportError as e:
         logger.warning(f"Output writer import failed: {e}")
         modules['output'] = None
-    
+
+    # Clarification module
+    try:
+        from clarification import (
+            ClarificationOption,
+            ClarificationResult,
+            check_and_generate_clarification,
+            process_clarification_selection,
+            store_clarification_session,
+            get_clarification_session,
+        )
+        modules['clarification'] = {
+            'ClarificationOption': ClarificationOption,
+            'ClarificationResult': ClarificationResult,
+            'check_and_generate_clarification': check_and_generate_clarification,
+            'process_clarification_selection': process_clarification_selection,
+            'store_clarification_session': store_clarification_session,
+            'get_clarification_session': get_clarification_session,
+        }
+        logger.debug("Clarification module imported successfully")
+    except ImportError as e:
+        logger.warning(f"Clarification module import failed: {e}")
+        modules['clarification'] = None
+
+    # Main pipeline (for resume after clarification)
+    try:
+        from main_pipeline import search_with_clarification
+        modules['main_pipeline'] = {'search_with_clarification': search_with_clarification}
+        logger.debug("Main pipeline imported successfully")
+    except ImportError as e:
+        logger.warning(f"Main pipeline import failed: {e}")
+        modules['main_pipeline'] = None
+
     return modules
 
 
@@ -182,6 +214,65 @@ def print_list(label: str, items: list, indent: int = 2, max_items: int = 10) ->
         print(f"{prefix}  • {item}")
     if len(items) > max_items:
         print(f"{prefix}  ... and {len(items) - max_items} more")
+
+
+def prompt_clarification(question: str, options: list) -> Tuple[int, object]:
+    """
+    Display clarification options and prompt user to select one.
+
+    Args:
+        question: The clarification question to display
+        options: List of ClarificationOption objects or dicts
+
+    Returns:
+        Tuple of (selected_index, selected_option)
+    """
+    print_subheader("CLARIFICATION NEEDED")
+    print(f"\n  {question}\n")
+
+    for i, opt in enumerate(options, 1):
+        # Handle both ClarificationOption objects and dicts
+        if hasattr(opt, 'label'):
+            label = opt.label
+            hebrew = getattr(opt, 'hebrew', None)
+            description = getattr(opt, 'description', '')
+        elif isinstance(opt, dict):
+            label = opt.get('label', str(opt))
+            hebrew = opt.get('hebrew')
+            description = opt.get('description', '')
+        else:
+            label = str(opt)
+            hebrew = None
+            description = ''
+
+        # Display option with number
+        if hebrew:
+            print(f"  [{i}] {label} ({hebrew})")
+        else:
+            print(f"  [{i}] {label}")
+
+        if description:
+            print(f"      {description}")
+
+    print()
+
+    while True:
+        try:
+            user_input = input("  Enter number (or 'skip' to search anyway): ").strip()
+
+            if user_input.lower() in ('skip', 's'):
+                return -1, None
+
+            selection = int(user_input)
+            if 1 <= selection <= len(options):
+                return selection - 1, options[selection - 1]
+            else:
+                print(f"  Please enter a number between 1 and {len(options)}")
+        except ValueError:
+            print("  Please enter a valid number")
+        except KeyboardInterrupt:
+            print("\n  Skipping clarification...")
+            return -1, None
 
 
 # =============================================================================
@@ -243,57 +334,62 @@ async def run_step1(query: str, modules: dict) -> Optional[object]:
 # =============================================================================
 
 async def run_step2(
-    query: str, 
-    hebrew_terms: List[str], 
+    query: str,
+    hebrew_terms: List[str],
     modules: dict,
-    decipher_result: object = None
+    decipher_result: object = None,
+    skip_clarification: bool = False
 ) -> Optional[object]:
     """
     Run Step 2: Understand query with Claude.
-    
+
     Args:
         query: Original query string
         hebrew_terms: Hebrew terms from Step 1 or user
         modules: Imported modules dict
         decipher_result: Optional result from Step 1
-        
+        skip_clarification: If True, skip clarification check
+
     Returns:
         QueryAnalysis or None if step unavailable
     """
     print_header("STEP 2: UNDERSTAND")
-    
+
     if modules['step2'] is None:
         print("  ⚠️  Step 2 module not available")
         return None
-    
+
     understand = modules['step2']['understand']
-    
+
     print(f"  Query: {query}")
     print(f"  Hebrew Terms: {hebrew_terms}")
     print("  Calling Claude...")
-    
+
     try:
         if decipher_result is not None:
-            result = await understand(decipher_result=decipher_result, query=query)
+            result = await understand(
+                decipher_result=decipher_result,
+                query=query,
+                skip_clarification=skip_clarification
+            )
         else:
-            result = await understand(hebrew_terms=hebrew_terms, query=query)
-        
+            result = await understand(
+                hebrew_terms=hebrew_terms,
+                query=query,
+                skip_clarification=skip_clarification
+            )
+
         # Display results
         print_subheader("QUERY ANALYSIS")
-        
+
         print_key_value("Query Type", result.query_type.value if hasattr(result.query_type, 'value') else result.query_type)
         print_key_value("Foundation Type", result.foundation_type.value if hasattr(result.foundation_type, 'value') else result.foundation_type)
         print_key_value("Breadth", result.breadth.value if hasattr(result.breadth, 'value') else result.breadth)
         print_key_value("Trickle Direction", result.trickle_direction.value if hasattr(result.trickle_direction, 'value') else result.trickle_direction)
         print_key_value("Confidence", result.confidence.value if hasattr(result.confidence, 'value') else result.confidence)
-        
-        if result.needs_clarification:
-            print()
-            print("  ⚠️  NEEDS CLARIFICATION:")
-            print(f"     {result.clarification_question}")
-            if result.clarification_options:
-                print_list("Options", result.clarification_options, indent=5)
-        
+
+        # NOTE: Clarification is now handled interactively in run_pipeline
+
         # Ref hints
         print_subheader("REF HINTS")
         if hasattr(result, 'ref_hints') and result.ref_hints:
@@ -309,7 +405,7 @@ async def run_step2(
             print_list("Suggested Refs", result.suggested_refs)
         else:
             print("  No ref hints provided")
-        
+
         # Search variants
         print_subheader("SEARCH VARIANTS")
         if hasattr(result, 'search_variants') and result.search_variants:
@@ -326,7 +422,7 @@ async def run_step2(
                 print_list("Related Terms", sv.related_terms)
         else:
             print("  No search variants provided")
-        
+
         # Target sources
         print_subheader("TARGET SOURCES")
         if result.target_sources:
@@ -335,12 +431,12 @@ async def run_step2(
             print_list("Target Simanim", result.target_simanim)
         if hasattr(result, 'target_chelek') and result.target_chelek:
             print_key_value("Target Chelek", result.target_chelek)
-        
+
         # Inyan description
         if result.inyan_description:
             print_subheader("INYAN DESCRIPTION")
             print(f"  {result.inyan_description}")
-        
+
         # Reasoning
         if result.reasoning:
             print_subheader("CLAUDE'S REASONING")
@@ -349,14 +445,14 @@ async def run_step2(
             if len(reasoning) > 300:
                 reasoning = reasoning[:300] + "..."
             print(f"  {reasoning}")
-        
+
         # Processing time
         if hasattr(result, 'processing_time_ms') and result.processing_time_ms:
             print()
             print(f"  ⏱️  Processing time: {result.processing_time_ms}ms")
-        
+
         return result
-        
+
     except Exception as e:
         logger.error(f"Step 2 error: {e}")
         import traceback
@@ -485,61 +581,137 @@ async def run_pipeline(
 ) -> Tuple[object, object, object]:
     """
     Run the pipeline with specified number of steps.
-    
+    Handles clarification interactively if needed.
+
     Args:
         query: User's query
         steps: How many steps to run (1, 2, or 3)
         modules: Pre-imported modules (or None to import)
         hebrew_terms: Optional pre-defined Hebrew terms
-        
+
     Returns:
         Tuple of (decipher_result, analysis, search_result)
     """
     print_header(f"OHR HANER PIPELINE - RUNNING STEPS 1-{steps}", char="═")
     print(f"  Query: {query}")
     print(f"  Steps: {steps}")
-    
+
     if modules is None:
         modules = import_modules()
-    
+
     decipher_result = None
     analysis = None
     search_result = None
-    
+    selected_option = None
+
     # Step 1: Decipher
     if steps >= 1:
         decipher_result = await run_step1(query, modules)
-        
+
         # Extract Hebrew terms from result
         if decipher_result is not None:
             if hasattr(decipher_result, 'hebrew_terms') and decipher_result.hebrew_terms:
                 hebrew_terms = decipher_result.hebrew_terms
             elif hasattr(decipher_result, 'hebrew_term') and decipher_result.hebrew_term:
                 hebrew_terms = [decipher_result.hebrew_term]
-    
+
     # Use query as fallback for Hebrew terms
     if not hebrew_terms:
         hebrew_terms = [query]
-    
+
     # Step 2: Understand
     if steps >= 2:
-        analysis = await run_step2(query, hebrew_terms, modules, decipher_result)
-    
+        analysis = await run_step2(query, hebrew_terms, modules, decipher_result, skip_clarification=False)
+
+        # Check if clarification is needed and handle interactively
+        if analysis and analysis.needs_clarification:
+            clarification_options = getattr(analysis, 'clarification_options', [])
+            clarification_question = getattr(analysis, 'clarification_question', 'Which interpretation did you mean?')
+
+            # Try to get options from clarification module if available
+            if not clarification_options and modules.get('clarification'):
+                try:
+                    check_and_generate = modules['clarification']['check_and_generate_clarification']
+                    clarification_result = await check_and_generate(
+                        query=query,
+                        hebrew_terms=hebrew_terms,
+                        confidence=str(getattr(analysis.confidence, 'value', analysis.confidence)),
+                        query_type=str(getattr(analysis.query_type, 'value', analysis.query_type)),
+                        topic=getattr(analysis, 'inyan_description', ''),
+                    )
+                    if clarification_result and clarification_result.needs_clarification:
+                        clarification_options = clarification_result.options
+                        clarification_question = clarification_result.question
+                except Exception as e:
+                    logger.warning(f"Could not generate clarification options: {e}")
+
+            if clarification_options:
+                # Prompt user to select an option
+                selected_idx, selected_option = prompt_clarification(clarification_question, clarification_options)
+
+                if selected_idx >= 0 and selected_option:
+                    # User selected an option - enrich the analysis
+                    print(f"\n  Selected: {getattr(selected_option, 'label', selected_option)}")
+
+                    # Get focus terms and refs from selected option
+                    focus_terms = getattr(selected_option, 'focus_terms', [])
+                    refs_hint = getattr(selected_option, 'refs_hint', [])
+
+                    if isinstance(selected_option, dict):
+                        focus_terms = selected_option.get('focus_terms', [])
+                        refs_hint = selected_option.get('refs_hint', [])
+
+                    # Enrich analysis with selection
+                    if focus_terms:
+                        if hasattr(analysis, 'focus_terms'):
+                            for term in focus_terms:
+                                if term not in analysis.focus_terms:
+                                    analysis.focus_terms.append(term)
+                        if hasattr(analysis, 'topic_terms'):
+                            for term in focus_terms:
+                                if term not in analysis.topic_terms:
+                                    analysis.topic_terms.append(term)
+
+                    if refs_hint and hasattr(analysis, 'primary_refs'):
+                        for ref in refs_hint:
+                            if ref not in analysis.primary_refs:
+                                analysis.primary_refs.append(ref)
+
+                    # Clear clarification flag so we proceed
+                    analysis.needs_clarification = False
+                    analysis.clarification_question = None
+                    analysis.clarification_options = []
+
+                    print(f"  Enriched with focus terms: {focus_terms}")
+                    print(f"  Enriched with refs: {refs_hint}")
+                else:
+                    # User skipped - search anyway with skip_clarification
+                    print("\n  Skipping clarification - will search with best guess")
+                    analysis.needs_clarification = False
+            else:
+                # No options available - just proceed
+                print("\n  No clarification options available - proceeding with search")
+                analysis.needs_clarification = False
+
     # Step 3: Search
     if steps >= 3:
         search_result = await run_step3(analysis, modules)
-        
+
         # Write output
-        if search_result is not None and not search_result.needs_clarification:
+        if search_result is not None and not getattr(search_result, 'needs_clarification', False):
             write_results(search_result, query, modules)
-    
+
     # Final summary
     print_header("PIPELINE COMPLETE", char="═")
     print(f"  Steps run: {steps}")
     print(f"  Step 1 (Decipher): {'✓' if decipher_result else '–'}")
     print(f"  Step 2 (Understand): {'✓' if analysis else '–'}")
     print(f"  Step 3 (Search): {'✓' if search_result else '–'}")
-    
+
+    if search_result:
+        total = getattr(search_result, 'total_sources', 0)
+        print(f"  Total Sources Found: {total}")
+
     return decipher_result, analysis, search_result
 
 

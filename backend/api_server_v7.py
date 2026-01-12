@@ -51,6 +51,7 @@ from models import (
     ValidationMode,
     FeedbackRequest,
     FeedbackResponse,
+    ClarifyRequest,
 )
 from utils.serialization import enum_value, serialize_word_validations
 
@@ -164,22 +165,67 @@ _pending_sessions: Dict[str, Any] = {}
 async def search_endpoint(request: SearchRequest) -> MareiMekomosResult:
     """
     Full search pipeline (Steps 1-2-3).
-    
+
     Takes user query, returns organized Torah sources.
+
+    V7: May return needs_clarification=True with clarification_options.
+    In that case, client should present options to user and call /search/clarify.
     """
     logger.info("=" * 60)
     logger.info(f"[/search] Query: '{request.query}'")
     logger.info("=" * 60)
-    
+
     try:
         from main_pipeline import search_sources
         result = await search_sources(request.query)
-        
-        logger.info(f"[/search] Complete: {result.total_sources} sources")
+
+        if result.needs_clarification:
+            logger.info(f"[/search] Clarification needed: {result.clarification_prompt}")
+            logger.info(f"[/search] Options: {result.clarification_options}")
+        else:
+            logger.info(f"[/search] Complete: {result.total_sources} sources")
+
         return result
-        
+
     except Exception as e:
         logger.exception(f"[/search] Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/search/clarify")
+async def clarify_endpoint(request: ClarifyRequest) -> MareiMekomosResult:
+    """
+    Resume search after user clarifies their intent.
+
+    Called when /search returned needs_clarification=True and user picked an option.
+
+    Args (in request body):
+        original_query: The original user query
+        selected_option_id: The option the user selected (id or label)
+        query_id: The query_id from the clarification response (in message field)
+        custom_clarification: Optional custom text if user typed their own clarification
+    """
+    logger.info("=" * 60)
+    logger.info(f"[/search/clarify] Original: '{request.original_query}'")
+    logger.info(f"[/search/clarify] Selected: '{request.selected_option_id}'")
+    logger.info(f"[/search/clarify] Query ID: '{request.query_id}'")
+    logger.info("=" * 60)
+
+    try:
+        from main_pipeline import search_with_clarification
+
+        result = await search_with_clarification(
+            original_query=request.original_query,
+            query_id=request.query_id or "",
+            selected_option_id=request.selected_option_id,
+            custom_clarification=request.custom_clarification,
+        )
+
+        logger.info(f"[/search/clarify] Complete: {result.total_sources} sources")
+        return result
+
+    except Exception as e:
+        logger.exception(f"[/search/clarify] Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

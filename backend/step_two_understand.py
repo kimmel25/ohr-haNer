@@ -84,6 +84,21 @@ except ImportError:
     def lookup_known_sugya(*args, **kwargs):
         return None
 
+# V7: Import clarification module
+try:
+    from clarification import (
+        check_and_generate_clarification,
+        ClarificationOption as ClarifyOption,
+        store_clarification_session,
+    )
+    CLARIFICATION_AVAILABLE = True
+except ImportError:
+    CLARIFICATION_AVAILABLE = False
+    async def check_and_generate_clarification(*args, **kwargs):
+        return None
+    def store_clarification_session(*args, **kwargs):
+        pass
+
 logger = logging.getLogger(__name__)
 
 
@@ -242,6 +257,10 @@ class QueryAnalysis:
     # V6: Known sugyos database match info
     known_sugya_match: Optional[Any] = None  # KnownSugyaMatch if found
     used_known_sugyos: bool = False          # Did we use the database?
+
+    # V7: Possible interpretations for ambiguous queries (from Claude)
+    # These are used directly as clarification options without extra API call
+    possible_interpretations: List[Dict[str, Any]] = field(default_factory=list)
 
 
 # ==============================================================================
@@ -645,9 +664,36 @@ Return ONLY valid JSON:
   "confidence": "high|medium|low",
   "needs_clarification": false,
   "clarification_question": null,
-  "reasoning": "Your reasoning"
+  "reasoning": "Your reasoning",
+
+  "possible_interpretations": [
+    {
+      "id": "interpretation_1",
+      "label": "Short label (2-5 words)",
+      "hebrew": "Hebrew equivalent if relevant",
+      "description": "Brief explanation of this interpretation",
+      "focus_terms": ["terms", "to", "focus", "on"],
+      "refs_hint": ["Specific refs if known"]
+    }
+  ]
 }
 ```
+
+## WHEN TO PROVIDE possible_interpretations
+
+For MACHLOKES/COMPARISON queries or queries with multiple possible meanings:
+- Provide 2-4 distinct interpretations
+- Each should be a valid way to understand the query
+- Include focus_terms that would narrow the search for each interpretation
+
+Example: "machlokes abaya rava on tashbisu" could mean:
+1. Bittul vs Physical Biur (whether removal is mental or physical)
+2. Timing derivation (how we know chametz is forbidden from 6th hour)
+3. The nature of the mitzvah (aseh or lo ta'aseh)
+
+If you set needs_clarification=true, include 2-4 possible_interpretations.
+ONLY provide possible_interpretations when there are genuinely multiple valid interpretations.
+For clear, unambiguous queries, leave this field empty or null.
 """
 
 
@@ -749,6 +795,37 @@ def _build_analysis_from_known_sugya(
         focus_terms = known_match.key_terms
         topic_terms = known_match.key_terms
 
+    # V6.1: Check for sub_topics that match query qualifiers
+    # This handles queries like "bari vishema beissurin" where we want to narrow
+    # to the specific sub-topic and its key rishonim
+    sub_topics = known_match.raw_data.get("sub_topics", {}) if known_match.raw_data else {}
+    query_lower = query.lower()
+    matched_sub_topic = None
+    for sub_topic_id, sub_topic_data in sub_topics.items():
+        # Check if the sub_topic_id appears in the query
+        if sub_topic_id in query_lower or sub_topic_id.replace("_", " ") in query_lower:
+            matched_sub_topic = sub_topic_data
+            logger.info(f"[V6.1] Matched sub_topic: {sub_topic_id}")
+            break
+
+    if matched_sub_topic:
+        # Add sub_topic focus terms to our search
+        sub_focus = matched_sub_topic.get("focus_terms", [])
+        for term in sub_focus:
+            if term not in focus_terms:
+                focus_terms.append(term)
+            if term not in topic_terms:
+                topic_terms.append(term)
+
+        # Add sub_topic key_rishonim as priority authors
+        sub_rishonim = matched_sub_topic.get("key_rishonim", [])
+        for rishon in sub_rishonim:
+            if rishon not in target_authors:
+                target_authors.insert(0, rishon)  # Prioritize these
+
+        logger.info(f"[V6.1] Added sub_topic focus: {sub_focus}")
+        logger.info(f"[V6.1] Prioritized rishonim for sub_topic: {sub_rishonim}")
+
     search_variants = None
     inyan_description = ""
     target_sources = ["gemara", "rashi", "tosafos"]
@@ -786,6 +863,20 @@ def _build_analysis_from_known_sugya(
         elif claude_focus:
             focus_terms = claude_focus
         # else keep gemara_keywords as focus_terms
+
+        # V4.5 FIX: Add qualifier_terms for nuanced queries like "bari vishema beissurin"
+        # These terms are CRITICAL for narrowing the search beyond the base sugya
+        qualifier_terms = claude_enrichment.get("qualifier_terms", [])
+        if qualifier_terms:
+            logger.info(f"[V6] Adding qualifier terms to focus: {qualifier_terms}")
+            for term in qualifier_terms:
+                if term not in focus_terms:
+                    focus_terms.append(term)
+            # Also add to topic_terms for search
+            for term in qualifier_terms:
+                if term not in topic_terms:
+                    topic_terms.append(term)
+
         search_variants = _parse_search_variants(claude_enrichment.get("search_variants", {}))
         inyan_description = claude_enrichment.get("inyan_description", "")
         target_sources = claude_enrichment.get("target_sources", target_sources)
@@ -881,22 +972,34 @@ async def analyze_with_claude(query: str, hebrew_terms: List[str]) -> QueryAnaly
             
             client = Anthropic(api_key=settings.anthropic_api_key)
             
-            # Simpler prompt since we already have the refs
-            enrich_prompt = f"""Analyze this Torah query. We already know the main sources.
-Just provide classification and search variants.
+            # V4.5: Enhanced prompt to detect qualifiers/nuances beyond the main sugya
+            enrich_prompt = f"""Analyze this Torah query. We matched a known sugya, but check for QUALIFIERS or SUB-TOPICS.
 
 QUERY: {query}
 HEBREW TERMS: {hebrew_terms}
 KNOWN TOPIC: {known_match.sugya_id}
 KNOWN KEY TERMS: {known_match.key_terms}
 
-Return ONLY valid JSON with: query_type, foundation_type, breadth, trickle_direction, 
-is_nuance_query, nuance_description, target_authors, primary_author, focus_terms, 
-search_variants, inyan_description, target_sources, reasoning."""
+IMPORTANT: Look for qualifiers that narrow the topic. For example:
+- "bari vishema beissurin" = bari vishema specifically in ISSURIN (prohibitions) vs mammon
+- "chezkas haguf ledina" = chezkas haguf specifically for practical HALACHA
+- "migu lehosif" = migu used to ADD claims
+
+If the query has qualifiers beyond the base sugya:
+1. Set is_nuance_query=true
+2. Describe the nuance in nuance_description
+3. Add the qualifier terms to focus_terms (in Hebrew AND transliteration)
+4. Add search_variants that include the qualifier
+
+Return ONLY valid JSON with: query_type, foundation_type, breadth, trickle_direction,
+is_nuance_query, nuance_description, target_authors, primary_author, focus_terms,
+search_variants, inyan_description, target_sources, qualifier_terms, reasoning."""
             
+            model = getattr(settings, "claude_model", "claude-sonnet-4-5-20250929")
+            max_tokens = min(getattr(settings, "claude_max_tokens", 1500), 1500)
             response = client.messages.create(
-                model="claude-sonnet-4-5-20250929",
-                max_tokens=1500,
+                model=model,
+                max_tokens=max_tokens,
                 temperature=0,
                 system="You are a Torah learning assistant. Provide query classification as JSON.",
                 messages=[{"role": "user", "content": enrich_prompt}]
@@ -968,9 +1071,11 @@ Return ONLY valid JSON."""
         
         client = Anthropic(api_key=settings.anthropic_api_key)
         
+        model = getattr(settings, "claude_model", "claude-sonnet-4-5-20250929")
+        max_tokens = min(getattr(settings, "claude_max_tokens", 3000), 3000)
         response = client.messages.create(
-            model="claude-sonnet-4-5-20250929",
-            max_tokens=3000,
+            model=model,
+            max_tokens=max_tokens,
             temperature=0,
             system=CLAUDE_SYSTEM_PROMPT_V6,
             messages=[{"role": "user", "content": user_prompt}]
@@ -1107,10 +1212,13 @@ Return ONLY valid JSON."""
             clarification_question=data.get("clarification_question"),
             clarification_options=data.get("clarification_options", []),
             reasoning=data.get("reasoning", ""),
-            
+
             # V6: No known sugya match
             known_sugya_match=None,
             used_known_sugyos=False,
+
+            # V7: Possible interpretations from Claude (for clarification without extra API call)
+            possible_interpretations=data.get("possible_interpretations", []),
         )
         
         log_subsection("ANALYSIS RESULTS (FROM CLAUDE)")
@@ -1194,21 +1302,120 @@ def _log_analysis_results(analysis: QueryAnalysis) -> None:
 
 
 # ==============================================================================
+#  V7: CLARIFICATION INTEGRATION
+# ==============================================================================
+
+async def _check_for_clarification(
+    analysis: QueryAnalysis,
+    query: str,
+    hebrew_terms: List[str],
+    known_sugya_data: Optional[Dict] = None,
+    skip_clarification: bool = False,
+) -> QueryAnalysis:
+    """
+    V7: Check if clarification is needed and populate options if so.
+
+    This is called after initial analysis to determine if we should
+    ask the user for clarification before proceeding to search.
+    """
+    if skip_clarification:
+        logger.info("[CLARIFICATION] Skipping clarification check (user already clarified)")
+        return analysis
+
+    if not CLARIFICATION_AVAILABLE:
+        logger.debug("[CLARIFICATION] Module not available")
+        return analysis
+
+    # Don't skip based on confidence alone - let check_and_generate_clarification decide
+    # It considers query type (machlokes queries need clarification even with high confidence)
+    logger.info(f"[CLARIFICATION] Checking if clarification needed for query: {query[:50]}...")
+
+    # Get known sugya raw data if available
+    raw_sugya_data = None
+    if analysis.known_sugya_match and hasattr(analysis.known_sugya_match, 'raw_data'):
+        raw_sugya_data = analysis.known_sugya_match.raw_data
+    elif known_sugya_data:
+        raw_sugya_data = known_sugya_data
+
+    # Determine topic for context
+    topic = ""
+    if analysis.known_sugya_match:
+        topic = getattr(analysis.known_sugya_match, 'sugya_id', '')
+    elif analysis.inyan_description:
+        topic = analysis.inyan_description[:50]
+
+    # Check if clarification is needed and generate options
+    # V7: Pass possible_interpretations from Step 2 Claude call to avoid extra API call
+    clarification_result = await check_and_generate_clarification(
+        query=query,
+        hebrew_terms=hebrew_terms,
+        confidence=analysis.confidence.value if hasattr(analysis.confidence, 'value') else str(analysis.confidence),
+        landmark_confidence=analysis.landmark_confidence.value if hasattr(analysis.landmark_confidence, 'value') else str(analysis.landmark_confidence),
+        query_type=analysis.query_type.value if hasattr(analysis.query_type, 'value') else str(analysis.query_type),
+        topic=topic,
+        known_sugya_data=raw_sugya_data,
+        context=analysis.reasoning,
+        clarification_question=analysis.clarification_question,
+        clarification_options=analysis.clarification_options,
+        possible_interpretations=analysis.possible_interpretations,  # V7: From Step 2 Claude call
+    )
+
+    if clarification_result and clarification_result.needs_clarification:
+        logger.info(f"[CLARIFICATION] Clarification needed: {clarification_result.reason}")
+        logger.info(f"[CLARIFICATION] Question: {clarification_result.question}")
+        logger.info(f"[CLARIFICATION] Options: {[opt.label for opt in clarification_result.options]}")
+
+        # Update analysis with clarification info
+        analysis.needs_clarification = True
+        analysis.clarification_question = clarification_result.question
+        analysis.clarification_options = [
+            opt.label for opt in clarification_result.options
+        ]
+
+        # Store session for later retrieval
+        store_clarification_session(
+            query_id=clarification_result.query_id,
+            original_query=query,
+            hebrew_terms=hebrew_terms,
+            options=clarification_result.options,
+            analysis=analysis,
+            partial_analysis={
+                "query_type": analysis.query_type.value,
+                "primary_refs": analysis.primary_refs,
+                "topic_terms": analysis.topic_terms,
+            }
+        )
+
+        # Store query_id in analysis for API to return
+        # We'll use reasoning to pass this (not ideal but works with existing structure)
+        if clarification_result.query_id:
+            analysis.reasoning = f"[CLARIFY:{clarification_result.query_id}] {analysis.reasoning}"
+
+    return analysis
+
+
+# ==============================================================================
 #  MAIN ENTRY POINT
 # ==============================================================================
 
 async def understand(
     hebrew_terms: List[str] = None,
     query: str = None,
-    decipher_result: "DecipherResult" = None
+    decipher_result: "DecipherResult" = None,
+    skip_clarification: bool = False,
 ) -> QueryAnalysis:
     """
-    Main entry point for Step 2: UNDERSTAND (V6 with known sugyos).
-    
+    Main entry point for Step 2: UNDERSTAND (V7 with known sugyos + clarification).
+
     Args:
         hebrew_terms: List of Hebrew terms from Step 1
         query: Original query string
         decipher_result: Optional DecipherResult from Step 1
+        skip_clarification: If True, don't check for clarification (used when resuming after user clarified)
+
+    Returns:
+        QueryAnalysis with interpretation. If needs_clarification=True, the caller
+        should present clarification_options to the user before proceeding to Step 3.
     """
     # Handle different input formats
     if decipher_result is not None:
@@ -1241,7 +1448,16 @@ async def understand(
         query = " ".join(hebrew_terms)
     
     analysis = await analyze_with_claude(query, hebrew_terms)
-    
+
+    # V7: Check if clarification is needed before proceeding
+    analysis = await _check_for_clarification(
+        analysis=analysis,
+        query=query,
+        hebrew_terms=hebrew_terms,
+        known_sugya_data=analysis.known_sugya_match.raw_data if analysis.known_sugya_match and hasattr(analysis.known_sugya_match, 'raw_data') else None,
+        skip_clarification=skip_clarification,
+    )
+
     log_section("STEP 2 COMPLETE")
     logger.info(f"Query type: {analysis.query_type.value}")
     logger.info(f"Is nuance: {analysis.is_nuance_query}")
@@ -1250,7 +1466,10 @@ async def understand(
     logger.info(f"Primary refs: {len(analysis.primary_refs)}")
     logger.info(f"Contrast refs: {len(analysis.contrast_refs)}")
     logger.info(f"Confidence: {analysis.confidence.value}")
-    
+    logger.info(f"Needs clarification: {analysis.needs_clarification}")
+    if analysis.needs_clarification:
+        logger.info(f"Clarification options: {analysis.clarification_options}")
+
     return analysis
 
 

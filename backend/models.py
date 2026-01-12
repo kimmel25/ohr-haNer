@@ -408,3 +408,54 @@ class FeedbackResponse(BaseModel):
     message: str
     should_cache: bool = False
     combined_score: float = 0.0
+
+
+# ==========================================
+#  CLARIFICATION MODELS
+# ==========================================
+
+class ClarificationOption(BaseModel):
+    """
+    A single option for user clarification.
+
+    Used when the system isn't confident about query interpretation
+    and needs user input to proceed.
+    """
+    id: str  # Unique identifier (e.g., "option_1", "subtopic_bittul")
+    label: str  # Short display text (e.g., "Bittul vs Biur")
+    hebrew: Optional[str] = None  # Hebrew display if relevant
+    description: str  # Brief explanation of what this option means
+
+    # Optional: metadata for resuming search with this option
+    focus_terms: List[str] = []  # Terms to focus on if this option is chosen
+    refs_hint: List[str] = []  # Specific refs to search if chosen
+
+
+class ClarificationRequest(BaseModel):
+    """
+    Response type when clarification is needed.
+
+    Returned instead of full results when confidence is too low
+    to proceed without user input.
+    """
+    needs_clarification: bool = True
+    question: str  # The question to ask (e.g., "Which aspect of tashbisu?")
+    options: List[ClarificationOption] = []
+
+    # Context for resuming after user selection
+    original_query: str
+    hebrew_terms: List[str] = []
+    partial_analysis: Optional[Dict[str, Any]] = None  # What we figured out so far
+
+    # For API response
+    query_id: str = ""  # Unique ID to reference this clarification session
+
+
+class ClarifyRequest(BaseModel):
+    """Request to continue search after user clarifies."""
+    original_query: str
+    selected_option_id: str
+    query_id: Optional[str] = None  # Reference to original clarification
+
+    # Optional: user can provide custom input instead of picking option
+    custom_clarification: Optional[str] = None

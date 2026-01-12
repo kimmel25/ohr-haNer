@@ -103,6 +103,11 @@ class Settings(BaseSettings):
     claude_model: str = Field("claude-sonnet-4-5-20250929", env="CLAUDE_MODEL")
     claude_max_tokens: int = Field(4000, env="CLAUDE_MAX_TOKENS")
     claude_temperature: float = Field(0.7, env="CLAUDE_TEMPERATURE")
+    # V6.1: Enable LLM clarification by default for better machlokes/nuance options
+    clarification_use_llm: bool = Field(True, env="CLARIFICATION_USE_LLM")
+    claude_clarification_max_tokens: int = Field(
+        800, env="CLAUDE_CLARIFICATION_MAX_TOKENS"
+    )
 
     # Step 3: Search
     default_search_depth: str = Field("standard", env="DEFAULT_SEARCH_DEPTH")

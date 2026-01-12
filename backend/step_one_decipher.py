@@ -629,17 +629,26 @@ async def decipher_single(query: str) -> DecipherResult:
     
     # V4.3: Try lookup_all first to find multiple terms
     # This handles "chezkas haguf chezkas mammon" → both terms!
+    # V4.5 FIX: Also process UNMATCHED words through transliteration
     if hasattr(dictionary, 'lookup_all'):
         all_matches = dictionary.lookup_all(normalized_query)
-        
-        if all_matches:
+
+        # Find unmatched words that need transliteration
+        words = normalized_query.split()
+        matched_words = set()
+        for translit, _, _ in (all_matches or []):
+            matched_words.update(translit.split())
+        unmatched_words = [w for w in words if w not in matched_words]
+
+        if all_matches and not unmatched_words:
+            # All words matched - return dictionary results
             hebrew_terms = [hebrew for _, hebrew, _ in all_matches]
             translit_terms = [translit for translit, _, _ in all_matches]
-            
+
             logger.info(f"    ✓ Dictionary HIT: Found {len(all_matches)} term(s)")
             for translit, hebrew, _ in all_matches:
                 logger.info(f"      '{translit}' → '{hebrew}'")
-            
+
             # If multiple terms, combine them
             if len(hebrew_terms) > 1:
                 primary_term = ' '.join(hebrew_terms)
@@ -667,6 +676,18 @@ async def decipher_single(query: str) -> DecipherResult:
                     original_query=query,
                     extraction_confident=True
                 )
+        elif all_matches and unmatched_words:
+            # PARTIAL match - some words in dict, some need transliteration
+            logger.info(f"    ✓ Dictionary PARTIAL: Found {len(all_matches)} term(s), {len(unmatched_words)} unmatched")
+            for translit, hebrew, _ in all_matches:
+                logger.info(f"      '{translit}' → '{hebrew}'")
+            logger.info(f"    Unmatched words need transliteration: {unmatched_words}")
+            # Don't return - continue to transliteration for unmatched words
+            # Store matched results to combine later
+            dict_hebrew_terms = [hebrew for _, hebrew, _ in all_matches]
+        else:
+            dict_hebrew_terms = []
+            unmatched_words = words  # All words need transliteration
     else:
         # Fallback to legacy lookup() if lookup_all not available
         cached_result = dictionary.lookup(normalized_query)
@@ -687,75 +708,89 @@ async def decipher_single(query: str) -> DecipherResult:
                 extraction_confident=True
             )
     
-    logger.debug(f"    → Dictionary miss, continuing to transliteration...")
-    
+    # V4.5: If we have partial dictionary matches, only transliterate unmatched words
+    if 'dict_hebrew_terms' not in dir() or not dict_hebrew_terms:
+        dict_hebrew_terms = []
+    if 'unmatched_words' not in dir() or not unmatched_words:
+        unmatched_words = normalized_query.split()
+
+    logger.debug(f"    → Continuing to transliteration for: {unmatched_words}")
+
     # ========================================
     # TOOL 2: Transliteration Map
     # ========================================
-    logger.debug(f"  [TOOL 2] Transliteration Map - Generating variants...")
-    
-    variants = generate_hebrew_variants(normalized_query, max_variants=15)
-    logger.debug(f"    Generated {len(variants)} variants")
-    logger.debug(f"    Top variants: {variants[:5]}")
-    
-    if not variants:
-        logger.warning(f"  No variants generated for '{query}'")
+    # V4.5: Process each unmatched word separately
+    transliterated_terms = []
+
+    for word in unmatched_words:
+        logger.debug(f"  [TOOL 2] Transliteration Map - Generating variants for '{word}'...")
+
+        variants = generate_hebrew_variants(word, max_variants=15)
+        logger.debug(f"    Generated {len(variants)} variants")
+
+        if not variants:
+            logger.warning(f"  No variants generated for '{word}'")
+            continue
+
+        # ========================================
+        # TOOL 3: Sefaria Validation (Author-Aware)
+        # ========================================
+        logger.debug(f"  [TOOL 3] Sefaria Validation - Finding best validated term for '{word}'...")
+
+        validator = get_validator()
+        validation_result = await find_best_validated(variants, validator, word, parallel=True)
+
+        if validation_result and validation_result.get('hits', 0) > 0:
+            hebrew_term = validation_result['term']
+            hits = validation_result.get('hits', 0)
+            logger.info(f"  ✓ SUCCESS: '{word}' → '{hebrew_term}' ({hits} hits)")
+            transliterated_terms.append(hebrew_term)
+            # Cache the result
+            dictionary.add(word, hebrew_term, hits=hits)
+        else:
+            # Use best guess even if no Sefaria hits
+            best_guess = variants[0]
+            logger.warning(f"  No Sefaria hits for '{word}', using best guess: {best_guess}")
+            transliterated_terms.append(best_guess)
+
+    # Combine dictionary matches + transliterated terms
+    all_hebrew_terms = dict_hebrew_terms + transliterated_terms
+
+    if not all_hebrew_terms:
+        logger.warning(f"  No Hebrew terms found for '{query}'")
         return DecipherResult(
             success=False,
             hebrew_term=None,
             hebrew_terms=[],
             confidence=ConfidenceLevel.LOW,
             method="failed",
-            message="Could not generate Hebrew variants",
+            message="Could not transliterate any terms",
             is_mixed_query=False,
             original_query=query,
             extraction_confident=False
         )
-    
-    # ========================================
-    # TOOL 3: Sefaria Validation (Author-Aware)
-    # ========================================
-    logger.debug(f"  [TOOL 3] Sefaria Validation - Finding best validated term...")
-    
-    validator = get_validator()
-    validation_result = await find_best_validated(variants, validator, normalized_query, parallel=True)
-    
-    if not validation_result or validation_result.get('hits', 0) == 0:
-        logger.warning(f"  No valid Hebrew term found for '{query}'")
-        
-        return DecipherResult(
-            success=False,
-            hebrew_term=variants[0],
-            hebrew_terms=[variants[0]],
-            confidence=ConfidenceLevel.LOW,
-            method="sefaria_no_hits",
-            message=f"No results found in Sefaria. Using best guess: {variants[0]}",
-            alternatives=variants[1:6],
-            is_mixed_query=False,
-            original_query=query,
-            extraction_confident=False
-        )
-    
-    # Success!
-    hebrew_term = validation_result['term']
-    hits = validation_result.get('hits', 0)
-    sample_refs = validation_result.get('sample_refs', [])
-    confidence = determine_confidence(hits, "sefaria")
-    
-    logger.info(f"  ✓ SUCCESS: '{query}' → '{hebrew_term}' ({hits} hits, {confidence.value} confidence)")
-    
-    # Cache the result for next time
-    dictionary.add(normalized_query, hebrew_term, hits=hits)
-    
+
+    # Determine method and confidence
+    if dict_hebrew_terms and transliterated_terms:
+        method = "dictionary_plus_transliteration"
+        confidence = ConfidenceLevel.MEDIUM
+    elif dict_hebrew_terms:
+        method = "dictionary"
+        confidence = ConfidenceLevel.HIGH
+    else:
+        method = "transliteration"
+        confidence = ConfidenceLevel.MEDIUM
+
+    primary_term = ' '.join(all_hebrew_terms)
+    logger.info(f"  ✓ COMBINED RESULT: {all_hebrew_terms} ({method})")
+
     return DecipherResult(
         success=True,
-        hebrew_term=hebrew_term,
-        hebrew_terms=[hebrew_term],
+        hebrew_term=primary_term,
+        hebrew_terms=all_hebrew_terms,
         confidence=confidence,
-        method="sefaria",
-        message=f"Found in Sefaria with {hits} references",
-        alternatives=variants[1:6],
-        sample_refs=sample_refs,
+        method=method,
+        message=f"Found {len(all_hebrew_terms)} term(s)",
         is_mixed_query=False,
         original_query=query,
         extraction_confident=True

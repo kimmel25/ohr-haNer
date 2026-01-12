@@ -191,9 +191,9 @@
     {
       "id": "bari_v_shema",
       "names": {
-        "hebrew": ["ברי ושמא", "ברי ושמא ברי עדיף", "טענת ברי"],
-        "english": ["certain vs uncertain claim", "bari v'shema", "definite claim vs doubtful claim"],
-        "transliterations": ["bari v'shema", "bari veshema", "bari ushma"]
+        "hebrew": ["ברי ושמא", "ברי ושמא ברי עדיף", "טענת ברי", "ברי ושמא באיסורין"],
+        "english": ["certain vs uncertain claim", "bari v'shema", "definite claim vs doubtful claim", "bari v'shema in prohibitions"],
+        "transliterations": ["bari v'shema", "bari veshema", "bari ushma", "bari vishema beissurin", "bari vishema beissura"]
       },
       "primary_gemara": [
         {
@@ -217,14 +217,30 @@
         {"ref": "Ketubot 75b", "context": "With chazakah"},
         {"ref": "Ketubot 76a", "context": "Continuation"}
       ],
-      "key_terms": ["ברי ושמא", "ברי עדיף", "טענת ברי", "טענת שמא"],
+      "key_terms": ["ברי ושמא", "ברי עדיף", "טענת ברי", "טענת שמא", "באיסורין", "באיסורא", "לאיסורא", "ממון", "ממונא", "נאמנת"],
+      "gemara_keywords": [
+        "ברי ושמא", "ברי עדיף", "טענת ברי", "טענת שמא",
+        "באיסורין", "באיסורא", "לאיסורא", "דאיסורא",
+        "ממון", "ממונא", "בממון", "דממונא",
+        "נאמנת", "נאמן", "מהימנא", "מהימן",
+        "רבי גמליאל", "ר\"ג", "רבן גמליאל"
+      ],
       "key_concepts": [
         "When one party claims certainly and other claims maybe",
         "Does bari override shema?",
         "Relationship to chazakah",
-        "R' Gamliel's position on ne'emanus"
+        "R' Gamliel's position on ne'emanus",
+        "Distinction between bari v'shema in monetary matters vs prohibitions (issurin)",
+        "Rosh: bari v'shema applies even to issurin (ne'emanus la'issur)"
       ],
-      "rishonim_who_discuss": ["Rashi", "Tosafos", "Ramban", "Rashba", "Ran", "Shitah Yeshanah"],
+      "sub_topics": {
+        "beissurin": {
+          "description": "Whether bari v'shema principle applies in matters of prohibition (issurin) vs monetary law (mammon)",
+          "key_rishonim": ["Rosh", "Rashba", "Ran", "Ritva"],
+          "focus_terms": ["באיסורין", "באיסורא", "לאיסורא", "ממון", "ממונא", "נאמנת באיסור", "נאמנת לאיסור"]
+        }
+      },
+      "rishonim_who_discuss": ["Rashi", "Tosafos", "Ramban", "Rashba", "Ran", "Rosh", "Ritva", "Shitah Yeshanah", "Meiri"],
       "related_sugyos": ["chezkas_haguf_vs_mammon", "mukas_etz", "hamotzi_mechavero"],
       "category": "dinei_mamonos",
       "confidence": "high"

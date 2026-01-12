@@ -1,4 +1,46 @@
 {
+  "issur": {
+    "hebrew": "איסור",
+    "confidence": "high",
+    "usage_count": 0,
+    "source": "manual",
+    "last_used": null
+  },
+  "issurin": {
+    "hebrew": "איסורין",
+    "confidence": "high",
+    "usage_count": 0,
+    "source": "manual",
+    "last_used": null
+  },
+  "beissurin": {
+    "hebrew": "באיסורין",
+    "confidence": "high",
+    "usage_count": 9,
+    "source": "manual",
+    "last_used": "2026-01-08T21:44:57.804024"
+  },
+  "bissurin": {
+    "hebrew": "באיסורין",
+    "confidence": "high",
+    "usage_count": 0,
+    "source": "manual",
+    "last_used": null
+  },
+  "mamon": {
+    "hebrew": "ממון",
+    "confidence": "high",
+    "usage_count": 0,
+    "source": "manual",
+    "last_used": null
+  },
+  "bemamonos": {
+    "hebrew": "בממונות",
+    "confidence": "high",
+    "usage_count": 0,
+    "source": "manual",
+    "last_used": null
+  },
   "mai kamashma lan": {
     "hebrew": "מאי קמשמע לן",
     "confidence": "medium",
@@ -870,9 +912,9 @@
   "chezkas haguf": {
     "hebrew": "חזקת הגוף",
     "confidence": "high",
-    "usage_count": 69,
+    "usage_count": 74,
     "source": "manual",
-    "last_used": "2026-01-06T23:36:10.410092"
+    "last_used": "2026-01-08T23:33:28.148028"
   },
   "chezka haguf": {
     "hebrew": "חזקת הגוף",
@@ -1729,9 +1771,9 @@
   "bari vishema": {
     "hebrew": "ברי ושמא",
     "confidence": "low",
-    "usage_count": 7,
+    "usage_count": 19,
     "source": "sefaria",
-    "last_used": "2025-12-31T21:24:13.376360"
+    "last_used": "2026-01-08T21:44:57.797775"
   },
   "kamma": {
     "hebrew": "קמא",
@@ -2077,9 +2119,9 @@
   "rava": {
     "hebrew": "רבה",
     "confidence": "high",
-    "usage_count": 2,
+    "usage_count": 11,
     "source": "runtime",
-    "last_used": "2026-01-07T23:31:46.216815",
+    "last_used": "2026-01-08T23:54:58.093831",
     "hits": 10000
   },
   "assur": {
@@ -2093,9 +2135,9 @@
   "6 hour": {
     "hebrew": "6 חור",
     "confidence": "low",
-    "usage_count": 2,
+    "usage_count": 4,
     "source": "runtime",
-    "last_used": "2026-01-07T23:31:46.246817",
+    "last_used": "2026-01-08T23:54:58.076004",
     "hits": 1
   },
   "sourc": {
@@ -2121,5 +2163,85 @@
     "source": "runtime",
     "last_used": "2026-01-07T23:35:12.176739",
     "hits": 10000
+  },
+  "lehavdil": {
+    "hebrew": "להבדיל",
+    "confidence": "high",
+    "usage_count": 2,
+    "source": "runtime",
+    "last_used": "2026-01-08T09:07:25.624576",
+    "hits": 3948
+  },
+  "mezonos": {
+    "hebrew": "מזונות",
+    "confidence": "high",
+    "usage_count": 1,
+    "source": "runtime",
+    "last_used": "2026-01-08T09:01:39.584984",
+    "hits": 9267
+  },
+  "zecher": {
+    "hebrew": "זכר",
+    "confidence": "high",
+    "usage_count": 1,
+    "source": "runtime",
+    "last_used": "2026-01-08T09:01:40.118148",
+    "hits": 10000
+  },
+  "bedika": {
+    "hebrew": "בדק",
+    "confidence": "high",
+    "usage_count": 1,
+    "source": "runtime",
+    "last_used": "2026-01-08T09:01:40.702141",
+    "hits": 5586
+  },
+  "bissurei": {
+    "hebrew": "ביסורי",
+    "confidence": "high",
+    "usage_count": 1,
+    "source": "runtime",
+    "last_used": "2026-01-08T09:02:00.418171",
+    "hits": 170
+  },
+  "bedinei": {
+    "hebrew": "בדני",
+    "confidence": "low",
+    "usage_count": 1,
+    "source": "runtime",
+    "last_used": "2026-01-08T09:07:26.780275",
+    "hits": 9
+  },
+  "machlokes": {
+    "hebrew": "מחלוקת",
+    "confidence": "high",
+    "usage_count": 9,
+    "source": "runtime",
+    "last_used": "2026-01-08T23:54:58.081128",
+    "hits": 10000
+  },
+  "abaya": {
+    "hebrew": "אבי",
+    "confidence": "high",
+    "usage_count": 9,
+    "source": "runtime",
+    "last_used": "2026-01-08T23:54:58.087832",
+    "hits": 10000
+  },
+  "on": {
+    "hebrew": "עון",
+    "confidence": "high",
+    "usage_count": 7,
+    "source": "runtime",
+    "last_used": "2026-01-08T23:33:11.436447",
+    "hits": 10000
+  },
+  "tashbisu": {
+    "hebrew": "תשביתו",
+    "confidence": "high",
+    "usage_count": 9,
+    "source": "runtime",
+    "last_used": "2026-01-08T23:54:58.102371",
+    "hits": 740
   }
 }

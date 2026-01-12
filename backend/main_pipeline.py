@@ -1,23 +1,46 @@
 """
-Ohr Haner - Main Pipeline
-=========================
+Ohr Haner - Main Pipeline (V7 with Clarification)
+==================================================
 
 The complete flow:
 1. DECIPHER: User query → Hebrew terms
 2. UNDERSTAND: Claude analyzes → QueryAnalysis
+   - V7: If confidence is low, may return clarification options
 3. SEARCH: Sefaria search → Organized sources
 
 Philosophy (from Architecture):
 - "Getting into the user's head is most important"
 - "We aren't scared to show our own lack of understanding"
 - "Better to ask than get it wrong"
+
+V7 CHANGES:
+- Added clarification flow: when Step 2 is uncertain, we ask the user before searching
+- Added search_sources_with_clarification() for resuming after user clarifies
+- search_sources() now returns early if clarification is needed
 """
 
 import asyncio
 import logging
+from typing import Optional, Dict, Any, List
 
 from models import MareiMekomosResult, ConfidenceLevel, QueryType, SourceLevel
 from source_output import sort_sources_chronologically
+
+# V7: Import clarification utilities
+try:
+    from clarification import (
+        get_clarification_session,
+        get_selected_option,
+        process_clarification_selection,
+        clear_clarification_session,
+    )
+    CLARIFICATION_AVAILABLE = True
+except ImportError:
+    CLARIFICATION_AVAILABLE = False
+    def get_clarification_session(*args, **kwargs): return None
+    def get_selected_option(*args, **kwargs): return None
+    def process_clarification_selection(*args, **kwargs): return {}
+    def clear_clarification_session(*args, **kwargs): pass
 
 logger = logging.getLogger(__name__)
 
@@ -207,15 +230,49 @@ async def search_sources(query: str) -> MareiMekomosResult:
     logger.info(f"  Target sources: {getattr(analysis, 'target_sources', [])}")
     logger.info(f"  Target authors: {getattr(analysis, 'target_authors', [])}")
     
-    # Check if clarification needed
-    if analysis.needs_clarification:
-        logger.info(f"Clarification needed: {analysis.clarification_question}")
-        clarification_prompt = analysis.clarification_question
-        clarification_options = analysis.clarification_options
-    else:
-        clarification_prompt = None
-        clarification_options = []
-        # Still continue to search with what we have...
+    # V7: Check if clarification needed - return early if so
+    if analysis.needs_clarification and analysis.clarification_options:
+        logger.info(f"[V7] Clarification needed: {analysis.clarification_question}")
+        logger.info(f"[V7] Options: {analysis.clarification_options}")
+
+        # Extract query_id from reasoning if present
+        query_id = ""
+        if analysis.reasoning and "[CLARIFY:" in analysis.reasoning:
+            try:
+                query_id = analysis.reasoning.split("[CLARIFY:")[1].split("]")[0]
+            except (IndexError, AttributeError):
+                pass
+
+        # Return early with clarification result - don't search yet
+        return MareiMekomosResult(
+            original_query=query,
+            hebrew_term=step1_result.hebrew_term,
+            hebrew_terms=step1_result.hebrew_terms,
+            transliteration_confidence=step1_result.confidence,
+            transliteration_method=step1_result.method,
+            is_mixed_query=bool(getattr(step1_result, "is_mixed_query", False)),
+            query_type=_map_query_type(analysis.query_type),
+            primary_source=None,
+            primary_source_he=None,
+            primary_sources=[],
+            interpretation=analysis.inyan_description or "",
+            sources=[],
+            sources_by_level={},
+            sources_by_term={},
+            related_sugyos=[],
+            total_sources=0,
+            levels_included=[],
+            success=True,  # Not a failure, just needs clarification
+            confidence=analysis.confidence,
+            needs_clarification=True,
+            clarification_prompt=analysis.clarification_question,
+            clarification_options=analysis.clarification_options,
+            message=f"query_id:{query_id}" if query_id else "Please clarify your query",
+        )
+
+    # No clarification needed - proceed to search
+    clarification_prompt = None
+    clarification_options = []
     
     # Step 3: Search
     logger.info("\n--- STEP 3: SEARCH ---")
@@ -352,6 +409,333 @@ def _fallback_decipher(query: str):
         method="failed",
         message="Could not identify Hebrew terms",
         original_query=query
+    )
+
+
+# ==============================================================================
+#  V7: RESUME SEARCH AFTER CLARIFICATION
+# ==============================================================================
+
+async def search_with_clarification(
+    original_query: str,
+    query_id: str,
+    selected_option_id: str,
+    custom_clarification: Optional[str] = None,
+) -> MareiMekomosResult:
+    """
+    Resume search after user has clarified their intent.
+
+    This is called when:
+    1. search_sources() returned needs_clarification=True
+    2. User selected one of the clarification_options
+    3. We now continue the search with the clarified intent
+
+    Args:
+        original_query: The original user query
+        query_id: The query_id from the clarification response
+        selected_option_id: The id of the option the user selected (or index as string)
+        custom_clarification: Optional custom text if user didn't pick an option
+
+    Returns:
+        MareiMekomosResult with actual search results
+    """
+    logger.info("=" * 80)
+    logger.info("RESUME SEARCH AFTER CLARIFICATION")
+    logger.info("=" * 80)
+    logger.info(f"Original query: '{original_query}'")
+    logger.info(f"Query ID: {query_id}")
+    logger.info(f"Selected option: {selected_option_id}")
+
+    # Get the stored session
+    session = get_clarification_session(query_id) if CLARIFICATION_AVAILABLE else None
+
+    if not session:
+        logger.warning(f"[V7] No session found for query_id: {query_id}")
+        # Fall back to regular search with skip_clarification
+        return await _search_with_skip_clarification(original_query)
+
+    # Get the selected option
+    selected_option = None
+
+    # Try to get by option_id first
+    if session.get("options"):
+        selected_option = session["options"].get(selected_option_id)
+
+        # Also try by index if option_id is numeric
+        if not selected_option and selected_option_id.isdigit():
+            idx = int(selected_option_id)
+            option_ids = list(session["options"].keys())
+            if 0 <= idx < len(option_ids):
+                selected_option = session["options"][option_ids[idx]]
+
+        # Also try by matching label
+        if not selected_option:
+            for opt in session["options"].values():
+                if opt.label.lower() == selected_option_id.lower():
+                    selected_option = opt
+                    break
+
+    if not selected_option:
+        logger.warning(f"[V7] Option not found: {selected_option_id}")
+        # Fall back to regular search
+        return await _search_with_skip_clarification(original_query)
+
+    # Process the selection to get enriched context
+    enriched_context = process_clarification_selection(
+        original_query=original_query,
+        selected_option=selected_option,
+        original_hebrew_terms=session.get("hebrew_terms", []),
+    )
+
+    logger.info(f"[V7] Enriched context: {enriched_context}")
+
+    stored_analysis = session.get("analysis")
+
+    # Clear the session
+    clear_clarification_session(query_id)
+
+    # If we already have analysis from Step 2, reuse it to avoid another Claude call
+    if stored_analysis is not None:
+        return await _search_with_enriched_analysis(
+            original_query,
+            enriched_context,
+            stored_analysis,
+        )
+
+    # Fall back to the full flow
+    return await _search_with_enriched_context(original_query, enriched_context)
+
+
+async def _search_with_skip_clarification(query: str) -> MareiMekomosResult:
+    """Run search with skip_clarification=True."""
+    logger.info("[V7] Running search with skip_clarification=True")
+
+    # Step 1: Decipher (same as normal)
+    try:
+        from step_one_decipher import decipher
+        step1_result = await decipher(query)
+    except Exception as e:
+        logger.error(f"Step 1 error: {e}")
+        return _build_failure_result(query, None, "Could not process your query.")
+
+    if not step1_result.success and not getattr(step1_result, 'is_pure_english', False):
+        return _build_failure_result(query, step1_result, "Could not transliterate query")
+
+    hebrew_terms = step1_result.hebrew_terms
+
+    # Step 2: Understand with skip_clarification=True
+    try:
+        from step_two_understand import understand
+        analysis = await understand(
+            hebrew_terms=hebrew_terms,
+            query=query,
+            decipher_result=step1_result,
+            skip_clarification=True,  # Skip clarification this time
+        )
+    except Exception as e:
+        logger.error(f"Step 2 error: {e}")
+        return _build_failure_result(query, step1_result, "Error analyzing your query.")
+
+    # Step 3: Search (same as normal)
+    try:
+        from step_three_search import search
+        search_result = await search(analysis)
+    except Exception as e:
+        logger.error(f"Step 3 error: {e}")
+        return _build_failure_result(query, step1_result, "Error searching for sources.")
+
+    # Build result (same as normal flow)
+    return _build_result_from_search(query, step1_result, analysis, search_result)
+
+
+async def _search_with_enriched_context(
+    original_query: str,
+    enriched_context: Dict[str, Any],
+) -> MareiMekomosResult:
+    """Run search with enriched context from clarification."""
+    logger.info("[V7] Running search with enriched context")
+    logger.info(f"[V7] Focus terms: {enriched_context.get('focus_terms', [])}")
+    logger.info(f"[V7] Refs hint: {enriched_context.get('refs_hint', [])}")
+
+    # Step 1: Decipher (same as normal)
+    try:
+        from step_one_decipher import decipher
+        step1_result = await decipher(original_query)
+    except Exception as e:
+        logger.error(f"Step 1 error: {e}")
+        return _build_failure_result(original_query, None, "Could not process your query.")
+
+    if not step1_result.success and not getattr(step1_result, 'is_pure_english', False):
+        return _build_failure_result(original_query, step1_result, "Could not transliterate query")
+
+    # Merge enriched Hebrew terms
+    hebrew_terms = list(step1_result.hebrew_terms)
+    for term in enriched_context.get("hebrew_terms", []):
+        if term not in hebrew_terms:
+            hebrew_terms.append(term)
+
+    # Step 2: Understand with skip_clarification and enriched terms
+    try:
+        from step_two_understand import understand
+        analysis = await understand(
+            hebrew_terms=hebrew_terms,
+            query=original_query,
+            decipher_result=step1_result,
+            skip_clarification=True,
+        )
+
+        # Enrich analysis with clarification context
+        if enriched_context.get("focus_terms"):
+            for term in enriched_context["focus_terms"]:
+                if term not in analysis.focus_terms:
+                    analysis.focus_terms.append(term)
+                if term not in analysis.topic_terms:
+                    analysis.topic_terms.append(term)
+
+        if enriched_context.get("refs_hint"):
+            for ref in enriched_context["refs_hint"]:
+                if ref not in analysis.primary_refs:
+                    analysis.primary_refs.append(ref)
+
+        logger.info(f"[V7] Enriched focus_terms: {analysis.focus_terms}")
+        logger.info(f"[V7] Enriched primary_refs: {analysis.primary_refs}")
+
+    except Exception as e:
+        logger.error(f"Step 2 error: {e}")
+        return _build_failure_result(original_query, step1_result, "Error analyzing your query.")
+
+    # Step 3: Search
+    try:
+        from step_three_search import search
+        search_result = await search(analysis)
+    except Exception as e:
+        logger.error(f"Step 3 error: {e}")
+        return _build_failure_result(original_query, step1_result, "Error searching for sources.")
+
+    # Build result
+    result = _build_result_from_search(original_query, step1_result, analysis, search_result)
+
+    # Add note about clarification
+    if enriched_context.get("clarified_intent"):
+        result.message = f"Showing results for: {enriched_context['clarified_intent']}. {result.message}"
+
+    return result
+
+
+async def _search_with_enriched_analysis(
+    original_query: str,
+    enriched_context: Dict[str, Any],
+    analysis: Any,
+) -> MareiMekomosResult:
+    """Run search using stored Step 2 analysis plus clarified context."""
+    logger.info("[V7] Reusing stored analysis to avoid extra Claude call")
+
+    # Step 1: Decipher (same as normal)
+    try:
+        from step_one_decipher import decipher
+        step1_result = await decipher(original_query)
+    except Exception as e:
+        logger.error(f"Step 1 error: {e}")
+        return _build_failure_result(original_query, None, "Could not process your query.")
+
+    if not step1_result.success and not getattr(step1_result, 'is_pure_english', False):
+        return _build_failure_result(original_query, step1_result, "Could not transliterate query")
+
+    # Normalize analysis for the clarified run
+    analysis.original_query = original_query
+    analysis.hebrew_terms_from_step1 = step1_result.hebrew_terms
+    analysis.needs_clarification = False
+    analysis.clarification_question = None
+    analysis.clarification_options = []
+
+    # Enrich analysis with clarification context
+    if enriched_context.get("focus_terms"):
+        for term in enriched_context["focus_terms"]:
+            if term not in analysis.focus_terms:
+                analysis.focus_terms.append(term)
+            if term not in analysis.topic_terms:
+                analysis.topic_terms.append(term)
+
+    if enriched_context.get("refs_hint"):
+        try:
+            from step_two_understand import RefHint
+        except Exception:
+            RefHint = None
+        for ref in enriched_context["refs_hint"]:
+            if ref not in analysis.primary_refs:
+                analysis.primary_refs.append(ref)
+            if RefHint and hasattr(analysis, "ref_hints"):
+                if not any(getattr(hint, "ref", None) == ref for hint in analysis.ref_hints):
+                    analysis.ref_hints.append(RefHint(ref=ref, is_primary=True, source="clarification"))
+
+    logger.info(f"[V7] Enriched focus_terms: {analysis.focus_terms}")
+    logger.info(f"[V7] Enriched primary_refs: {analysis.primary_refs}")
+
+    # Step 3: Search
+    try:
+        from step_three_search import search
+        search_result = await search(analysis)
+    except Exception as e:
+        logger.error(f"Step 3 error: {e}")
+        return _build_failure_result(original_query, step1_result, "Error searching for sources.")
+
+    # Build result
+    result = _build_result_from_search(original_query, step1_result, analysis, search_result)
+
+    if enriched_context.get("clarified_intent"):
+        result.message = f"Showing results for: {enriched_context['clarified_intent']}. {result.message}"
+
+    return result
+
+
+def _build_result_from_search(query, step1_result, analysis, search_result) -> MareiMekomosResult:
+    """Build MareiMekomosResult from search components."""
+    sources_list = (
+        getattr(search_result, "all_sources", None)
+        or getattr(search_result, "sources", None)
+        or []
+    )
+    if not sources_list:
+        sources_list = (
+            list(getattr(search_result, "foundation_stones", []) or [])
+            + list(getattr(search_result, "commentary_sources", []) or [])
+            + list(getattr(search_result, "earlier_sources", []) or [])
+        )
+
+    sources_list = sort_sources_chronologically(sources_list)
+    sources_payload = [_serialize_source(source) for source in sources_list]
+
+    sources_by_level = {}
+    for level, sources in (getattr(search_result, "sources_by_level", {}) or {}).items():
+        sorted_sources = sort_sources_chronologically(sources)
+        sources_by_level[level] = [_serialize_source(source) for source in sorted_sources]
+
+    levels_found = list(getattr(search_result, "sources_by_level", {}) or {})
+
+    return MareiMekomosResult(
+        original_query=query,
+        hebrew_term=step1_result.hebrew_term,
+        hebrew_terms=step1_result.hebrew_terms,
+        transliteration_confidence=step1_result.confidence,
+        transliteration_method=step1_result.method,
+        is_mixed_query=bool(getattr(step1_result, "is_mixed_query", False)),
+        query_type=_map_query_type(analysis.query_type),
+        primary_source=(analysis.primary_refs[0] if getattr(analysis, "primary_refs", []) else None),
+        primary_source_he=None,
+        primary_sources=list(getattr(analysis, "primary_refs", []) or []),
+        interpretation=(getattr(analysis, "reasoning", "") or getattr(analysis, "inyan_description", "")),
+        sources=sources_payload,
+        sources_by_level=sources_by_level,
+        sources_by_term={},
+        related_sugyos=[],
+        total_sources=search_result.total_sources,
+        levels_included=levels_found,
+        success=True,
+        confidence=search_result.confidence,
+        needs_clarification=False,
+        clarification_prompt=None,
+        clarification_options=[],
+        message=getattr(search_result, "search_description", ""),
     )
 
 

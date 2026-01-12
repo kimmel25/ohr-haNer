@@ -168,14 +168,71 @@ def strip_html_tags(text: str) -> str:
     """Remove HTML tags from text for plain text output."""
     if not text:
         return ""
-    
+
     text = re.sub(r'<br\s*/?>', '\n', text, flags=re.IGNORECASE)
     text = re.sub(r'</p>|</div>', '\n', text, flags=re.IGNORECASE)
     text = re.sub(r'<[^>]+>', '', text)
     text = html.unescape(text)
     text = re.sub(r'\n{3,}', '\n\n', text)
     text = text.strip()
-    
+
+    return text
+
+
+def strip_niqqud(text: str) -> str:
+    """
+    Strip Hebrew vowel points (nekudos/niqqud) from text.
+
+    This removes:
+    - Hebrew points (U+05B0-U+05BD): sheva, hiriq, tsere, segol, patah, qamats, holam, etc.
+    - Hebrew point dagesh/mapiq (U+05BC)
+    - Hebrew point shin/sin dot (U+05C1, U+05C2)
+    - Hebrew punctuation (U+05BE-U+05BF): maqaf, rafe
+    - Hebrew cantillation marks (U+0591-U+05AF): taamim
+    """
+    if not text:
+        return ""
+
+    # Remove cantillation marks (taamim) - U+0591 to U+05AF
+    # Remove vowel points (nekudos) - U+05B0 to U+05BD
+    # Remove other marks - U+05BF (rafe), U+05C1-U+05C2 (shin/sin dots), U+05C4-U+05C5, U+05C7
+    text = re.sub(r'[\u0591-\u05C7]', '', text)
+
+    return text
+
+
+def should_strip_niqqud_for_level(level_str: str) -> bool:
+    """
+    Determine if niqqud should be stripped for a given source level.
+
+    Gemara is traditionally studied without nekudos.
+    Chumash and some other sources typically have nekudos.
+    """
+    # Strip niqqud from Gemara sources (Bavli, Yerushalmi)
+    return level_str in ["gemara"]
+
+
+def get_processed_source_text(source: "Source", max_length: int = 2000) -> str:
+    """
+    Get processed Hebrew text for a source, with niqqud stripped for Gemara.
+
+    Args:
+        source: The source object
+        max_length: Maximum length to return (default 2000)
+
+    Returns:
+        Processed Hebrew text, or placeholder if no text
+    """
+    if not source.hebrew_text:
+        return '<em>אין טקסט</em>'
+
+    text = source.hebrew_text[:max_length]
+    level_str = get_level_str(source)
+
+    # Strip niqqud for Gemara sources
+    if should_strip_niqqud_for_level(level_str):
+        text = strip_niqqud(text)
+
     return text
 
 
@@ -218,16 +275,15 @@ def format_source_txt(source: "Source", num: int, show_tier: bool = False) -> Li
     if source.hebrew_text:
         lines.append("    ─── Hebrew ───")
         hebrew_clean = strip_html_tags(source.hebrew_text)
+        # V6.1: Strip niqqud (nekudos) from Gemara text
+        level_str = get_level_str(source)
+        if should_strip_niqqud_for_level(level_str):
+            hebrew_clean = strip_niqqud(hebrew_clean)
         for line in hebrew_clean.split('\n'):
             lines.append(f"    {line}")
     
-    # English text
-    if source.english_text:
-        lines.append("")
-        lines.append("    ─── English ───")
-        english_clean = strip_html_tags(source.english_text)
-        for line in english_clean.split('\n'):
-            lines.append(f"    {line}")
+    # V6.1: English text removed - Hebrew only output
+    # (English still stored in source object for potential future use)
     
     # Source separator
     lines.append("")
@@ -704,7 +760,7 @@ def format_sources_html(result: "SearchResult", query: str) -> str:
 """
         s = result.landmark_source
         seen_refs.add(s.ref)
-        source_text = s.hebrew_text[:2000] if s.hebrew_text else '<em>אין טקסט</em>'
+        source_text = get_processed_source_text(s, max_length=2000)
         focus_score = getattr(s, 'focus_score', 0)
         
         html_content += f"""
@@ -739,7 +795,7 @@ def format_sources_html(result: "SearchResult", query: str) -> str:
             if s.ref in seen_refs:
                 continue
             seen_refs.add(s.ref)
-            source_text = s.hebrew_text[:2000] if s.hebrew_text else '<em>אין טקסט</em>'
+            source_text = get_processed_source_text(s, max_length=2000)
             focus_score = getattr(s, 'focus_score', 0)
             
             html_content += f"""
@@ -773,7 +829,7 @@ def format_sources_html(result: "SearchResult", query: str) -> str:
             if s.ref in seen_refs:
                 continue
             seen_refs.add(s.ref)
-            source_text = s.hebrew_text[:1500] if s.hebrew_text else '<em>אין טקסט</em>'
+            source_text = get_processed_source_text(s, max_length=1500)
             focus_score = getattr(s, 'focus_score', 0)
             
             html_content += f"""
@@ -799,7 +855,7 @@ def format_sources_html(result: "SearchResult", query: str) -> str:
             if s.ref in seen_refs:
                 continue
             seen_refs.add(s.ref)
-            source_text = s.hebrew_text[:1500] if s.hebrew_text else '<em>אין טקסט</em>'
+            source_text = get_processed_source_text(s, max_length=1500)
             
             html_content += f"""
             <div class="source-card">
@@ -823,7 +879,7 @@ def format_sources_html(result: "SearchResult", query: str) -> str:
             if s.ref in seen_refs:
                 continue
             seen_refs.add(s.ref)
-            source_text = s.hebrew_text[:1000] if s.hebrew_text else '<em>אין טקסט</em>'
+            source_text = get_processed_source_text(s, max_length=1000)
             
             html_content += f"""
             <div class="source-card">

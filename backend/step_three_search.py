@@ -382,6 +382,44 @@ EXCLUSION_PATTERNS = {
     "tosafos": ["Piskei Tosafot"],  # This is a summary, not Tosafos itself
 }
 
+# V6.1: Unconventional sources to exclude from results
+# These are modern/academic sources that clutter the marei mekomos
+UNCONVENTIONAL_SOURCE_PATTERNS = [
+    "Steinsaltz",           # Modern Steinsaltz commentary/elucidation
+    "Introductions to the Babylonian Talmud",  # Sefaria introductions
+    "Introduction to",      # Various introductions
+    "Koren",               # Koren translations/editions
+    "William Davidson",     # William Davidson translation
+    "Jastrow",             # Dictionary
+    "Guide for the Perplexed",  # Rambam's philosophical work (usually not relevant)
+    "The Commentators",     # Generic commentary collections
+    "Sefer HaChinukh",      # Usually background, not primary
+    "Encyclopedia",         # Encyclopedia entries
+    "Otzar Laazei Rashi",   # Rashi glossary
+    "Otzar HaGeonim",       # Geonic anthology (usually background)
+]
+
+def is_unconventional_source(ref: str, categories: List[str] = None) -> bool:
+    """
+    Check if a source is unconventional and should be excluded.
+
+    Returns True if the source should be excluded from results.
+    """
+    ref_lower = ref.lower()
+
+    for pattern in UNCONVENTIONAL_SOURCE_PATTERNS:
+        if pattern.lower() in ref_lower:
+            return True
+
+    # Also check categories if provided
+    if categories:
+        cat_str = " ".join(categories).lower()
+        for pattern in UNCONVENTIONAL_SOURCE_PATTERNS:
+            if pattern.lower() in cat_str:
+                return True
+
+    return False
+
 
 # =============================================================================
 #  DATA STRUCTURES
@@ -836,14 +874,24 @@ def generate_keyword_variants(keyword: str) -> List[str]:
     # Add common Aramaic forms for Hebrew terms
     aramaic_mappings = {
         'חזקה': ['חזקא', 'דחזקה', 'דחזקא'],
-        'ממון': ['ממונא', 'דממונא', 'דממון'],
+        'ממון': ['ממונא', 'דממונא', 'דממון', 'בממון', 'לממון'],
         'גוף': ['גופא', 'דגופא', 'דגוף'],
         'מוחזק': ['מוחזקת', 'מוחזקין'],
         'רוב': ['רובא', 'דרובא'],
+        # V6.1: Add issurin variants - critical for queries like "bari vishema beissurin"
+        'איסור': ['איסורא', 'דאיסורא', 'דאיסור', 'באיסור', 'לאיסור', 'באיסורא', 'לאיסורא'],
+        'איסורין': ['באיסורין', 'דאיסורין', 'לאיסורין', 'אף באיסורין', 'נאמנת באיסורין'],
+        'באיסורין': ['באיסורא', 'לאיסורא', 'דאיסורא', 'איסורא', 'איסורין', 'איסור'],
+        'באיסורא': ['באיסורין', 'לאיסורין', 'דאיסורין', 'איסורין', 'איסור'],
     }
     for base, aramaic_forms in aramaic_mappings.items():
         if base in keyword:
             variants.extend(aramaic_forms)
+
+    # V6.1: Special handling for issurin/mammon contrast queries
+    # If searching for issurin, also look for mammon (often discussed together as contrast)
+    if any(term in keyword for term in ['איסור', 'איסורין', 'באיסור']):
+        variants.extend(['ממון', 'ממונא', 'בממון', 'לממון'])
 
     return list(set(variants))
 
@@ -1440,6 +1488,12 @@ async def trickle_up_filtered(
                 if not link_ref or link_ref in seen_refs:
                     continue
 
+                # V6.1: Filter out unconventional sources (Steinsaltz, introductions, etc.)
+                link_categories = link.get("categories", [])
+                if is_unconventional_source(link_ref, link_categories):
+                    logger.debug(f"      Skipped unconventional source: {link_ref}")
+                    continue
+
                 # V6 FIX: Check if this commentary is on a relevant segment
                 commentary_segment = extract_segment_from_commentary_ref(link_ref)
                 if commentary_segment is not None:
@@ -1982,33 +2036,39 @@ async def trickle_up_unfiltered(
             link_ref = link.get("ref", "")
             if not link_ref or link_ref in seen_refs:
                 continue
-            
+
+            # V6.1: Filter out unconventional sources (Steinsaltz, introductions, etc.)
+            link_categories = link.get("categories", [])
+            if is_unconventional_source(link_ref, link_categories):
+                logger.debug(f"    Skipped unconventional source: {link_ref}")
+                continue
+
             categories = link.get("category", "")
             collective_title = link.get("collectiveTitle", {}).get("en", "")
-            
+
             is_target = False
             matched_target = None
-            
+
             for target in target_lower:
                 if target == "gemara":
                     continue
-                
+
                 if matches_source_target(link_ref, categories, collective_title, target):
                     is_target = True
                     matched_target = target
                     break
-            
+
             if not is_target:
                 continue
-            
+
             seen_refs.add(link_ref)
-            
+
             text_response = await fetch_text(link_ref, session)
             if not text_response:
                 continue
-            
+
             he_text, en_text = extract_text_content(text_response)
-            
+
             source = Source(
                 ref=link_ref,
                 he_ref=text_response.get("heRef", link_ref),
