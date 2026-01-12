@@ -28,7 +28,7 @@ Architecture:
 - Transliterates each candidate using cascade
 - Returns validated Hebrew terms for Step 2
 
-NO VECTOR SEARCH. NO CLAUDE.
+NO VECTOR SEARCH. NO GEMINI.
 """
 
 import sys
@@ -806,7 +806,7 @@ async def decipher(query: str) -> DecipherResult:
     Main entry point for Step 1: Transliteration → Hebrew
 
     V4.4 FLOW:
-    1. Check if PURE ENGLISH query (no Hebrew content) - pass to Claude directly
+    1. Check if PURE ENGLISH query (no Hebrew content) - pass to Gemini directly
     2. Check if mixed query (English + Hebrew)
     3. If mixed:
        - Extract Hebrew candidates (author-aware, V4.2)
@@ -825,7 +825,7 @@ async def decipher(query: str) -> DecipherResult:
     if is_pure_english_query(query):
         log_subsection("Pure English Query Detected")
         logger.info("Query is entirely in English - passing to Step 2 for interpretation")
-        logger.info("Query will be interpreted by Claude as a topic request")
+        logger.info("Query will be interpreted by Gemini as a topic request")
 
         return DecipherResult(
             success=True,  # This IS a success - we identified it correctly
@@ -833,7 +833,7 @@ async def decipher(query: str) -> DecipherResult:
             hebrew_terms=[],  # No Hebrew terms - Step 2 will use the original query
             confidence=ConfidenceLevel.HIGH,  # High confidence it's English
             method="pure_english_topic",
-            message="Query is in English. Claude will interpret the topic.",
+            message="Query is in English. Gemini will interpret the topic.",
             is_mixed_query=False,
             original_query=query,
             extraction_confident=True,

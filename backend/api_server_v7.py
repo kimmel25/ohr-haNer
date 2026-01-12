@@ -150,6 +150,34 @@ async def health_check() -> Dict[str, Any]:
     }
 
 
+@app.get("/tokens/usage")
+async def get_token_usage() -> Dict[str, Any]:
+    """
+    Get token usage statistics for the current session.
+
+    Returns aggregate statistics about API token usage and costs.
+    """
+    try:
+        from utils.token_tracker import get_global_tracker
+        tracker = get_global_tracker()
+        summary = tracker.get_summary()
+        return {
+            "success": True,
+            "usage": summary,
+        }
+    except ImportError:
+        return {
+            "success": False,
+            "error": "Token tracking not available",
+        }
+    except Exception as e:
+        logger.exception(f"[/tokens/usage] Error: {e}")
+        return {
+            "success": False,
+            "error": str(e),
+        }
+
+
 # ==========================================
 #  SESSION STATE (for decipher workflow)
 # ==========================================
@@ -176,6 +204,14 @@ async def search_endpoint(request: SearchRequest) -> MareiMekomosResult:
     logger.info("=" * 60)
 
     try:
+        # Reset token tracker for this request
+        from utils.token_tracker import get_global_tracker
+        tracker = get_global_tracker()
+        tracker.reset()
+    except ImportError:
+        pass  # Token tracking not available
+
+    try:
         from main_pipeline import search_sources
         result = await search_sources(request.query)
 
@@ -184,6 +220,16 @@ async def search_endpoint(request: SearchRequest) -> MareiMekomosResult:
             logger.info(f"[/search] Options: {result.clarification_options}")
         else:
             logger.info(f"[/search] Complete: {result.total_sources} sources")
+
+        # Log token usage for this request
+        try:
+            from utils.token_tracker import get_global_tracker
+            tracker = get_global_tracker()
+            summary = tracker.get_summary()
+            if summary['total_calls'] > 0:
+                logger.info(f"[/search] Token usage: {summary['total_tokens']:,} tokens (${summary['total_cost']:.4f})")
+        except ImportError:
+            pass
 
         return result
 
@@ -473,7 +519,7 @@ if settings.is_development:
             "log_level": settings.log_level,
             "log_dir": str(LOG_DIR),
             "cache_dir": str(settings.cache_dir),
-            "claude_model": settings.claude_model,
+            "gemini_model": settings.gemini_model,
             "sefaria_base_url": settings.sefaria_base_url,
         }
     

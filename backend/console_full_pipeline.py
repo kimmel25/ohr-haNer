@@ -341,7 +341,7 @@ async def run_step2(
     skip_clarification: bool = False
 ) -> Optional[object]:
     """
-    Run Step 2: Understand query with Claude.
+    Run Step 2: Understand query with Gemini.
 
     Args:
         query: Original query string
@@ -363,7 +363,7 @@ async def run_step2(
 
     print(f"  Query: {query}")
     print(f"  Hebrew Terms: {hebrew_terms}")
-    print("  Calling Claude...")
+    print("  Calling Gemini...")
 
     try:
         if decipher_result is not None:
@@ -439,7 +439,7 @@ async def run_step2(
 
         # Reasoning
         if result.reasoning:
-            print_subheader("CLAUDE'S REASONING")
+            print_subheader("GEMINI'S REASONING")
             # Wrap long text
             reasoning = result.reasoning
             if len(reasoning) > 300:
@@ -711,6 +711,31 @@ async def run_pipeline(
     if search_result:
         total = getattr(search_result, 'total_sources', 0)
         print(f"  Total Sources Found: {total}")
+
+    # Token usage summary
+    try:
+        from utils.token_tracker import get_global_tracker
+        tracker = get_global_tracker()
+        summary = tracker.get_summary()
+        if summary['total_calls'] > 0:
+            print()
+            print_header("TOKEN USAGE & COST", char="─")
+            print(f"  API Calls: {summary['total_calls']}")
+            print(f"  Total Tokens: {summary['total_tokens']:,}")
+            print(f"    Input:  {summary['total_input_tokens']:,}")
+            print(f"    Output: {summary['total_output_tokens']:,}")
+            print()
+            print(f"  💰 Total Cost: ${summary['total_cost']:.4f}")
+            print(f"  Model: {summary['model']}")
+
+            # Breakdown by operation
+            if summary['by_operation']:
+                print()
+                print("  By Operation:")
+                for op, stats in summary['by_operation'].items():
+                    print(f"    • {op}: {stats['total_tokens']:,} tokens (${stats['cost']:.4f})")
+    except ImportError:
+        pass  # Token tracking not available
 
     return decipher_result, analysis, search_result
 

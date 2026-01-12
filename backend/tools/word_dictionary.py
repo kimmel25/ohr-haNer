@@ -183,7 +183,7 @@ def initialize_dictionary_from_notes() -> Dict:
     possible_paths = [
         Path(__file__).parent.parent.parent / "my_notes.md",  # backend/../my_notes.md
         Path(__file__).parent.parent / "my_notes.md",  # backend/my_notes.md
-        Path("/mnt/user-data/uploads/my_notes.md"),  # Claude environment
+        Path("/mnt/user-data/uploads/my_notes.md"),  # Gemini environment
         Path("my_notes.md"),  # Current directory
     ]
     

@@ -22,6 +22,15 @@ from enum import Enum
 
 import google.generativeai as genai
 
+# Token tracking
+try:
+    from utils.token_tracker import get_global_tracker
+    TOKEN_TRACKING_AVAILABLE = True
+except ImportError:
+    TOKEN_TRACKING_AVAILABLE = False
+    def get_global_tracker(*args, **kwargs):
+        return None
+
 try:
     from config import get_settings
     settings = get_settings()
@@ -163,7 +172,7 @@ def should_ask_clarification(
 
 
 # ==============================================================================
-#  OPTION GENERATION (Claude-based)
+#  OPTION GENERATION (Gemini-based)
 # ==============================================================================
 
 CLARIFICATION_PROMPT = """You are helping clarify a Torah query that could have multiple interpretations.
@@ -241,7 +250,7 @@ async def generate_clarification_options(
     known_sugya_data: Optional[Dict] = None,
 ) -> ClarificationResult:
     """
-    Generate clarification options using Claude.
+    Generate clarification options using Gemini.
 
     Args:
         query: Original user query
@@ -297,6 +306,11 @@ async def generate_clarification_options(
 
         response = model.generate_content(full_prompt)
         raw_text = response.text.strip()
+
+        # Track token usage
+        if TOKEN_TRACKING_AVAILABLE and hasattr(response, 'usage_metadata'):
+            tracker = get_global_tracker(model_name)
+            tracker.record_from_response(response, "Clarification Generation")
 
         # Parse JSON
         json_text = raw_text
@@ -587,15 +601,15 @@ async def check_and_generate_clarification(
     context: str = "",
     clarification_question: Optional[str] = None,
     clarification_options: Optional[List[str]] = None,
-    possible_interpretations: Optional[List[Dict]] = None,  # V7: From Step 2 Claude call
+    possible_interpretations: Optional[List[Dict]] = None,  # V7: From Step 2 Gemini call
 ) -> Optional[ClarificationResult]:
     """
     Convenience function: Check if clarification needed and generate options if so.
 
     This is the main entry point for the clarification system.
 
-    V7 OPTIMIZATION: If possible_interpretations is provided (from Step 2 Claude call),
-    we use those directly instead of making another Claude API call.
+    V7 OPTIMIZATION: If possible_interpretations is provided (from Step 2 Gemini call),
+    we use those directly instead of making another Gemini API call.
 
     Args:
         query: User's original query
@@ -608,7 +622,7 @@ async def check_and_generate_clarification(
         context: Additional context
         clarification_question: Question text from Step 2 if available
         clarification_options: Option labels from Step 2 if available
-        possible_interpretations: Pre-computed interpretations from Step 2 Claude call
+        possible_interpretations: Pre-computed interpretations from Step 2 Gemini call
 
     Returns:
         ClarificationResult if clarification needed, None otherwise
@@ -620,7 +634,7 @@ async def check_and_generate_clarification(
     has_subtopics = bool(known_sugya_data and known_sugya_data.get("sub_topics"))
 
     # Detect machlokes/comparison from query text if query_type doesn't indicate it
-    # This catches "machlokes abaya rava on X" even if Claude classified it as "topic"
+    # This catches "machlokes abaya rava on X" even if Gemini classified it as "topic"
     query_lower = query.lower()
     effective_query_type = query_type
     machlokes_keywords = ["machlokes", "machloket", "מחלוקת", "dispute", "argument between"]
@@ -696,7 +710,7 @@ async def check_and_generate_clarification(
                 reason=reason.value,
             )
 
-    # Fallback: Skip extra Claude call unless explicitly enabled
+    # Fallback: Skip extra Gemini call unless explicitly enabled
     if not getattr(settings, "clarification_use_llm", False):
         logger.info("[CLARIFICATION] No pre-computed options; using generic fallback (no extra API call)")
         return _fallback_clarification_result(question, reason.value, query=query)

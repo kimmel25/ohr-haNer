@@ -464,16 +464,16 @@
   "lehotzi": {
     "hebrew": "להוציא",
     "confidence": "medium",
-    "usage_count": 0,
+    "usage_count": 3,
     "source": "notes",
-    "last_used": null
+    "last_used": "2026-01-11T21:01:29.018910"
   },
   "mammon": {
     "hebrew": "ממון",
     "confidence": "medium",
-    "usage_count": 1,
+    "usage_count": 4,
     "source": "notes",
-    "last_used": "2025-12-25T09:09:32.531434"
+    "last_used": "2026-01-11T21:01:29.023243"
   },
   "haisha": {
     "hebrew": "האשה",
@@ -1011,7 +1011,7 @@
     "hebrew": "סוטה",
     "confidence": "high",
     "usage_count": 5,
-    "source": "claude",
+    "source": "gemini",
     "last_used": "2025-12-03T22:24:26.237588"
   },
   "berachos": {
@@ -1442,9 +1442,9 @@
   "migu": {
     "hebrew": "מיגו",
     "confidence": "high",
-    "usage_count": 9,
+    "usage_count": 12,
     "source": "sefaria",
-    "last_used": "2025-12-08T17:13:18.033490"
+    "last_used": "2026-01-11T21:01:29.011909"
   },
   "umdena": {
     "hebrew": "ומדנא",
@@ -1792,9 +1792,9 @@
   "bittul chometz": {
     "hebrew": "ביטול חמץ",
     "confidence": "medium",
-    "usage_count": 67,
+    "usage_count": 68,
     "source": "sefaria",
-    "last_used": "2026-01-04T21:45:42.285068"
+    "last_used": "2026-01-11T20:45:48.581996"
   },
   "rans": {
     "hebrew": "רן",

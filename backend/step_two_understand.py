@@ -41,6 +41,16 @@ from enum import Enum
 
 import google.generativeai as genai
 
+# Token tracking
+try:
+    from utils.token_tracker import TokenTracker, get_global_tracker
+    TOKEN_TRACKING_AVAILABLE = True
+except ImportError:
+    TOKEN_TRACKING_AVAILABLE = False
+    TokenTracker = None
+    def get_global_tracker(*args, **kwargs):
+        return None
+
 # Initialize logging
 try:
     from logging_config import setup_logging
@@ -156,11 +166,11 @@ class Breadth(str, Enum):
 
 
 class LandmarkConfidence(str, Enum):
-    """How confident is Claude about the suggested landmark?"""
-    HIGH = "high"          # Claude is very sure this is THE source
-    MEDIUM = "medium"      # Claude thinks this is likely the main source
-    GUESSING = "guessing"  # Claude isn't sure but giving a best guess
-    NONE = "none"          # Claude doesn't know a landmark for this
+    """How confident is Gemini about the suggested landmark?"""
+    HIGH = "high"          # Gemini is very sure this is THE source
+    MEDIUM = "medium"      # Gemini thinks this is likely the main source
+    GUESSING = "guessing"  # Gemini isn't sure but giving a best guess
+    NONE = "none"          # Gemini doesn't know a landmark for this
 
 
 class RefConfidence(str, Enum):
@@ -177,7 +187,7 @@ class RefConfidence(str, Enum):
 
 @dataclass
 class RefHint:
-    """A suggested reference from Claude with verification info."""
+    """A suggested reference from Gemini with verification info."""
     ref: str
     confidence: RefConfidence = RefConfidence.POSSIBLE
     verification_keywords: List[str] = field(default_factory=list)
@@ -187,7 +197,7 @@ class RefHint:
     # V5: Segment-level targeting
     target_segments: List[str] = field(default_factory=list)  # Specific lines/segments to focus on
     # V6: Source of ref
-    source: str = "claude"  # "claude" or "known_sugyos_db"
+    source: str = "gemini"  # "gemini" or "known_sugyos_db"
 
 
 @dataclass
@@ -240,7 +250,7 @@ class QueryAnalysis:
     # Legacy: suggested_refs for backward compatibility
     suggested_refs: List[str] = field(default_factory=list)
     
-    # What Claude understands about the query
+    # What Gemini understands about the query
     inyan_description: str = ""
     search_topics_hebrew: List[str] = field(default_factory=list)
     search_variants: Optional[SearchVariants] = None
@@ -256,14 +266,14 @@ class QueryAnalysis:
     clarification_question: Optional[str] = None
     clarification_options: List[str] = field(default_factory=list)
     
-    # Claude's reasoning
+    # Gemini's reasoning
     reasoning: str = ""
     
     # V6: Known sugyos database match info
     known_sugya_match: Optional[Any] = None  # KnownSugyaMatch if found
     used_known_sugyos: bool = False          # Did we use the database?
 
-    # V7: Possible interpretations for ambiguous queries (from Claude)
+    # V7: Possible interpretations for ambiguous queries (from Gemini)
     # These are used directly as clarification options without extra API call
     possible_interpretations: List[Dict[str, Any]] = field(default_factory=list)
 
@@ -316,13 +326,13 @@ def _parse_ref_hint(ref_data: dict) -> RefHint:
         buffer_size=ref_data.get("buffer_size", 1),
         is_primary=ref_data.get("is_primary", True),
         target_segments=ref_data.get("target_segments", []),
-        source=ref_data.get("source", "claude"),
+        source=ref_data.get("source", "gemini"),
     )
 
 
 def _parse_search_variants(data: dict) -> SearchVariants:
     """Parse SearchVariants from JSON data."""
-    # Claude occasionally returns a list instead of an object.
+    # Gemini occasionally returns a list instead of an object.
     # Be permissive so Step 2 doesn't crash on enrichment.
     if data is None:
         data = {}
@@ -536,7 +546,7 @@ def _detect_query_vagueness(query: str, hebrew_terms: List[str]) -> tuple[bool, 
 
 
 # ==============================================================================
-#  GEMINI SYSTEM PROMPT - V8 (adapted from Claude V6)
+#  GEMINI SYSTEM PROMPT - V8 (adapted from Gemini V6)
 # ==============================================================================
 
 GEMINI_SYSTEM_PROMPT_V8 = """You are an expert Torah learning assistant for Ohr Haner, a marei mekomos (source finder) system.
@@ -711,6 +721,13 @@ def _check_known_sugyos(query: str, hebrew_terms: List[str]) -> Optional[Any]:
     V6: Check if query matches a known sugya in the database.
     Returns KnownSugyaMatch if found, None otherwise.
     """
+    from config import get_settings
+    
+    settings = get_settings()
+    if not settings.use_known_sugyos:
+        logger.info("[KNOWN_SUGYOS] Disabled via USE_KNOWN_SUGYOS config")
+        return None
+    
     if not KNOWN_SUGYOS_AVAILABLE:
         logger.debug("[KNOWN_SUGYOS] Module not available")
         return None
@@ -733,11 +750,11 @@ def _build_analysis_from_known_sugya(
     query: str,
     hebrew_terms: List[str],
     known_match: Any,  # KnownSugyaMatch
-    claude_enrichment: Optional[Dict] = None
+    gemini_enrichment: Optional[Dict] = None
 ) -> QueryAnalysis:
     """
     V6: Build QueryAnalysis using known sugya data as foundation.
-    Claude enrichment provides additional context but known refs take priority.
+    Gemini enrichment provides additional context but known refs take priority.
     """
     log_subsection("V6: BUILDING ANALYSIS FROM KNOWN SUGYA")
     
@@ -775,7 +792,7 @@ def _build_analysis_from_known_sugya(
     if known_match.primary_gemara:
         suggested_landmark = known_match.primary_gemara[0].ref
     
-    # Use Claude enrichment if available for additional fields
+    # Use Gemini enrichment if available for additional fields
     query_type = QueryType.TOPIC
     foundation_type = FoundationType.GEMARA
     breadth = Breadth.STANDARD
@@ -838,40 +855,40 @@ def _build_analysis_from_known_sugya(
 
     logger.info(f"[V6] Using rishonim_who_discuss as target_authors: {target_authors}")
 
-    if claude_enrichment:
-        # Use Claude's classification/enrichment but keep our refs
-        query_type = _parse_enum(claude_enrichment.get("query_type"), QueryType, QueryType.TOPIC)
-        foundation_type = _parse_enum(claude_enrichment.get("foundation_type"), FoundationType, FoundationType.GEMARA)
-        breadth = _parse_enum(claude_enrichment.get("breadth"), Breadth, Breadth.STANDARD)
-        trickle_direction = _parse_enum(claude_enrichment.get("trickle_direction"), TrickleDirection, TrickleDirection.UP)
-        is_nuance = claude_enrichment.get("is_nuance_query", False)
-        nuance_description = claude_enrichment.get("nuance_description", "")
-        # V6 FIX: Merge Claude's target_authors with known_sugyos rishonim
-        # If Claude provides specific authors, use both (deduped)
-        claude_authors = claude_enrichment.get("target_authors", [])
-        if claude_authors:
+    if gemini_enrichment:
+        # Use Gemini's classification/enrichment but keep our refs
+        query_type = _parse_enum(gemini_enrichment.get("query_type"), QueryType, QueryType.TOPIC)
+        foundation_type = _parse_enum(gemini_enrichment.get("foundation_type"), FoundationType, FoundationType.GEMARA)
+        breadth = _parse_enum(gemini_enrichment.get("breadth"), Breadth, Breadth.STANDARD)
+        trickle_direction = _parse_enum(gemini_enrichment.get("trickle_direction"), TrickleDirection, TrickleDirection.UP)
+        is_nuance = gemini_enrichment.get("is_nuance_query", False)
+        nuance_description = gemini_enrichment.get("nuance_description", "")
+        # V6 FIX: Merge Gemini's target_authors with known_sugyos rishonim
+        # If Gemini provides specific authors, use both (deduped)
+        gemini_authors = gemini_enrichment.get("target_authors", [])
+        if gemini_authors:
             combined_authors = list(target_authors)  # Start with known_sugyos rishonim
-            for author in claude_authors:
+            for author in gemini_authors:
                 if author not in combined_authors:
                     combined_authors.append(author)
             target_authors = combined_authors
-        primary_author = claude_enrichment.get("primary_author")
-        # V6 FIX: Merge Claude's focus_terms with gemara_keywords, not replace
-        claude_focus = claude_enrichment.get("focus_terms", [])
-        if claude_focus and gemara_keywords:
-            # Combine both - gemara_keywords first (more reliable), then Claude's
+        primary_author = gemini_enrichment.get("primary_author")
+        # V6 FIX: Merge Gemini's focus_terms with gemara_keywords, not replace
+        gemini_focus = gemini_enrichment.get("focus_terms", [])
+        if gemini_focus and gemara_keywords:
+            # Combine both - gemara_keywords first (more reliable), then Gemini's
             combined_focus = list(gemara_keywords)
-            for term in claude_focus:
+            for term in gemini_focus:
                 if term not in combined_focus:
                     combined_focus.append(term)
             focus_terms = combined_focus
-        elif claude_focus:
-            focus_terms = claude_focus
+        elif gemini_focus:
+            focus_terms = gemini_focus
         # else keep gemara_keywords as focus_terms
 
         # V4.5 FIX: Add qualifier_terms for nuanced queries like "bari vishema beissurin"
         # These terms are CRITICAL for narrowing the search beyond the base sugya
-        qualifier_terms = claude_enrichment.get("qualifier_terms", [])
+        qualifier_terms = gemini_enrichment.get("qualifier_terms", [])
         if qualifier_terms:
             logger.info(f"[V6] Adding qualifier terms to focus: {qualifier_terms}")
             for term in qualifier_terms:
@@ -882,10 +899,10 @@ def _build_analysis_from_known_sugya(
                 if term not in topic_terms:
                     topic_terms.append(term)
 
-        search_variants = _parse_search_variants(claude_enrichment.get("search_variants", {}))
-        inyan_description = claude_enrichment.get("inyan_description", "")
-        target_sources = claude_enrichment.get("target_sources", target_sources)
-        reasoning = f"Known sugya: {known_match.sugya_id}. Claude: {claude_enrichment.get('reasoning', '')}"
+        search_variants = _parse_search_variants(gemini_enrichment.get("search_variants", {}))
+        inyan_description = gemini_enrichment.get("inyan_description", "")
+        target_sources = gemini_enrichment.get("target_sources", target_sources)
+        reasoning = f"Known sugya: {known_match.sugya_id}. Gemini: {gemini_enrichment.get('reasoning', '')}"
     
     # Build final analysis
     analysis = QueryAnalysis(
@@ -943,8 +960,8 @@ def _build_analysis_from_known_sugya(
 #  MAIN ANALYSIS FUNCTION
 # ==============================================================================
 
-async def analyze_with_claude(query: str, hebrew_terms: List[str]) -> QueryAnalysis:
-    """Have Claude analyze the query with V6 known sugyos integration."""
+async def analyze_with_gemini(query: str, hebrew_terms: List[str]) -> QueryAnalysis:
+    """Have Gemini analyze the query with V6 known sugyos integration."""
     log_section("STEP 2: UNDERSTAND (V6) - With Known Sugyos")
     logger.info(f"Query: {query}")
     logger.info(f"Hebrew terms: {hebrew_terms}")
@@ -967,11 +984,11 @@ async def analyze_with_claude(query: str, hebrew_terms: List[str]) -> QueryAnaly
     known_match = _check_known_sugyos(query, hebrew_terms)
     
     if known_match:
-        # We found a match! Still call Claude for enrichment but use known refs
+        # We found a match! Still call Gemini for enrichment but use known refs
         logger.info("[V6] Known sugya found - will use database refs as primary")
         
         # Get Gemini enrichment (optional - can skip for speed)
-        claude_enrichment = None
+        gemini_enrichment = None
         try:
             log_subsection("CALLING GEMINI FOR ENRICHMENT")
 
@@ -1014,6 +1031,12 @@ RESPOND WITH ONLY THE JSON OBJECT, NO OTHER TEXT."""
             )
 
             response = model.generate_content(enrich_prompt)
+
+            # Track token usage
+            if TOKEN_TRACKING_AVAILABLE and hasattr(response, 'usage_metadata'):
+                tracker = get_global_tracker(model_name)
+                tracker.record_from_response(response, "Step 2: Enrichment")
+
             raw_text = response.text.strip()
             json_text = raw_text
             if "```json" in raw_text:
@@ -1021,17 +1044,17 @@ RESPOND WITH ONLY THE JSON OBJECT, NO OTHER TEXT."""
             elif "```" in raw_text:
                 json_text = raw_text.split("```")[1].split("```")[0].strip()
 
-            claude_enrichment = json.loads(json_text)
+            gemini_enrichment = json.loads(json_text)
             logger.info("[V8] Got Gemini enrichment")
             
         except Exception as e:
             logger.warning(f"[V8] Gemini enrichment failed (non-critical): {e}")
-            claude_enrichment = None
+            gemini_enrichment = None
         
         # V4.4: Check if LLM enrichment indicates the match is bad
         # If LLM says it's "unrelated" or "wrong", fall back to full analysis
-        if claude_enrichment:
-            reasoning = claude_enrichment.get("reasoning", "").lower()
+        if gemini_enrichment:
+            reasoning = gemini_enrichment.get("reasoning", "").lower()
             bad_match_indicators = ["unrelated", "not related", "wrong topic", "incorrect match",
                                     "different topic", "no connection", "does not match",
                                     "completely unrelated", "nothing to do with"]
@@ -1045,7 +1068,7 @@ RESPOND WITH ONLY THE JSON OBJECT, NO OTHER TEXT."""
         # Only use known_sugya if it's still valid after Claude check
         if known_match:
             # Build analysis from known sugya + Claude enrichment
-            analysis = _build_analysis_from_known_sugya(query, hebrew_terms, known_match, claude_enrichment)
+            analysis = _build_analysis_from_known_sugya(query, hebrew_terms, known_match, gemini_enrichment)
 
             log_subsection("ANALYSIS RESULTS (FROM KNOWN SUGYOS)")
             _log_analysis_results(analysis)
@@ -1102,6 +1125,11 @@ RESPOND WITH ONLY THE JSON OBJECT."""
         elapsed_ms = int((time.time() - start_time) * 1000)
         logger.info(f"Gemini response received in {elapsed_ms}ms")
 
+        # Track token usage
+        if TOKEN_TRACKING_AVAILABLE and hasattr(response, 'usage_metadata'):
+            tracker = get_global_tracker(model_name)
+            tracker.record_from_response(response, "Step 2: Understanding")
+
         raw_text = response.text.strip()
         logger.info(f"Response length: {len(raw_text)} chars")
         logger.debug(f"Raw response:\n{raw_text}")
@@ -1135,33 +1163,33 @@ RESPOND WITH ONLY THE JSON OBJECT."""
             if isinstance(ref_data, dict):
                 hint = _parse_ref_hint(ref_data)
                 hint.is_primary = True
-                hint.source = "claude"
+                hint.source = "gemini"
                 ref_hints.append(hint)
                 primary_refs_list.append(hint.ref)
             elif isinstance(ref_data, str):
-                ref_hints.append(RefHint(ref=ref_data, is_primary=True, source="claude"))
+                ref_hints.append(RefHint(ref=ref_data, is_primary=True, source="gemini"))
                 primary_refs_list.append(ref_data)
         
         for ref_data in data.get("contrast_refs", []):
             if isinstance(ref_data, dict):
                 hint = _parse_ref_hint(ref_data)
                 hint.is_primary = False
-                hint.source = "claude"
+                hint.source = "gemini"
                 ref_hints.append(hint)
                 contrast_refs_list.append(hint.ref)
             elif isinstance(ref_data, str):
-                ref_hints.append(RefHint(ref=ref_data, is_primary=False, source="claude"))
+                ref_hints.append(RefHint(ref=ref_data, is_primary=False, source="gemini"))
                 contrast_refs_list.append(ref_data)
         
         if not ref_hints:
             for ref_data in data.get("suggested_refs", []):
                 if isinstance(ref_data, dict):
                     hint = _parse_ref_hint(ref_data)
-                    hint.source = "claude"
+                    hint.source = "gemini"
                     ref_hints.append(hint)
                     primary_refs_list.append(hint.ref)
                 elif isinstance(ref_data, str):
-                    ref_hints.append(RefHint(ref=ref_data, source="claude"))
+                    ref_hints.append(RefHint(ref=ref_data, source="gemini"))
                     primary_refs_list.append(ref_data)
         
         # Validate and fix refs
@@ -1298,7 +1326,7 @@ def _log_analysis_results(analysis: QueryAnalysis) -> None:
         for hint in analysis.ref_hints:
             if hint.is_primary:
                 conf = hint.confidence.value if hasattr(hint.confidence, 'value') else hint.confidence
-                src = f" [from {hint.source}]" if hint.source != "claude" else ""
+                src = f" [from {hint.source}]" if hint.source != "gemini" else ""
                 logger.info(f"  • {hint.ref} [{conf}]{src}")
                 if hint.verification_keywords:
                     logger.info(f"    Keywords: {hint.verification_keywords}")
@@ -1363,7 +1391,7 @@ async def _check_for_clarification(
         topic = analysis.inyan_description[:50]
 
     # Check if clarification is needed and generate options
-    # V7: Pass possible_interpretations from Step 2 Claude call to avoid extra API call
+    # V7: Pass possible_interpretations from Step 2 Gemini call to avoid extra API call
     clarification_result = await check_and_generate_clarification(
         query=query,
         hebrew_terms=hebrew_terms,
@@ -1375,7 +1403,7 @@ async def _check_for_clarification(
         context=analysis.reasoning,
         clarification_question=analysis.clarification_question,
         clarification_options=analysis.clarification_options,
-        possible_interpretations=analysis.possible_interpretations,  # V7: From Step 2 Claude call
+        possible_interpretations=analysis.possible_interpretations,  # V7: From Step 2 Gemini call
     )
 
     if clarification_result and clarification_result.needs_clarification:
@@ -1465,7 +1493,7 @@ async def understand(
     if not query:
         query = " ".join(hebrew_terms)
     
-    analysis = await analyze_with_claude(query, hebrew_terms)
+    analysis = await analyze_with_gemini(query, hebrew_terms)
 
     # V7: Check if clarification is needed before proceeding
     analysis = await _check_for_clarification(
@@ -1500,7 +1528,7 @@ __all__ = [
     'understand',
     'run_step_two',
     'analyze',
-    'analyze_with_claude',
+    'analyze_with_gemini',
     'QueryAnalysis',
     'RefHint',
     'SearchVariants',

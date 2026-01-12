@@ -4,7 +4,7 @@ Ohr Haner - Main Pipeline (V7 with Clarification)
 
 The complete flow:
 1. DECIPHER: User query → Hebrew terms
-2. UNDERSTAND: Claude analyzes → QueryAnalysis
+2. UNDERSTAND: Gemini analyzes → QueryAnalysis
    - V7: If confidence is low, may return clarification options
 3. SEARCH: Sefaria search → Organized sources
 
@@ -204,9 +204,9 @@ async def search_sources(query: str) -> MareiMekomosResult:
 
     hebrew_terms = step1_result.hebrew_terms
 
-    # V4.4: For pure English queries, Claude will interpret the topic from original query
+    # V4.4: For pure English queries, Gemini will interpret the topic from original query
     if is_pure_english:
-        logger.info("Pure English query detected - Claude will interpret topic from original query")
+        logger.info("Pure English query detected - Gemini will interpret topic from original query")
     
     # Step 2: Understand
     logger.info("\n--- STEP 2: UNDERSTAND ---")
@@ -494,7 +494,7 @@ async def search_with_clarification(
     # Clear the session
     clear_clarification_session(query_id)
 
-    # If we already have analysis from Step 2, reuse it to avoid another Claude call
+    # If we already have analysis from Step 2, reuse it to avoid another Gemini call
     if stored_analysis is not None:
         return await _search_with_enriched_analysis(
             original_query,
@@ -628,7 +628,7 @@ async def _search_with_enriched_analysis(
     analysis: Any,
 ) -> MareiMekomosResult:
     """Run search using stored Step 2 analysis plus clarified context."""
-    logger.info("[V7] Reusing stored analysis to avoid extra Claude call")
+    logger.info("[V7] Reusing stored analysis to avoid extra Gemini call")
 
     # Step 1: Decipher (same as normal)
     try:

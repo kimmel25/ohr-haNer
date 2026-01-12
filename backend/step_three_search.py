@@ -1119,11 +1119,11 @@ async def verify_landmark(
     topic_terms: List[str],
     session: aiohttp.ClientSession
 ) -> LandmarkResult:
-    """Verify Claude's suggested landmark."""
-    log_subsection("PHASE 1A: VERIFY CLAUDE'S LANDMARK")
+    """Verify Gemini's suggested landmark."""
+    log_subsection("PHASE 1A: VERIFY GEMINI'S LANDMARK")
     
     if not suggested_landmark:
-        logger.info("  No landmark suggested by Claude")
+        logger.info("  No landmark suggested by Gemini")
         return LandmarkResult(discovery_method="none", reasoning="No landmark suggested")
     
     logger.info(f"  Suggested landmark: {suggested_landmark}")
@@ -1171,7 +1171,7 @@ async def verify_landmark(
         logger.info(f"  ✓ LANDMARK VERIFIED: {suggested_landmark}")
         return LandmarkResult(
             landmark_ref=suggested_landmark,
-            discovery_method="claude_verified",
+            discovery_method="gemini_verified",
             confidence="high" if focus_score >= 3.0 else "medium",
             reasoning=f"Contains {len(focus_found)} focus terms and {len(topic_found)} topic terms",
             focus_keywords_found=focus_found,
@@ -1358,7 +1358,7 @@ async def find_landmark(
     logger.info(f"  Focus terms: {focus_terms}")
     logger.info(f"  Topic terms: {topic_terms}")
     
-    # Phase 1A: Try Claude's suggested landmark
+    # Phase 1A: Try Gemini's suggested landmark
     if suggested_landmark:
         result = await verify_landmark(
             suggested_landmark, landmark_confidence,
@@ -1981,7 +1981,7 @@ async def handle_general_query(
     result.refs_verified = len(verified_refs)
     
     # V5: Use topic-filtered trickle up even for general queries
-    # V6 FIX: For definition queries, ALWAYS use trickle_up regardless of Claude's direction
+    # V6 FIX: For definition queries, ALWAYS use trickle_up regardless of Gemini's direction
     should_trickle_up = (
         analysis.trickle_direction in [TrickleDirection.UP, TrickleDirection.BOTH]
         or is_definition  # Definition queries always need commentary filtering

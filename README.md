@@ -3,7 +3,7 @@
 Marei Mekomos turns transliterated Hebrew (and mixed English) into organized Torah sources. The backend runs a 3-step pipeline:
 
 1. DECIPHER: transliteration -> Hebrew (dictionary + rules + Sefaria validation)
-2. UNDERSTAND: Hebrew -> query intent + search plan (Claude)
+2. UNDERSTAND: Hebrew -> query intent + search plan (Gemini)
 3. SEARCH: search plan -> organized sources (local corpus + Sefaria)
 
 The system is optimized for speed, cost control, and clear "trickle-up" presentation (Gemara -> Rishonim -> Acharonim).
@@ -26,7 +26,7 @@ The system is optimized for speed, cost control, and clear "trickle-up" presenta
 ## Overview
 - Inputs: transliteration, Hebrew, or mixed English (examples: "migu", "chezkas haguf", "what is migu")
 - Outputs: sources grouped by level, query analysis metadata, and optional clarification prompts
-- Backend: FastAPI + Anthropic + Sefaria API
+- Backend: FastAPI + Gemini + Sefaria API
 - Frontend: React + Vite UI for Step 1 validation and Step 2/3 results
 
 Example (abbreviated):
@@ -38,7 +38,7 @@ Step 3 -> sources_by_level (gemara, rishonim, acharonim)
 ## Architecture (3-step pipeline)
 
 ### Step 1: DECIPHER (backend/step_one_decipher.py)
-- Purpose: convert transliteration to Hebrew without using Claude or vector search.
+- Purpose: convert transliteration to Hebrew without using Gemini or vector search.
 - Mixed query handling: detects English markers, extracts likely transliterated segments, and treats author names specially.
 - Dictionary-first: checks backend/data/word_dictionary.json for an instant hit.
 - Rules-based transliteration: backend/tools/transliteration_map.py generates variants using prefix detection, smichut, sofit letters, and Aramaic endings.
@@ -47,19 +47,19 @@ Step 3 -> sources_by_level (gemara, rishonim, acharonim)
 
 ### Step 2: UNDERSTAND (backend/step_two_understand.py)
 - Purpose: analyze intent and construct a QueryAnalysis that drives Step 3.
-- Uses Anthropic Claude to classify the query and build a search plan.
+- Uses Google Gemini to classify the query and build a search plan.
 - Key outputs: query_type, realm, search_method, search_topics, target_masechtos, target_authors, and clarification prompts.
 - Search methods:
   - trickle_up: start from base texts and pull commentaries
   - trickle_down: start from later sources to locate sugyos, then backfill
   - hybrid: combine both
   - direct: user provides a specific ref
-- Fallback: if Claude fails, returns a conservative plan with a clarification prompt.
+- Fallback: if Gemini fails, returns a conservative plan with a clarification prompt.
 
 ### Step 3: SEARCH (backend/step_three_search.py)
 - Purpose: discover main sugyos and fetch sources.
 - Phase A: local corpus discovery (optional). Uses backend/local_corpus.py to search a local Sefaria export (Shulchan Arukh, Tur, Rambam) and extract Gemara citations.
-- Phase B: Claude validation. Asks Claude to confirm discovered sugyos or suggest better ones.
+- Phase B: Gemini validation. Asks Gemini to confirm discovered sugyos or suggest better ones.
 - Phase C: fetch sources from Sefaria via backend/tools/sefaria_client.py, then group by level.
 - Fallback: if no sugyos found, falls back to a Sefaria search API query.
 - Output: SearchResult plus output files (txt + html) via backend/source_output.py.
@@ -77,7 +77,7 @@ marei-mekomos/
     api_server_v7.py          # FastAPI entry point
     main_pipeline.py          # Orchestrates Steps 1-3
     step_one_decipher.py      # Transliteration -> Hebrew
-    step_two_understand.py    # Intent + strategy (Claude)
+    step_two_understand.py    # Intent + strategy (Gemini)
     step_three_search.py      # Discovery + source fetching
     config.py                 # Settings (Pydantic)
     models.py                 # Pydantic API models
@@ -95,7 +95,7 @@ marei-mekomos/
     src/                      # React UI
     package.json              # Vite scripts
   README.md
-  CLAUDE_CONTEXT.md
+  GEMINI_CONTEXT.md
 ```
 
 ## Quick Start
@@ -112,16 +112,16 @@ python -m venv .venv
 # macOS/Linux:
 source .venv/bin/activate
 
-pip install fastapi uvicorn anthropic pydantic pydantic-settings httpx
+pip install fastapi uvicorn google-generativeai pydantic pydantic-settings httpx
 # Test dependencies (optional):
 pip install pytest requests
 ```
 
-2) Configure your Anthropic key (required by backend/config.py):
+2) Configure your Gemini key (required by backend/config.py):
 
 ```bash
 # backend/.env
-ANTHROPIC_API_KEY=sk-...
+GEMINI_API_KEY=your-api-key
 ```
 
 3) Run the API server:
@@ -150,7 +150,7 @@ Settings live in `backend/config.py` and are loaded from environment variables o
 Environment variables are case-insensitive.
 
 Required:
-- ANTHROPIC_API_KEY: Anthropic API key (backend will fail to start without it)
+- GEMINI_API_KEY: Gemini API key (backend will fail to start without it)
 
 Common server settings:
 - ENVIRONMENT (default: production)
@@ -175,9 +175,9 @@ Logging:
 Pipeline tuning:
 - TRANSLITERATION_MAX_VARIANTS (default: 15)
 - TRANSLITERATION_MIN_HITS (default: 1)
-- CLAUDE_MODEL (default: claude-sonnet-4-5-20250929)
-- CLAUDE_MAX_TOKENS (default: 4000)
-- CLAUDE_TEMPERATURE (default: 0.7)
+- GEMINI_MODEL (default: gemini-1.5-flash)
+- GEMINI_MAX_TOKENS (default: 4000)
+- GEMINI_TEMPERATURE (default: 0.7)
 - DEFAULT_SEARCH_DEPTH (default: standard)
 - MAX_SOURCES_PER_LEVEL (default: 10)
 
@@ -344,19 +344,19 @@ pytest tests/
 
 Notes:
 - Some tests call a running API at `http://localhost:8000` (start the backend first).
-- Integration-style tests require `ANTHROPIC_API_KEY`.
+- Integration-style tests require `GEMINI_API_KEY`.
 - `test_master_kb_integration.py` references `phase2_integration_helpers.py` which is not part of this repo; see that file for details.
 
 ## Troubleshooting
 
 Backend fails to start:
-- Ensure `ANTHROPIC_API_KEY` is set (required by config validation).
+- Ensure `GEMINI_API_KEY` is set (required by config validation).
 - Install dependencies in your venv.
 - Check that port 8000 is free.
 
-Claude errors or timeouts:
+Gemini errors or timeouts:
 - Confirm the API key is valid.
-- Reduce `CLAUDE_MAX_TOKENS` or set `CLAUDE_TEMPERATURE` lower.
+- Reduce `GEMINI_MAX_TOKENS` or set `GEMINI_TEMPERATURE` lower.
 - Check network access.
 
 No sources found:

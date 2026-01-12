@@ -4,7 +4,7 @@
     "created": "2026-01-01",
     "source": "Kollel notes - Kesubos and Pesachim",
     "description": "Known sugyos database mapping classic Torah concepts to their actual gemara locations",
-    "usage": "Check this database first before relying on Claude's general suggestions. If entry exists, use these exact locations."
+    "usage": "Check this database first before relying on Gemini's general suggestions. If entry exists, use these exact locations."
   },
   
   "sugyos": [

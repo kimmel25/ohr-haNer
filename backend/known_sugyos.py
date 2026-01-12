@@ -4,10 +4,10 @@ Known Sugyos Database Lookup
 
 This module provides lookup functionality for the known_sugyos database.
 When a user queries a classic Torah concept, we check here FIRST before
-relying on Claude's semantic suggestions.
+relying on Gemini's semantic suggestions.
 
 If we have a known mapping, we use those exact locations as primary sources
-with HIGH confidence, solving the "Primary Sources Issue" where Claude
+with HIGH confidence, solving the "Primary Sources Issue" where Gemini
 returns Rishonim instead of the underlying gemara.
 
 USAGE:

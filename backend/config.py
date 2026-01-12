@@ -110,6 +110,8 @@ class Settings(BaseSettings):
     gemini_clarification_max_tokens: int = Field(
         1500, env="GEMINI_CLARIFICATION_MAX_TOKENS"
     )
+    # V6.2: Control known sugyos database lookup
+    use_known_sugyos: bool = Field(True, env="USE_KNOWN_SUGYOS")
 
     # Step 3: Search
     default_search_depth: str = Field("standard", env="DEFAULT_SEARCH_DEPTH")

@@ -2,7 +2,7 @@
 
 **Version:** V7 (Local Corpus V10, Step 3 V5)  
 **Type:** Torah Research Assistant with AI-Powered Query Analysis  
-**Stack:** Python (FastAPI) + React (Vite) + Claude AI (Sonnet) + Sefaria API  
+**Stack:** Python (FastAPI) + React (Vite) + Gemini AI (Flash) + Sefaria API  
 **Purpose:** Transform natural language Torah queries (transliterated/Hebrew/English) into organized, hierarchical source compilations  
 **Last Updated:** January 1, 2026
 
@@ -18,7 +18,7 @@ Transform natural language Torah queries into comprehensive, hierarchically-orga
 2. **Transparency**: "We aren't scared to show our own lack of understanding"
 3. **Accuracy Over Guessing**: Better to ask for clarification than provide wrong sources
 4. **Trickle-Up Presentation**: Sources flow naturally: Gemara → Rishonim → Acharonim
-5. **Semantic Intelligence**: Claude AI analyzes INTENT, not just keywords
+5. **Semantic Intelligence**: Gemini AI analyzes INTENT, not just keywords
 
 ### What Makes This Different
 - **No Vector Search Required**: Dictionary-first approach with rule-based transliteration
@@ -144,7 +144,7 @@ class DecipherResult:
 **Goal:** Analyze user intent and build a semantic search strategy  
 **Input:** Hebrew terms from Step 1 + original query  
 **Output:** `QueryAnalysis` - complete search plan with WHAT/WHERE/WHOSE/HOW  
-**Method:** Claude AI (Sonnet) with structured prompt engineering
+**Method:** Gemini AI (Flash) with structured prompt engineering
 
 **The Critical Innovation: Topic vs. Author Separation**
 
@@ -165,7 +165,7 @@ Query: "what is the ran's shittah in bittul chometz"
 
 **Query Classification (V5):**
 
-Claude classifies queries into these types:
+Gemini classifies queries into these types:
 
 1. **TOPIC**: General exploration
    - "migu" → Broad search for מיגו across gemara
@@ -308,7 +308,7 @@ class QueryAnalysis:
     confidence: ConfidenceLevel
     needs_clarification: bool
     clarification_question: Optional[str]
-    reasoning: str  # Claude's explanation
+    reasoning: str  # Gemini's explanation
 ```
 
 **Example Outputs:**
@@ -384,8 +384,8 @@ Used when: query_type = nuance/shittah/comparison/machlokes
 Goal: Identify the primary source that discusses this nuance
 
 ```
-PHASE 1A: VERIFY CLAUDE'S SUGGESTED LANDMARK
-- If Claude suggested a landmark:
+PHASE 1A: VERIFY GEMINI'S SUGGESTED LANDMARK
+- If Gemini suggested a landmark:
   1. Check if ref exists in Sefaria
   2. Fetch the text
   3. Verify it contains BOTH:
@@ -682,7 +682,7 @@ Total Sources: 15
 ────────────────────────────────────────
   NUANCE DETECTION
 ────────────────────────────────────────
-Discovery Method: claude_verified
+Discovery Method: gemini_verified
 Landmark: Pesachim 4b
 Confidence: high
 Reasoning: Contains focus terms and topic terms
@@ -1216,7 +1216,7 @@ Total Sources: {count}
 ```python
 class Settings(BaseSettings):
     # API Keys
-    anthropic_api_key: str  # Required
+    gemini_api_key: str  # Required
     
     # App Settings
     app_name: str = "Marei Mekomos"
@@ -1251,14 +1251,14 @@ class Settings(BaseSettings):
 from config import get_settings
 
 settings = get_settings()  # Singleton
-api_key = settings.anthropic_api_key
+api_key = settings.gemini_api_key
 ```
 
 ```
 marei-mekomos/
 ├── backend/
 │   ├── step_one_decipher.py      # Step 1: Transliteration → Hebrew
-│   ├── step_two_understand.py    # Step 2: Claude query analysis
+│   ├── step_two_understand.py    # Step 2: Gemini query analysis
 │   ├── step_three_search.py      # Step 3: V8.1 trickle-down search
 │   ├── main_pipeline.py          # Orchestrates 3-step flow
 │   ├── console_full_pipeline.py  # Interactive CLI tester
@@ -1274,7 +1274,7 @@ marei-mekomos/
 │   ├── logging_async_safe.py     # Async-safe logging
 │   ├── cache/                    # API response cache
 │   │   ├── sefaria_v2/          # Sefaria API cache (JSON)
-│   │   └── claude/              # Claude API cache
+│   │   └── gemini/              # Gemini API cache
 │   ├── data/
 │   │   ├── word_dictionary.json # Known Hebrew terms
 │   │   └── peirushim.py         # Commentary metadata
@@ -1312,7 +1312,7 @@ marei-mekomos/
 │   ├── sources_*.html          # HTML formatted results
 │   └── sources_*.txt           # Plain text results
 ├── README.md                    # Main documentation
-├── CLAUDE_CONTEXT.md           # Claude API context
+├── GEMINI_CONTEXT.md           # Gemini API context
 └── PROJECT_CONTEXT.md          # This file
 ```
 
@@ -1323,7 +1323,7 @@ marei-mekomos/
 ### Backend
 - **Python 3.9+**
 - **FastAPI** - REST API framework
-- **Anthropic Claude** - Query analysis (Step 2)
+- **Google Gemini** - Query analysis (Step 2)
 - **Pydantic** - Data validation and settings
 - **asyncio** - Async operations
 - **aiohttp** - Async HTTP client
@@ -1390,7 +1390,7 @@ class QueryAnalysis:
     confidence: ConfidenceLevel
     needs_clarification: bool
     clarification_question: Optional[str]
-    reasoning: str                      # Claude's reasoning
+    reasoning: str                      # Gemini's reasoning
     search_description: str             # Human-readable description
 ```
 
@@ -1509,7 +1509,7 @@ Rule-based Hebrew ↔ transliteration engine.
 
 1. **Create `.env` file:**
 ```bash
-ANTHROPIC_API_KEY=sk-ant-...
+GEMINI_API_KEY=your-api-key-here
 SEFARIA_BASE_URL=https://www.sefaria.org/api
 ENVIRONMENT=development
 LOG_LEVEL=INFO
@@ -1523,7 +1523,7 @@ pip install -r requirements.txt
 
 3. **Initialize caching:**
 ```bash
-mkdir -p cache/sefaria_v2 cache/claude
+mkdir -p cache/sefaria_v2 cache/gemini
 mkdir -p logs output
 ```
 
@@ -1640,12 +1640,12 @@ Step 3: Search SA OC simanim 301-350 for "טלטול"
 3. Check intersection vs. union in Phase C
 4. Look for "INTERSECTION: X dapim" in logs
 
-### Issue: "Claude returned wrong search method"
+### Issue: "Gemini returned wrong search method"
 **Cause:** Query type not properly detected  
 **Debug:**
 1. Check Step 2 `query_type` classification
 2. For comparisons/shittah/machlokes, should force `trickle_down` (V6+)
-3. Check Claude's `reasoning` field
+3. Check Gemini's `reasoning` field
 4. Review system prompt in `step_two_understand.py`
 
 ### Issue: "No sources found"
@@ -1686,7 +1686,7 @@ Step 3: Search SA OC simanim 301-350 for "טלטול"
 [STEP 2: UNDERSTAND] Analyzing query
   Query: what is the rans shittah in bittul chometz
   Hebrew terms: ['רן', 'ביטול חמץ']
-[UNDERSTAND] Claude raw response: {...}
+[UNDERSTAND] Gemini raw response: {...}
 [UNDERSTAND] Final QueryAnalysis:
   INYAN: ['ביטול חמץ']
   WHERE: ['Pesachim']
@@ -1697,7 +1697,7 @@ Step 3: Search SA OC simanim 301-350 for "טלטול"
 **Step 3:**
 ```
 [STEP 3: SEARCH] V8.1 Trickle-Down
-  All topics from Claude: ['ביטול חמץ', 'חיוב ביטול']
+  All topics from Gemini: ['ביטול חמץ', 'חיוב ביטול']
   Core topics (filtered): ['ביטול חמץ', 'חיוב ביטול']
   Combined search query: 'ביטול חמץ חיוב ביטול'
 PHASE A/B/C: Discovering main sugyos
@@ -1721,7 +1721,7 @@ STEP 3 COMPLETE: 12 sources found
 ### Prerequisites
 
 1. **Python 3.9+** installed
-2. **Anthropic API Key** from https://console.anthropic.com/
+2. **Gemini API Key** from https://aistudio.google.com/apikey
 3. **Optional**: Sefaria Export for offline corpus (download from Sefaria)
 
 ### Initial Setup
@@ -1740,12 +1740,12 @@ pip install -r requirements.txt
 
 # 4. Create .env file
 New-Item .env -ItemType File
-Add-Content .env "ANTHROPIC_API_KEY=sk-ant-your-key-here"
+Add-Content .env "GEMINI_API_KEY=your-api-key-here"
 Add-Content .env "ENVIRONMENT=development"
 Add-Content .env "LOG_LEVEL=DEBUG"
 
 # 5. Create necessary directories
-New-Item -ItemType Directory -Force cache\sefaria_v2, cache\claude, logs, output
+New-Item -ItemType Directory -Force cache\sefaria_v2, cache\gemini, logs, output
 
 # 6. Optional: Download Sefaria Export
 # Download from https://github.com/Sefaria/Sefaria-Export
@@ -1895,7 +1895,7 @@ logger.debug(f"Validation scores: {scores}")
    - Check logs for "INTERSECTION: 0 dapim"
    - Fix: Simplify search terms in Step 2
 
-2. **Claude misidentified masechta**
+2. **Gemini misidentified masechta**
    - Check Step 2 `target_masechtos`
    - Fix: Add more context to query or use direct reference
 
@@ -1910,7 +1910,7 @@ logger.info(f"Target masechtos: {analysis.target_masechtos}")
 logger.info(f"Search topics: {analysis.search_topics_hebrew}")
 ```
 
-#### Issue 3: "Claude returned wrong search method"
+### Issue: "Gemini returned wrong search method"
 
 **Symptom:** Query uses trickle_up when should use trickle_down
 
@@ -1919,7 +1919,7 @@ logger.info(f"Search topics: {analysis.search_topics_hebrew}")
 **Solutions:**
 1. Check Step 2 `query_type` classification
 2. For comparisons/shittah/machlokes, V5 should classify as NUANCE
-3. Review Claude's `reasoning` field
+3. Review Gemini's `reasoning` field
 4. Check system prompt in `step_two_understand.py`
 
 **Note:** Step 3 V5 often routes all queries through nuance handler anyway, so search_method is less critical now.
@@ -1935,7 +1935,7 @@ logger.info(f"Search topics: {analysis.search_topics_hebrew}")
 1. **Landmark verification failed**
    - Check: Does landmark exist in Sefaria?
    - Check: Does landmark contain focus_terms + topic_terms?
-   - Fix: Claude suggested bad landmark, discovery needed
+   - Fix: Gemini suggested bad landmark, discovery needed
 
 2. **Topic-filtered search too restrictive**
    - Check: Are focus_terms too specific?
@@ -1978,7 +1978,7 @@ sefaria_max_retries: int = 5  # Default: 3
 ```powershell
 # Delete cache and rebuild
 Remove-Item -Recurse backend\cache\sefaria_v2\*
-Remove-Item -Recurse backend\cache\claude\*
+Remove-Item -Recurse backend\cache\gemini\*
 ```
 
 ---
@@ -2251,7 +2251,7 @@ OUTPUT:
 2. Run `console_full_pipeline.py` with a simple query
 3. Read `step_one_decipher.py` - simplest, most self-contained
 4. Read `models.py` - understand all data structures
-5. Read `step_two_understand.py` - see Claude integration
+5. Read `step_two_understand.py` - see Gemini integration
 6. Read `step_three_search.py` - most complex, leave for last
 
 **Key Concepts to Understand:**
@@ -2338,13 +2338,13 @@ OUTPUT:
 
 **Credits:**
 - **Sefaria**: For the amazing free Torah API and corpus
-- **Anthropic**: For Claude AI API
+- **Google**: For Gemini AI API
 - **Contributors**: [List contributors]
 
 **Built With:**
 - Python, FastAPI, Pydantic, aiohttp
 - React, Vite
-- Claude (Anthropic)
+- Gemini (Google)
 - Sefaria API
 
 ---
